@@ -1,0 +1,37 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PATENTKIT_COMPAT_VERSION: "0.1.1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 安装构建依赖
+        run: python -m pip install pyyaml
+      - name: 语法检查
+        run: python -m compileall -q tools patent-research-skill/scripts
+      - name: 构建发布包（无示例，仅冒烟）
+        run: |
+          python tools/build_skill_release.py --out dist --no-samples --built-at 2026-10-22T00:00:00+08:00 --json
+          python - <<'PY'
+          import json, pathlib, zipfile
+          zips = sorted(pathlib.Path("dist").glob("patent-research-skill-v*.zip"))
+          assert zips, "没有生成发布包"
+          with zipfile.ZipFile(zips[0]) as zf:
+              names = set(zf.namelist())
+          for required in ("manifest.json", "install.ps1", "install.sh", "install-oneclick.cmd"):
+              assert required in names, f"缺少 {required}"
+          print("ok:", zips[0].name, len(names), "entries")
+          PY
+      - name: 安装脚本 dry-run
+        run: |
+          bash release/install.sh --dry-run --dest "$RUNNER_TEMP/skills" --no-self-check
