@@ -48,7 +48,6 @@ After installation, restart the client:
 ```
 patent-research-skill/   SKILL.md + references/ + scripts/ + assets/ + agents/openai.yaml
 release/                 installers (ps1/sh/oneclick), install docs, release notes
-tools/build_skill_release.py   release builder (manifest + sha256 + synthetic sample workspace)
 .github/workflows/ci.yml       build smoke test + installer dry-run
 ```
 

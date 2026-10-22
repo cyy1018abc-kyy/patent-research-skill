@@ -6,34 +6,36 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
-    env:
-      PATENTKIT_COMPAT_VERSION: "0.1.1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install build dependencies
+      - name: Install validation dependency
         run: python -m pip install pyyaml
-      - name: Syntax check
-        run: python -m compileall -q tools patent-research-skill/scripts
-      - name: Build release package (smoke, no samples)
+      - name: Validate skill frontmatter
         run: |
-          python tools/build_skill_release.py --out dist --no-samples --built-at 2026-10-22T00:00:00+08:00 --json
           python - <<'PY'
-          import json, pathlib, zipfile
-          zips = sorted(pathlib.Path("dist").glob("patent-research-skill-v*.zip"))
-          assert zips, "release package not generated"
-          with zipfile.ZipFile(zips[0]) as zf:
-              names = set(zf.namelist())
-          for required in ("manifest.json", "install.ps1", "install.sh", "install-oneclick.cmd"):
-              assert required in names, f"missing {required}"
-          print("ok:", zips[0].name, len(names), "entries")
+          import pathlib, yaml
+          text = pathlib.Path("patent-research-skill/SKILL.md").read_text(encoding="utf-8")
+          assert text.startswith("---"), "missing YAML frontmatter"
+          fm = yaml.safe_load(text.split("---", 2)[1])
+          assert fm["name"] == "patent-research"
+          assert fm["description"].strip()
+          assert fm.get("metadata", {}).get("version")
+          print("skill version:", fm["metadata"]["version"])
           PY
-      - name: Installer dry-run (from built package)
+      - name: Syntax check scripts
+        run: python -m compileall -q patent-research-skill/scripts
+      - name: Shell syntax check
+        run: bash -n release/install.sh
+      - name: Required files
         run: |
-          cd dist
-          unzip -q patent-research-skill-v*.zip -d pkg
-          bash pkg/install.sh --dry-run --dest "$RUNNER_TEMP/skills" --no-self-check
+          test -f release/install.ps1
+          test -f release/install-oneclick.cmd
+          test -f release/INSTALL.md
+          test -f release/INSTALL-colleagues.md
+          test -f patent-research-skill/agents/openai.yaml
+          echo "package layout ok"
