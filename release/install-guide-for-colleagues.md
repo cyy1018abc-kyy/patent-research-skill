@@ -10,7 +10,7 @@ Get these 3 files of the **same version** from the release page / group chat (pu
 | File | Purpose |
 |---|---|
 | `patent-research-skill-v2.3.0.zip` | Skill package (SKILL.md + references + scripts + install scripts) |
-| `patentkit-0.1.1-py3-none-any.whl` | Kernel (validation/gate rules, Python package) |
+| `patentkit-0.1.2-py3-none-any.whl` | Kernel (validation/gate rules, Python package) |
 | `install-oneclick.cmd` (Windows) | One-click installer (installs the kernel + the skill) |
 
 Also recommended: get `SHA256SUMS-*.txt` to verify the files were not corrupted during download (optional).
@@ -28,7 +28,7 @@ Also recommended: get `SHA256SUMS-*.txt` to verify the files were not corrupted 
 
 ```powershell
 # 1) Install the kernel
-pip install .\patentkit-0.1.1-py3-none-any.whl
+pip install .\patentkit-0.1.2-py3-none-any.whl
 
 # 2) Unzip the skill package
 Expand-Archive .\patent-research-skill-v2.3.0.zip -DestinationPath .\pkg
@@ -43,7 +43,7 @@ If you don't have `pwsh`, use instead: `powershell -ExecutionPolicy Bypass -File
 
 ```bash
 # 1) Install the kernel
-python3 -m pip install ./patentkit-0.1.1-py3-none-any.whl
+python3 -m pip install ./patentkit-0.1.2-py3-none-any.whl
 
 # 2) Unzip and install
 unzip patent-research-skill-v2.3.0.zip -d pkg

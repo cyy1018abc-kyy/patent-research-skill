@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-22 · Skill 2.3.3 + kernel 0.1.2
+
+- Compatibility release for the English workspace layout: the skill now requires
+  `patentkit >= 0.1.2` (0.1.1 still expects the old paths).
+- Kernel 0.1.2: English paths/messages; quoted `title` placeholders in workspace
+  templates so titles containing `": "` render valid YAML.
+- Skill runtime, installers, documentation and release notes remain fully English.
+
 ## 2026-10-22 · Skill 2.3.2
 
 - Full English edition: skill runtime (`SKILL.md`, `references/`, script messages, assets),

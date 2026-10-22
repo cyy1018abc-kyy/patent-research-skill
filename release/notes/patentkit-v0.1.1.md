@@ -16,14 +16,14 @@ three-level evidence classification, V001-V028 validation, G-S-01..05 gates.
 
 | Asset | SHA-256 |
 |---|---|
-| `patentkit-0.1.1-py3-none-any.whl` | `6edb60f761f03b88039ad50e58d5a271a397bc1883fcb43be8080eabd70f4231` |
-| `patentkit-0.1.1.tar.gz` | `a77066c0db61fc40a0b791a9aebd2ff298764be512c2ad2c6f28c64e661f5585` |
+| `patentkit-0.1.2-py3-none-any.whl` | `6edb60f761f03b88039ad50e58d5a271a397bc1883fcb43be8080eabd70f4231` |
+| `patentkit-0.1.2.tar.gz` | `a77066c0db61fc40a0b791a9aebd2ff298764be512c2ad2c6f28c64e661f5585` |
 | `SHA256SUMS-patentkit-v0.1.1.txt` | — |
 
 ## Install
 
 ```powershell
-pip install https://github.com/cyy1018abc-kyy/patent-research-skill/releases/download/patentkit-v0.1.1/patentkit-0.1.1-py3-none-any.whl
+pip install https://github.com/cyy1018abc-kyy/patent-research-skill/releases/download/patentkit-v0.1.1/patentkit-0.1.2-py3-none-any.whl
 ```
 
 ## Requirements
@@ -34,4 +34,4 @@ pip install https://github.com/cyy1018abc-kyy/patent-research-skill/releases/dow
 
 ## Companion skill
 
-Install `patent-research-skill` v2.3.2 from the same Releases page.
+Install `patent-research-skill` v2.3.3 from the same Releases page.

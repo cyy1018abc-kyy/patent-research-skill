@@ -16,7 +16,7 @@ Download from [Releases](https://github.com/cyy1018abc-kyy/patent-research-skill
 | Asset | Purpose |
 |---|---|
 | `patent-research-skill-v<version>.zip` | Skill package (with installer + synthetic sample workspace) |
-| `patentkit-<version>-py3-none-any.whl` | Kernel (Python package; `patentkit` >= 0.1.1) |
+| `patentkit-<version>-py3-none-any.whl` | Kernel (Python package; `patentkit` >= 0.1.2) |
 | `INSTALL-colleagues.md` | One-page install guide (repo source: `release/install-guide-for-colleagues.md`) |
 
 ### Windows (one click)
@@ -27,14 +27,14 @@ same folder, then double-click `install-oneclick.cmd`.
 ### Manual (any platform)
 
 ```powershell
-pip install ./patentkit-0.1.1-py3-none-any.whl
-Expand-Archive ./patent-research-skill-v2.3.2.zip -DestinationPath ./pkg
+pip install ./patentkit-0.1.2-py3-none-any.whl
+Expand-Archive ./patent-research-skill-v2.3.3.zip -DestinationPath ./pkg
 pwsh -File ./pkg/install.ps1 -Client both -Force
 ```
 
 ```bash
-python3 -m pip install ./patentkit-0.1.1-py3-none-any.whl
-unzip patent-research-skill-v2.3.2.zip -d pkg
+python3 -m pip install ./patentkit-0.1.2-py3-none-any.whl
+unzip patent-research-skill-v2.3.3.zip -d pkg
 chmod +x pkg/install.sh && ./pkg/install.sh --client both --force
 ```
 
@@ -56,13 +56,13 @@ release/                 installers (ps1/sh/oneclick), install docs, release not
 ```bash
 pip install pyyaml
 PATENTKIT_COMPAT_VERSION=0.1.1 python tools/build_skill_release.py --out dist --json
-# produces a zip including samples/sample-workspace (requires patentkit >= 0.1.1 locally)
+# produces a zip including samples/sample-workspace (requires patentkit >= 0.1.2 locally)
 ```
 
 ## Requirements
 
 - Python >= 3.11 (required by the skill scripts)
-- `patentkit` >= 0.1.1 (install the wheel from Releases)
+- `patentkit` >= 0.1.2 (install the wheel from Releases)
 - Codex CLI >= 0.161 (the desktop app bundles a newer runtime, no upgrade needed)
 
 ## Language
@@ -88,4 +88,4 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 
 ## Version
 
-Current skill version: **2.3.2**. See [CHANGELOG.md](CHANGELOG.md).
+Current skill version: **2.3.3**. See [CHANGELOG.md](CHANGELOG.md).
