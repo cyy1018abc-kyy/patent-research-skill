@@ -1,7 +1,7 @@
 {
   "target": "TGT-0002",
   "query_axis": "N1",
-  "query_text": "示例检索式（合成数据）",
+  "query_text": "Example query (synthetic data)",
   "database": "Espacenet",
   "capture_mode": "live",
   "result": {
@@ -9,7 +9,7 @@
     "captured": 12,
     "complete": true
   },
-  "raw": "02_检索日志/raw/2026-01-01_示例_N1.txt",
+  "raw": "02_search_logs/raw/2026-01-01_sample_N1.txt",
   "logged_at": "2026-01-01T00:00:00+08:00",
-  "note": "合成日志：真实日志由 patentkit fetch-* 写入，raw/ 必须是可回放的原始响应。"
+  "note": "Synthetic log: real logs are written by patentkit fetch-*; raw/ must be a replayable raw response."
 }

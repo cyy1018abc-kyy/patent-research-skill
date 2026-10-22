@@ -34,4 +34,4 @@ pip install https://github.com/cyy1018abc-kyy/patent-research-skill/releases/dow
 
 ## Companion skill
 
-Install `patent-research-skill` v2.3.1 from the same Releases page.
+Install `patent-research-skill` v2.3.2 from the same Releases page.

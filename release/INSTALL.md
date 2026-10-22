@@ -1,86 +1,139 @@
-# Install `patent-research-skill`
+# Installing `patent-research-skill`
 
-> A standalone, distributable skill package for AI clients that can read/write local
-> files and run local commands (Codex CLI, Claude Code, Codex desktop app).
-> It contains the methodology (`SKILL.md` + `references/`) and executable scripts
-> (`scripts/`). It contains **no real project data or patent drafts**.
+> This is a **standalone distributable skill package**: for AI clients such as Codex CLI / Claude Code
+> that can read/write local files and execute local commands. It contains the methodology (`SKILL.md` + `references/`) and
+> executable scripts (`scripts/`), and **contains no search data or patent manuscripts from any real project**.
+>
+> Evidence conventions, the five acceptance gates, and other rules are implemented in the `patentkit` core; this package only covers "how to do things".
+
+## Getting the installation package
+
+- Skill package zip: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v2.3.0> →
+  `patent-research-skill-v2.3.0.zip`
+- Kernel wheel / sdist: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.1.1>
+- Verification: `SHA256SUMS-*.txt` on the same page; on Windows you can check with `Get-FileHash <file> -Algorithm SHA256`.
 
 ## Prerequisites
 
 | Dependency | Requirement | Check |
 |---|---|---|
-| Python | >= 3.11 | `python --version` |
-| patentkit | installed (kernel) | `python -c "import patentkit; print(patentkit.__version__)"` |
-| Client | Codex CLI >= 0.161 / Claude Code >= 2.1.206 / current Codex desktop app | — |
+| Python | ≥ 3.11 | `python --version` |
+| patentkit | installed (core) | `python -m patentkit doctor` |
 
 ```powershell
-pip install patentkit-0.1.1-py3-none-any.whl
+pip install patentkit                 # when a release index is available
+# or install from an internal git / repo:
+pip install "git+https://<internal-git-url>"
 ```
 
-## Quick install
+> You can install the skill package without the core, but the scripts will exit with code 3 and tell you to install `patentkit` first.
 
-Extract the release zip, then run the installer from the package root:
+## Three-step installation
+
+Run this in the **root of the unzipped release package** (the directory should contain `manifest.json`, `patent-research/`, `samples/`):
 
 ```powershell
-Expand-Archive .\patent-research-skill-v2.3.1.zip -DestinationPath .\pkg
-pwsh -File .\pkg\install.ps1 -DryRun          # preview
-pwsh -File .\pkg\install.ps1 -Client both     # Claude Code + Codex
+# 1) Preview (writes no files)
+pwsh -File .\install.ps1 -DryRun
+
+# 2) Install: Claude Code by default (~/.claude/skills/patent-research/)
+pwsh -File .\install.ps1 -Client claude
+#    Codex CLI: ~/.agents/skills/patent-research/
+pwsh -File .\install.ps1 -Client codex
+#    Install both:
+pwsh -File .\install.ps1 -Client both
+
+# 3) Self-check (the install script already runs it by default; can also be run manually)
+python "$HOME/.claude/skills/patent-research/scripts/status.py" --root ".\samples\sample_workspace"
 ```
 
-macOS / Linux:
+macOS / Linux / WSL:
 
 ```bash
-unzip patent-research-skill-v2.3.1.zip -d pkg
-chmod +x pkg/install.sh
-./pkg/install.sh --dry-run
-./pkg/install.sh --client both
+chmod +x install.sh
+./install.sh --dry-run
+./install.sh --client claude
 ```
 
-Options:
+### Where it installs
 
-| Option | Meaning |
-|---|---|
-| `-Client claude` | install only for Claude Code (`~/.claude/skills`) |
-| `-Client codex` | install only for Codex (`~/.agents/skills`) |
-| `-Client both` | install both |
-| `-Dest <dir>` | custom skills root (a `patent-research/` directory is created) |
-| `-DryRun` / `--dry-run` | print actions without writing |
-| `-Force` / `--force` | overwrite an existing installation |
-| `-NoSelfCheck` / `--no-self-check` | skip the post-install smoke test |
-| `-Uninstall` / `--uninstall` | remove the installed skill |
+| Client | Default skills root | After installation |
+|---|---|---|
+| Claude Code | `~/.claude/skills/` | `~/.claude/skills/patent-research/` |
+| Codex CLI | `~/.agents/skills/` | `~/.agents/skills/patent-research/` |
+| Custom | `-Dest <skills-root>` / `--dest <dir>` | `<dir>/patent-research/` |
 
-The installer copies the payload to a directory named `patent-research` (the value of
-`name` in `SKILL.md`), then runs a smoke test against the bundled synthetic
-`samples/sample-workspace/` if `patentkit` is installed.
+> **The directory name must equal the `name` in `SKILL.md` (`patent-research`)** — clients identify skills by directory/name,
+> so a wrong name may not be recognized. The install script handles this automatically.
 
-Exit codes: `0` success, `1` failure (self-check failed / destination exists), `2` invalid package.
+## Verifying it works
 
-## Verify
+1. After installation the self-check should show "✅ Self-check passed".
+2. In the client, say: "run a patent novelty check" / "show the status of this patent workspace" /
+   "what is the search query on the N1 axis" — the skill should trigger and execute the commands in `scripts/`.
+3. Before using a real workspace, practice on the package's `samples/sample_workspace/` (synthetic data, do whatever you like).
+
+## Upgrading
 
 ```powershell
-python "$HOME/.agents/skills/patent-research/scripts/status.py" --root .\pkg\samples\sample-workspace
+# 1) Switch to the new package: unzip into a new directory, preview first
+pwsh -File .\install.ps1 -DryRun
+
+# 2) Install over the old version (replaces it)
+pwsh -File .\install.ps1 -Client both -Force
+
+# 3) Upgrade the kernel (if the release notes require it)
+pip install -U patentkit
 ```
 
-Expected: exit code 0 and a JSON object with `workspace`, `active_target`, `gates`, `ok`, ...
+> Before upgrading, check `skill.version` and `compat.patentkit` in `manifest.json`;
+> for cross-major upgrades follow the release notes. For a manual install, just replace the skill directory.
 
-Then restart the client:
-
-- **Codex desktop**: sidebar **Skills** -> select "Patent Research" (or `@`).
-- **Claude Code**: ask "use the patent-research skill, locate the workspace and run the self-check".
-
-## Upgrade / uninstall
+## Uninstalling
 
 ```powershell
-pwsh -File .\pkg\install.ps1 -Client both -Force      # upgrade
-pwsh -File .\pkg\install.ps1 -Uninstall -Client both  # uninstall
+pwsh -File .\install.ps1 -Uninstall -Client both
 ```
+
+The `patentkit` core is removed with `pip uninstall patentkit`; workspace data is unaffected.
+
+## Manual installation (if you prefer not to use the scripts)
+
+1. Copy `patent-research/` to the client's skills root and **rename it to `patent-research`** (that is already its name inside the package).
+2. Make sure `SKILL.md` is at the top level of the directory.
+3. Run the self-check: `python <skill-dir>/scripts/status.py --root samples/sample_workspace`.
 
 ## Troubleshooting
 
-| Symptom | Cause / fix |
-|---|---|
-| `manifest.json not found` | run the installer from the extracted package root |
-| self-check fails / script exit 3 | `patentkit` is not installed: `pip install patentkit-*.whl` |
-| `workspace not found` (exit 2) | `cd` into a directory containing `workspace.yml`, or pass `--root` |
-| desktop app does not list the skill | restart the app; confirm `~/.agents/skills/patent-research/SKILL.md` exists |
-| skill answers are generic | select the skill explicitly with `@`; keep the global `~/.codex/AGENTS.md` guidance |
+| Symptom | Cause | Fix |
+|---|---|---|
+| `install.ps1` reports "manifest.json not found" | not run from the release package root | `cd` to the unzipped directory and rerun, or `chmod +x install.sh` |
+| Self-check exits 3 | `patentkit` not installed / Python version too low | `pip install patentkit`; confirm `python --version` ≥ 3.11 |
+| Self-check exits 2 | workspace location failed | use `--root <workspace>`; or `cd` into the directory containing `workspace.yml` |
+| The client does not recognize the skill | skill directory name ≠ the `name` in `SKILL.md` | rename the directory to `patent-research` |
+| The client does not trigger automatically | client version/settings issue | manually `/patent-research`, or make the request more specific (search / novelty / evidence chain) |
+| Chinese text shows garbled characters | console encoding | the scripts force UTF-8; clients should decode captured output as UTF-8 |
+
+## Safety and confidentiality
+
+- This package contains no real candidates, search logs, determination conclusions, or manuscript body text; `samples/` is **synthetic data**.
+- The scripts only call the local `patentkit` to read the workspace you specify; they do not go online or upload anything.
+- However, **the client itself may go online** (cloud inference): candidate titles, determination conclusions, and manuscript body text
+  from a real workspace **must not** be pasted into a public-cloud client. A pure chat client can only reach the `asserted` level, and
+  conclusions must be marked "⚠️ Unverified by tool checks".
+
+## Package structure
+
+```
+patent-research-skill-v<version>/
+├── manifest.json       version + compatibility + sha256 of all files
+├── INSTALL.md          this file
+├── install.ps1 / install.sh
+├── patent-research/    ← what gets installed into the client
+│   ├── SKILL.md        main entry: when to trigger / execution order / hard constraints / result format
+│   ├── references/     6 methodology references (loaded on demand)
+│   ├── scripts/        status / validate / gates / report / check
+│   ├── assets/         report templates, blank comparison matrix, synthetic examples
+│   └── README.md
+└── samples/sample_workspace/  desensitized workspace (TGT-0002, synthetic data)
+```

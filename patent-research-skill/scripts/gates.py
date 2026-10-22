@@ -1,21 +1,22 @@
 #!/usr/bin/env python
-"""五门 × 三列（verified/attested/asserted）摘要 —— 薄封装 `patentkit.api.gates`。
+"""Summary of five gates × three columns (verified/attested/asserted) — thin wrapper over `patentkit.api.gates`.
 
-口径（工具侧固定，不在这里重算）：**PASS 只认最严的 verified 列**；
-attested/asserted 是历史成绩，不构成通过依据。本脚本只做呈现：
+Criteria (fixed on the tool side, not recomputed here): **PASS is recognized only on the strictest verified column**;
+attested/asserted are historical record and do not constitute a basis for passing. This script only presents:
 
-用法：
+Usage:
 
     python patent-research-skill/scripts/gates.py
     python patent-research-skill/scripts/gates.py --target TGT-0002 --json
 
-`--target` 默认取术语表 `active_target`；多目标工作区建议显式指定，
-否则看到的是「当前激活目标」的门，不是你以为的那个。
+`--target` defaults to the glossary's `active_target`; multi-target workspaces should specify it explicitly,
+otherwise you see the gates of "the currently active target", not the one you meant.
 
-退出码：0 五门全 PASS / 1 有门未过（含 N/A）/ 2 工作区问题 / 3 依赖缺失。
+Exit code: 0 all five gates PASS / 1 some gate not passed (including N/A) / 2 workspace problem / 3 missing dependency.
 
-⚠️ 与原生 `python -m patentkit gates` 的区别：原生命令门未过时 exit **2**，
-本脚本按技能包统一退出码约定归到 **1**（2 专用于工作区问题）。
+⚠️ Difference from the native `python -m patentkit gates`: the native command exits **2** when not all gates
+pass, while this script maps it to **1** under the skill package's unified exit-code convention (2 is reserved
+for workspace problems).
 """
 
 from __future__ import annotations
@@ -27,26 +28,26 @@ import _env
 
 _GATE_MARK = {"PASS": "✅ PASS", "FAIL": "❌ FAIL", "N/A": "⬜ N/A"}
 
-_HEADERS = ("门", "判定", "阈值", "verified（最严）", "≥attested", "≥asserted")
+_HEADERS = ("Gate", "Status", "Threshold", "verified (strictest)", "≥attested", "≥asserted")
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="gates.py",
-        description="G-S-01..05 三列验收门摘要（薄封装 patentkit.api.gates）",
+        description="G-S-01..05 three-column acceptance-gate summary (thin wrapper over patentkit.api.gates)",
     )
     parser.add_argument(
         "--target",
         metavar="TGT-xxxx",
         default=None,
-        help="目标 ID（默认取术语表 active_target；多目标工作区建议显式指定）",
+        help="target ID (defaults to the glossary's active_target; multi-target workspaces should specify it explicitly)",
     )
     _env.add_common_args(parser)
     return parser
 
 
 def _display_width(text: str) -> int:
-    """终端显示宽度：CJK 全角字符算 2 列，保证表格在中文终端里也对齐。"""
+    """Terminal display width: CJK full-width characters count as 2 columns so the table stays aligned in CJK terminals."""
     return sum(2 if unicodedata.east_asian_width(ch) in "WF" else 1 for ch in text)
 
 
@@ -55,7 +56,7 @@ def _pad(text: str, width: int) -> str:
 
 
 def _table(rows: list[tuple[str, ...]]) -> list[str]:
-    """按显示宽度对齐的简单表格（不依赖第三方表格库）。"""
+    """A simple table aligned by display width (no third-party table library)."""
     widths = [
         max(_display_width(row[column]) for row in (rows + [_HEADERS]))
         for column in range(len(_HEADERS))
@@ -83,30 +84,30 @@ def render(data: dict) -> str:
         for gate in gates
     ]
 
-    lines = [f"验收门 · 目标 {data.get('target', '?')}（PASS 只认 verified 列）", ""]
+    lines = [f"Acceptance gates · Target {data.get('target', '?')} (PASS recognized on the verified column only)", ""]
     lines += _table(rows)
     lines.append("")
 
     per_axis = data.get("per_axis") or {}
     if per_axis:
         lines.append(
-            "G-S-02 分轴（verified 篇数）："
+            "G-S-02 per axis (verified document counts): "
             + "  ".join(f"{axis}={values['verified']}" for axis, values in sorted(per_axis.items()))
         )
 
     failed = [gate for gate in gates if gate["status"] != "PASS"]
     if failed:
         lines.append("")
-        lines.append("未过的门：")
+        lines.append("Failed gates:")
         for gate in failed:
-            reason = gate.get("note") or "查看 values 列自查"
-            lines.append(f"  · {gate['gate_id']}（{gate['status']}）{reason}")
+            reason = gate.get("note") or "inspect the values column yourself"
+            lines.append(f"  · {gate['gate_id']} ({gate['status']}) {reason}")
         lines.append("")
-        lines.append("下一步：门禁 FAIL 不是「再想想」，是检索不够 —— 优先补检索，不是放宽口径")
-        lines.append(f"汇总：❌ {len(failed)}/{len(gates)} 门未过")
+        lines.append("Next steps: a gate FAIL is not \"think it over\" — it means the search is insufficient; prioritize supplementary searching, not loosening the criteria")
+        lines.append(f"Summary: ❌ {len(failed)}/{len(gates)} gates failed")
     else:
         lines.append("")
-        lines.append(f"汇总：✅ 五门全 PASS（{len(gates)}/{len(gates)}）")
+        lines.append(f"Summary: ✅ all gates PASS ({len(gates)}/{len(gates)})")
     return "\n".join(lines)
 
 
@@ -115,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
     _env.require_patentkit()
     root = _env.resolve_workspace(args.root, as_json=args.json)
 
-    # 延迟 import：没装包时由 require_patentkit() 给安装指引，而不是抛 traceback
+    # Deferred import: when the package is missing, require_patentkit() gives install guidance instead of a traceback
     from patentkit import api
     from patentkit.registry import TerminologyError
 
@@ -123,9 +124,9 @@ def main(argv: list[str] | None = None) -> int:
         data = api.gates(root, target=args.target)
     except (api.WorkspaceError, TerminologyError, ValueError) as exc:
         return _env.failure(
-            f"读取工作区数据失败：{exc}",
+            f"Failed to read workspace data: {exc}",
             _env.EXIT_WORKSPACE,
-            hints=("先跑 python -m patentkit doctor 定位术语表/active_target 的问题",),
+            hints=("Run python -m patentkit doctor first to locate glossary/active_target problems",),
             as_json=args.json,
         )
 

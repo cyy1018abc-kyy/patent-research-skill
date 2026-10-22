@@ -1,91 +1,96 @@
 ---
 name: patent-research
 description: >
-  专利现有技术检索、新颖性/创造性自检、检索证据链与验收门（G-S）管理。
-  工具不可用/未运行时，回答必须以「⚠️ 未经验证工具校验」开头。
-  当用户要做专利检索、找现有技术、评估新颖性/创造性、核查检索证据是否充分、
-  判断验收门是否 PASS、核对证据等级（verified/attested/asserted）、
-  整理检索留痕、交稿前核对权项与说明书时使用。
-  支持多目标工作区；命中「跑一遍新颖性核查」「N1 轴检索式」「补检索」
-  「五项验收门是不是 PASS」「asserted 能不能当依据」「证据等级」等说法时优先触发。
+  Patent prior-art searching, novelty/inventive-step self-checks, and management of the search
+  evidence chain and acceptance gates (G-S).
+  When tools are unavailable or not running, answers must begin with "⚠️ Unverified by tool checks".
+  Use when the user wants to run a patent search, find prior art, assess novelty/inventive step,
+  verify whether the search evidence is sufficient, judge whether the acceptance gates are PASS,
+  check evidence levels (verified/attested/asserted), organize search records, or cross-check
+  claims and specification before hand-off.
+  Supports multi-target workspaces; prefer triggering on phrases such as "run a novelty check",
+  "N1 axis query", "supplementary search", "are the five acceptance gates PASS",
+  "can asserted be used as evidence", or "evidence level".
 license: Apache-2.0
 metadata:
-  version: 2.3.1
+  version: 2.3.2
 ---
 
-# 专利调研
+# Patent Research
 
-> **配套**：`patentkit`（Python 内核，规则实现在这里）+ 本包 `scripts/`（薄封装）。
-> 没有工具也能按 `references/` 工作，但结论必须标注「⚠️ 未经验证工具校验」。
+> **Companion**: `patentkit` (the Python core where the rules are implemented) + this package's `scripts/` (thin wrappers).
+> You can still work from `references/` without the tools, but conclusions must be marked "⚠️ Unverified by tool checks".
 
-## 何时触发
+## When to use
 
-| 该用 | 不该用 |
+| Use | Do not use |
 |---|---|
-| 专利/论文的现有技术检索、查全查准 | 撰写权利要求/说明书正文（先走 04 对比，再回稿） |
-| 新颖性、创造性的**初步**判断 | 出具法律意见、替代专利代理师或审查员 |
-| 整理检索留痕、核对验收门（G-S） | 单独问法条/程序问题（查官方，不走本流程） |
-| 交稿前证据充分性、权项数值依据核对 | 修改目标专利正文（本流程只给差异点与风险） |
+| Prior-art search over patents/papers; recall and precision | Drafting the body of claims/specification (run the 04 comparison first, then return to the manuscript) |
+| **Preliminary** judgments of novelty and inventive step | Issuing legal opinions; standing in for a patent attorney or examiner |
+| Organizing search records; checking the acceptance gates (G-S) | Answering isolated questions about statutes/procedure (consult official sources; not this workflow) |
+| Evidence sufficiency before hand-off; cross-checking numerical support for claims | Editing the target patent text (this workflow only reports gaps and risks) |
 
-## 执行顺序（按序，不要跳）
+## Execution order (follow the sequence; do not skip)
 
-**先读 [`references/04-证据等级制度.md`](references/04-证据等级制度.md)** —— 它是理解其它一切的前提：
-分不清「自述」和「证据」，后面每一步都会假 PASS。
+**First read [`references/04-evidence-level-system.md`](references/04-evidence-level-system.md)** — it is the prerequisite for understanding everything else:
+if you cannot tell "self-report" from "evidence", every later step will produce false PASSes.
 
-| # | 阶段 | 读 | 做 | 检查点 |
+| # | Stage | Read | Do | Checkpoint |
 |---|---|---|---|---|
-| 0 | 定位与自检 | — | `python scripts/status.py`（无脚本时 `patentkit status`） | 工作区、`active_target` 正确；校验无 error |
-| 1 | 广度检索 | [`01-检索框架`](references/01-检索框架.md) | `patentkit search-plan --axis N1` → `patentkit fetch-cnipa` / `fetch-crossref` → `patentkit ingest --apply` | **G-S-01**：专利 ≥200 + 文献 ≥200（verified 列） |
-| 2 | 深度检索 | [`02-检索式模板`](references/02-检索式模板.md) | `patentkit review export --with-abstract` → **人工判定** → `patentkit review apply --apply` | **G-S-02**：每轴 ≥10 篇 relevance≥4，且缓冲 ≥+3 |
-| 3 | 对比分析 | [`03-三层判定`](references/03-三层判定.md) | `patentkit report <TGT-ID>` → 填单篇/组合/技术效果三层 | **G-S-03** ≥5 近端；**G-S-04** 同族/被引完整 |
-| 4 | 门禁 | [`05-验收门口径`](references/05-验收门口径.md) | `python scripts/gates.py`（或 `patentkit gates`） | 五门 **verified 列**全 PASS，不看 asserted |
-| 5 | 交稿核对 | [`06-撰写与润色规范`](references/06-撰写与润色规范.md) | `python scripts/check.py` + `patentkit attest --check` | validate 0 error/warn；稿件 sha256 无漂移 |
+| 0 | Locate and self-check | — | `python scripts/status.py` (`patentkit status` if scripts are unavailable) | Workspace and `active_target` correct; validation has no error |
+| 1 | Broad search | [`01-search-framework.md`](references/01-search-framework.md) | `patentkit search-plan --axis N1` → `patentkit fetch-cnipa` / `fetch-crossref` → `patentkit ingest --apply` | **G-S-01**: patents ≥200 + literature ≥200 (verified column) |
+| 2 | Deep search | [`02-query-templates.md`](references/02-query-templates.md) | `patentkit review export --with-abstract` → **human determination** → `patentkit review apply --apply` | **G-S-02**: ≥10 documents with relevance≥4 per axis, plus buffer ≥+3 |
+| 3 | Comparative analysis | [`03-three-tier-determination.md`](references/03-three-tier-determination.md) | `patentkit report <TGT-ID>` → fill in per-document / combination / technical-effect layers | **G-S-03** ≥5 closest prior-art documents; **G-S-04** families/citations complete |
+| 4 | Gate checks | [`05-acceptance-gates.md`](references/05-acceptance-gates.md) | `python scripts/gates.py` (or `patentkit gates`) | All five gates PASS on the **verified column**; asserted does not count |
+| 5 | Hand-off checks | [`06-drafting-and-polishing-rules.md`](references/06-drafting-and-polishing-rules.md) | `python scripts/check.py` + `patentkit attest --check` | validate 0 error/warn; no manuscript sha256 drift |
 
-> **脚本在哪**：`scripts/` 在本技能**安装目录**下（如
-> `~/.claude/skills/patent-research/scripts/` 或 `~/.agents/skills/patent-research/scripts/`），
-> **不在工作区里**。执行前先定位技能目录；或直接用等价的 `patentkit <子命令>`。
+> **Where the scripts are**: `scripts/` lives under the skill's **install directory** (e.g.
+> `~/.claude/skills/patent-research/scripts/` or `~/.agents/skills/patent-research/scripts/`),
+> **not in the workspace**. Locate the skill directory before running them, or call the equivalent
+> `patentkit <subcommand>`.
 >
-> 缺口只在 1、2、3 之间来回补：**门不过 ⇒ 检索不够**，不是改口径。
+> Fix gaps only by looping between stages 1, 2, and 3: **a failed gate means the search is not
+> sufficient**, not that the criteria should be changed.
 
-## 硬约束（不得违反）
+## Hard constraints (must not be violated)
 
-1. **没有 `raw/` 原始产物就不许标 `verified`** —— `validate` 的 V009/V013 会拦。
-2. **门禁 PASS 只认最严的 `verified` 列**；`asserted` 是历史成绩，不是通过依据。
-3. **不替用户判定 `relevance` / `role`**。模型代判必须在 `review_note` 写「【模型代判】」+ 理由，结论降为 `asserted`。
-4. **工具不可用 / 未运行时**，**回答开头必须显式写「⚠️ 未经验证工具校验」**，再给方法建议；不得省略、不得伪装成已验证。
-5. **命中数 ≠ 核心文献数**：数据库的 `hits` 是全库命中面，不是「找到 N 篇」。
-6. **主检索式最多 3 个 AND 子式**；IPC 作后置筛选，不写进主检索式。
-7. **门禁 FAIL 不是「再想想」**，是「检索不够」—— 优先补检索/补判定，不是放宽阈值。
-8. **阈值与判定口径只认 `patentkit/validate.py` 与 `patentkit/gates.py`**；本文件与 `references/` 只做解释，不另立第二套口径。
+1. **Do not tag `verified` without the `raw/` original artifact** — validation rules V009/V013 block it.
+2. **Gate PASS is only recognized on the strictest `verified` column**; `asserted` is historical record, not a basis for passing.
+3. **Do not decide `relevance` / `role` for the user.** When the model makes a determination, it must write "[Model-determined]" + rationale in `review_note`, and the conclusion is downgraded to `asserted`.
+4. **When tools are unavailable / not running**, **the answer must explicitly start with "⚠️ Unverified by tool checks"**, then give methodological advice; do not omit it, and do not disguise the result as verified.
+5. **Hit count ≠ core-document count**: a database's `hits` is its whole-library hit surface, not "found N documents".
+6. **A primary query has at most 3 AND sub-queries**; use IPC as a post-filter, not inside the primary query.
+7. **A gate FAIL is not "think it over"** — it means "the search is insufficient": prioritize supplementary searching/determination, not loosening thresholds.
+8. **Thresholds and determination criteria live only in `patentkit/validate.py` and `patentkit/gates.py`**; this file and `references/` only explain them and must not introduce a second set of criteria.
 
-## 结果格式（输出调研结论时照此，缺一不可）
+## Result format (use this whenever you report research conclusions; nothing may be omitted)
 
-| 项 | 要求 |
+| Item | Requirement |
 |---|---|
-| **结论** | 明确写「成立 / 存疑 / 不成立」（针对新颖性、创造性或证据充分性）；**不下「能否授权」结论** |
-| **证据等级** | `verified` / `attested` / `asserted`；来源不是 `raw/` 的一律 `asserted` |
-| **门禁状态** | 引用 `verified` 列的实际数值（例：G-S-02 最少轴 12 篇），不写「应该能过」 |
-| **未验证标注** | 工具未跑或数据不全时，显式写「⚠️ 未经验证工具校验；以下为方法建议」 |
+| **Conclusion** | State explicitly "holds / doubtful / does not hold" (for novelty, inventive step, or evidence sufficiency); **do not conclude whether a patent can be granted** |
+| **Evidence level** | `verified` / `attested` / `asserted`; anything whose source is not `raw/` is `asserted` |
+| **Gate status** | Cite the actual value from the `verified` column (e.g. G-S-02 minimum axis 12 documents); do not write "should pass" |
+| **Unverified annotation** | When tools have not run or data is incomplete, explicitly write "⚠️ Unverified by tool checks; the following is methodological advice" |
 
-示例（数值为占位，勿照抄）：
+Example (values are placeholders; do not copy):
 
 ```text
-结论：单篇新颖性——存疑（D3 覆盖 N2/N5，未覆盖 N4）
-证据等级：verified（25 篇近端，raw/ 齐全）
-门禁：G-S-01 ✅ 210P/205L ｜ G-S-02 ✅ 最少轴 12 篇 ｜ G-S-03 ✅ 25 ｜ G-S-04 ✅ 25/25 ｜ G-S-05 ✅ 100%
-未验证：无
+Conclusion: per-document novelty — doubtful (D3 covers N2/N5, not N4)
+Evidence level: verified (25 closest prior-art documents, raw/ complete)
+Gates: G-S-01 ✅ 210P/205L ｜ G-S-02 ✅ minimum axis 12 ｜ G-S-03 ✅ 25 ｜ G-S-04 ✅ 25/25 ｜ G-S-05 ✅ 100%
+Unverified: none
 ```
 
-## 参考（按需加载，不要一次全读）
+## References (load on demand; do not read everything at once)
 
-| 文件 | 什么时候读 |
+| File | When to read |
 |---|---|
-| [`04-证据等级制度`](references/04-证据等级制度.md) | **先读**；判 PASS、标证据等级前 |
-| [`01-检索框架`](references/01-检索框架.md) | 建域、开新项目、采集纪律 |
-| [`02-检索式模板`](references/02-检索式模板.md) | 构造检索式、按数据库语法改写 |
-| [`03-三层判定`](references/03-三层判定.md) | 判 relevance、写对比矩阵与三层结论 |
-| [`05-验收门口径`](references/05-验收门口径.md) | 门不过、缓冲不足、`validate` 报错时 |
-| [`06-撰写与润色规范`](references/06-撰写与润色规范.md) | 交稿前权项-说明书数值/支持核对 |
+| [`04-evidence-level-system.md`](references/04-evidence-level-system.md) | **Read first**; before judging PASS or tagging an evidence level |
+| [`01-search-framework.md`](references/01-search-framework.md) | Building the domain, starting a new project, collection discipline |
+| [`02-query-templates.md`](references/02-query-templates.md) | Constructing queries, rewriting them for each database's syntax |
+| [`03-three-tier-determination.md`](references/03-three-tier-determination.md) | Judging relevance, writing the comparison matrix and three-tier conclusions |
+| [`05-acceptance-gates.md`](references/05-acceptance-gates.md) | A gate fails, the buffer is insufficient, or `validate` reports errors |
+| [`06-drafting-and-polishing-rules.md`](references/06-drafting-and-polishing-rules.md) | Cross-checking claim-specification values/support before hand-off |
 
-> `scripts/` 与安装说明见本包 [`README.md`](README.md)。脚本只是 `patentkit` 的薄封装，
-> 规则实现不在脚本里；未安装 `patentkit` 时脚本会给出安装提示（exit 3）。
+> See this package's [`README.md`](README.md) for `scripts/` and installation instructions. The scripts are only thin wrappers around `patentkit`;
+> the rules are not implemented in them. If `patentkit` is not installed, the scripts print installation guidance (exit 3).

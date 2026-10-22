@@ -1,14 +1,13 @@
-# Desktop app (Codex / ChatGPT app) metadata.
+# Desktop (Codex / ChatGPT App) display and invocation metadata.
 # Spec: https://learn.chatgpt.com/docs/build-skills#optional-metadata
-# Purpose: shows a display name/description in the Skills sidebar and inserts a
-# default prompt when the skill is selected with @.
-# Note: display_name / short_description are UI text; triggering is still driven by
-#       the `description` in SKILL.md.
+# Effect: shows the display name and summary in the Skills sidebar/selector; selecting via @ automatically attaches the default prompt.
+# Note: display_name / short_description are desktop UI strings and do not affect trigger matching;
+#      triggering is still determined by the description in SKILL.md.
 interface:
   display_name: "Patent Research"
-  short_description: "Prior-art search, evidence chain & acceptance gates (G-S)"
-  default_prompt: "Use the patent-research skill: locate the workspace and self-check first, then follow the execution order. If tools cannot run, start the conclusion with 「⚠️ 未经验证工具校验」."
+  short_description: "Prior-art search, evidence chain, and acceptance gates (G-S)"
+  default_prompt: "Start with the patent-research skill: locate the workspace and self-check first, then proceed in execution order; when tools cannot run, begin each conclusion with \"⚠️ Unverified by tool checks\"."
   brand_color: "#1F6FEB"
 policy:
-  # Allow implicit invocation by description (default true); @ selection still works.
+  # Allow implicit triggering by description (default true; the desktop app can also select explicitly via @)
   allow_implicit_invocation: true

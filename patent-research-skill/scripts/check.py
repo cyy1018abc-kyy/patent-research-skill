@@ -1,21 +1,22 @@
 #!/usr/bin/env python
-"""CI 入口：`validate --strict` + `gates` 一并跑 —— 等价于 `python -m patentkit check`。
+"""CI entry point: run `validate --strict` + `gates` together — equivalent to `python -m patentkit check`.
 
-两项都过才算过：
+Both must pass to pass:
 
-1. `python -m patentkit validate --strict`：数据一致性（warn 也算失败）
-2. `python -m patentkit gates`：五门 G-S-01..05 全 PASS（只认 verified 列）
+1. `python -m patentkit validate --strict`: data consistency (warnings also count as failures)
+2. `python -m patentkit gates`: all five gates G-S-01..05 PASS (verified column only)
 
-用法：
+Usage:
 
     python patent-research-skill/scripts/check.py
     python patent-research-skill/scripts/check.py --json
 
-退出码：0 全过 / 1 任一项失败 / 2 工作区问题 / 3 依赖缺失。
+Exit code: 0 all pass / 1 any failure / 2 workspace problem / 3 missing dependency.
 
-⚠️ 与原生 `python -m patentkit check` 的区别：原生在门禁未过时返回 **2**，
-本脚本按技能包统一约定归到 **1**（2 专用于工作区问题）。调用方若要区分
-「数据不一致」与「门没过」，看 `--json` 里的 `validate.ok` / `gates.all_pass`。
+⚠️ Difference from the native `python -m patentkit check`: the native command returns **2** when the gates
+do not pass, while this script maps it to **1** under the skill package's unified exit-code convention (2 is
+reserved for workspace problems). If the caller needs to distinguish "inconsistent data" from "gates not
+passed", look at `validate.ok` / `gates.all_pass` in the `--json` output.
 """
 
 from __future__ import annotations
@@ -24,14 +25,14 @@ import argparse
 
 import _env
 
-#: 人类输出最多列多少条校验阻断项；再多就引导到 --json
+#: Maximum number of blocking validation findings to list in human output; beyond that, point to --json
 _MAX_SHOW = 20
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="check.py",
-        description="提交前必跑：validate --strict + gates（任一失败 exit 1）",
+        description="Required before commit: validate --strict + gates (any failure → exit 1)",
     )
     _env.add_common_args(parser)
     return parser
@@ -40,14 +41,14 @@ def build_parser() -> argparse.ArgumentParser:
 def _render_validate(validate_data: dict) -> list[str]:
     summary = validate_data["summary"]
     if validate_data["ok"]:
-        return ["✅ 校验（strict）：0 error / 0 warn"]
+        return ["✅ Validation (strict): 0 error / 0 warn"]
 
     blocking = [
         finding
         for finding in validate_data["findings"]
         if finding["level"] in {"error", "warn"}
     ]
-    lines = [f"❌ 校验（strict）：{summary['errors']} error / {summary['warnings']} warn"]
+    lines = [f"❌ Validation (strict): {summary['errors']} error / {summary['warnings']} warn"]
     for finding in blocking[:_MAX_SHOW]:
         lines.append(
             f"   [{finding['level'].upper():5}] {finding['code']} {finding['path']}"
@@ -55,16 +56,16 @@ def _render_validate(validate_data: dict) -> list[str]:
         )
     hidden = len(blocking) - _MAX_SHOW
     if hidden > 0:
-        lines.append(f"   … 其余 {hidden} 条见 --json")
+        lines.append(f"   … {hidden} more; see --json")
     return lines
 
 
 def _render_gates(gates_data: dict) -> list[str]:
     gates = gates_data["gates"]
     if gates_data.get("all_pass"):
-        return ["✅ 验收门：五门全 PASS（只认 verified 列）"]
+        return ["✅ Acceptance gates: all gates PASS (verified column only)"]
     detail = " · ".join(f"{gate['gate_id']} {gate['status']}" for gate in gates)
-    return [f"❌ 验收门：{detail}"]
+    return [f"❌ Acceptance gates: {detail}"]
 
 
 def render(validate_data: dict, gates_data: dict) -> str:
@@ -73,15 +74,15 @@ def render(validate_data: dict, gates_data: dict) -> str:
     lines = [*_render_validate(validate_data), *_render_gates(gates_data), ""]
 
     if validate_ok and gates_ok:
-        lines.append("✅ check 通过：数据一致且五门齐 PASS，可以进入下一阶段")
+        lines.append("✅ check passed: data is consistent and all gates PASS; you can move to the next stage")
         return "\n".join(lines)
 
-    lines.append("下一步：")
+    lines.append("Next steps:")
     if not validate_ok:
-        lines.append("  · 先修校验阻断项 —— 数据不一致时门禁数字不可信")
+        lines.append("  · Fix the blocking validation findings first — gate numbers are not trustworthy while the data is inconsistent")
     if not gates_ok:
-        lines.append("  · 门禁未过优先补检索，不是放宽口径")
-    lines.append("❌ check 未通过")
+        lines.append("  · When gates do not pass, add searches first; do not loosen the criteria")
+    lines.append("❌ check did not pass")
     return "\n".join(lines)
 
 
@@ -90,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     _env.require_patentkit()
     root = _env.resolve_workspace(args.root, as_json=args.json)
 
-    # 延迟 import：没装包时由 require_patentkit() 给安装指引，而不是抛 traceback
+    # Deferred import: when the package is missing, require_patentkit() gives install guidance instead of a traceback
     from patentkit import api
     from patentkit.registry import TerminologyError
 
@@ -99,9 +100,9 @@ def main(argv: list[str] | None = None) -> int:
         gates_data = api.gates(root)
     except (api.WorkspaceError, TerminologyError, ValueError) as exc:
         return _env.failure(
-            f"读取工作区数据失败：{exc}",
+            f"Failed to read workspace data: {exc}",
             _env.EXIT_WORKSPACE,
-            hints=("先跑 python -m patentkit doctor 定位是术语表还是数据文件的问题",),
+            hints=("Run python -m patentkit doctor first to locate whether the glossary or a data file is the problem",),
             as_json=args.json,
         )
 

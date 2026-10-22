@@ -17,7 +17,7 @@ Download from [Releases](https://github.com/cyy1018abc-kyy/patent-research-skill
 |---|---|
 | `patent-research-skill-v<version>.zip` | Skill package (with installer + synthetic sample workspace) |
 | `patentkit-<version>-py3-none-any.whl` | Kernel (Python package; `patentkit` >= 0.1.1) |
-| `INSTALL-colleagues.md` | One-page install guide |
+| `INSTALL-colleagues.md` | One-page install guide (repo source: `release/install-guide-for-colleagues.md`) |
 
 ### Windows (one click)
 
@@ -28,13 +28,13 @@ same folder, then double-click `install-oneclick.cmd`.
 
 ```powershell
 pip install ./patentkit-0.1.1-py3-none-any.whl
-Expand-Archive ./patent-research-skill-v2.3.1.zip -DestinationPath ./pkg
+Expand-Archive ./patent-research-skill-v2.3.2.zip -DestinationPath ./pkg
 pwsh -File ./pkg/install.ps1 -Client both -Force
 ```
 
 ```bash
 python3 -m pip install ./patentkit-0.1.1-py3-none-any.whl
-unzip patent-research-skill-v2.3.1.zip -d pkg
+unzip patent-research-skill-v2.3.2.zip -d pkg
 chmod +x pkg/install.sh && ./pkg/install.sh --client both --force
 ```
 
@@ -67,10 +67,8 @@ PATENTKIT_COMPAT_VERSION=0.1.1 python tools/build_skill_release.py --out dist --
 
 ## Language
 
-Repository documentation and installers are in English.
-The **skill runtime content** (`SKILL.md`, `references/`, script output, sample data)
-remains in Chinese because the skill targets Chinese patent practice. A fully English
-skill runtime would be a separate translated edition; open an issue if you need it.
+The repository and the skill runtime are fully in English, including `SKILL.md`,
+`references/`, script messages, assets, installers, and release notes.
 
 ## Credits & license
 
@@ -90,4 +88,4 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 
 ## Version
 
-Current skill version: **2.3.1**. See [CHANGELOG.md](CHANGELOG.md).
+Current skill version: **2.3.2**. See [CHANGELOG.md](CHANGELOG.md).

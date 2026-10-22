@@ -1,28 +1,29 @@
-"""技能脚本的共用环境层 —— 编码、依赖、工作区、JSON 四件事。
+"""Shared environment layer for the skill scripts — encoding, dependencies, workspace, JSON.
 
-`scripts/` 下的命令会被 **LLM 客户端以子进程方式调用**（Codex CLI / Claude Code /
-Cline …），调用方只关心「退出码 + stdout 能否解析」，不关心终端排版。这类环境有
-四类问题反复出现，集中到这里处理，各命令脚本只保留业务呈现：
+Commands under `scripts/` are invoked by **LLM clients as subprocesses** (Codex CLI / Claude Code /
+Cline …); the caller only cares about "exit code + whether stdout can be parsed", not terminal
+formatting. Four classes of problems recur in such environments, so they are handled centrally here
+and each command script keeps only its business presentation:
 
-| 问题 | 不处理的后果 | 本文件的处理 |
+| Problem | Consequence if unhandled | Handling here |
 |---|---|---|
-| Windows 控制台按 GBK 编码 stdout | 打印 ✅/⚠️ 直接 `UnicodeEncodeError` 崩掉；子进程捕获到乱码 | `configure_stdio()` 锁定 UTF-8 |
-| 没装 patentkit | 抛一屏 traceback，客户端不知道该装什么 | `require_patentkit()` 给安装命令，exit 3 |
-| 不在工作区里 | 静默回退到 cwd，报「术语表不存在」误导人 | `resolve_workspace()` 固定定位顺序，exit 2 + 三条修法 |
-| `--json` 里混进人类提示 | 调用方 `json.loads` 直接失败 | `emit_json()` 是 --json 模式唯一的 stdout 出口 |
+| Windows console encodes stdout as GBK | Printing ✅/⚠️ crashes with `UnicodeEncodeError`; the subprocess captures mojibake | `configure_stdio()` locks UTF-8 |
+| patentkit not installed | A screenful of traceback; the client does not know what to install | `require_patentkit()` prints the install command, exit 3 |
+| Not inside a workspace | Silent fallback to cwd, misleading "glossary does not exist" | `resolve_workspace()` uses a fixed resolution order, exit 2 + three fixes |
+| Human hints mixed into `--json` | The caller's `json.loads` fails outright | `emit_json()` is the only stdout exit in --json mode |
 
-退出码约定（与 `patentkit` CLI 的差异见 `scripts/README.md`）：
+Exit-code conventions (differences from the `patentkit` CLI are in `scripts/README.md`):
 
-| 码 | 含义 |
+| Code | Meaning |
 |---|---|
-| 0 | 成功，命令自身的判定通过 |
-| 1 | 业务失败：校验有 error / 门未全 PASS / 报告写不出 |
-| 2 | 工作区问题：定位不到、`--root` 指错、工作区数据不可解析；argparse 用法错误也是 2 |
-| 3 | 依赖缺失：Python < 3.11，或 patentkit / 其依赖未安装 |
+| 0 | Success; the command's own determination passed |
+| 1 | Business failure: validation errors / not all gates PASS / report cannot be written |
+| 2 | Workspace problem: not located, wrong `--root`, unparseable workspace data; argparse usage errors are also 2 |
+| 3 | Missing dependency: Python < 3.11, or patentkit / its dependencies not installed |
 
-设计约束：**本文件只依赖标准库**。patentkit 的 import 全部延迟到函数内部，
-否则「没装包」会在脚本启动的第一行就变成 traceback，`require_patentkit()` 的
-友好提示永远执行不到。
+Design constraint: **this file depends only on the standard library**. All patentkit imports are deferred
+into functions; otherwise "package not installed" would become a traceback on the script's first line, and
+`require_patentkit()`'s friendly hint would never get to run.
 """
 
 from __future__ import annotations
@@ -39,51 +40,54 @@ EXIT_OK = 0
 EXIT_FAIL = 1
 EXIT_WORKSPACE = 2
 EXIT_DEPENDENCY = 3
-#: 非业务码：Ctrl+C 中断。POSIX 惯例 130 = 128 + SIGINT。
+#: Non-business code: Ctrl+C interruption. POSIX convention 130 = 128 + SIGINT.
 EXIT_INTERRUPTED = 130
 
-#: 与 `patentkit/pyproject.toml` 的 requires-python 保持一致
+#: Keep in sync with requires-python in `patentkit/pyproject.toml`
 MIN_PYTHON = (3, 11)
 
-#: 依赖检查只做一次（同一进程内 main 可能被重复调用）
+#: The dependency check runs only once (main may be called repeatedly in the same process)
 _REQUIRED = False
 
 
-# ── 编码 ──────────────────────────────────────────────────────────────
+# ── Encoding ─────────────────────────────────────────────────────────
 
 
 def configure_stdio() -> None:
-    """把 stdout/stderr 固定为 UTF-8。
+    """Pin stdout/stderr to UTF-8.
 
-    Windows 下 Python 默认按控制台代码页（cp936）编码输出。本包的输出含
-    `✅/❌/⚠️` 等符号，直接 print 会 `UnicodeEncodeError`；被父进程捕获时
-    还会因为编码不一致变成乱码。重设编码比要求用户先 `chcp 65001` 或
-    设 `PYTHONIOENCODING` 更可靠 —— 这个坑不该让调用方来填。
+    On Windows, Python encodes output using the console code page (cp936) by default. This package's
+    output contains symbols such as `✅/❌/⚠️`, so a plain print raises `UnicodeEncodeError`; when
+    captured by a parent process it also becomes mojibake because of the encoding mismatch.
+    Reconfiguring the encoding is more reliable than asking users to run `chcp 65001` or set
+    `PYTHONIOENCODING` first — the caller should not have to fill this pit.
 
-    `errors="replace"`：终端实在显示不了某个符号时降级成 `?`，也不要整条命令崩掉。
+    `errors="replace"`: if the terminal truly cannot display a symbol, downgrade it to `?` rather
+    than crash the whole command.
     """
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure is None:  # 被替换成非 TextIOWrapper 的流（如测试里的 StringIO）
+        if reconfigure is None:  # replaced by a non-TextIOWrapper stream (e.g. StringIO in tests)
             continue
         try:
             reconfigure(encoding="utf-8", errors="replace")
-        except (ValueError, OSError):  # pragma: no cover - 流已关闭等极端情况
+        except (ValueError, OSError):  # pragma: no cover - extreme cases such as a closed stream
             pass
 
 
-# ── 依赖 ──────────────────────────────────────────────────────────────
+# ── Dependencies ─────────────────────────────────────────────────────
 
 
 def require_patentkit() -> None:
-    """确认 Python 版本与 patentkit 可用；不满足时打印修法并 exit 3。
+    """Confirm the Python version and that patentkit is usable; otherwise print fixes and exit 3.
 
-    检查顺序：先 Python 版本（低于 3.11 时连 patentkit 都不必试装），
-    再 `import patentkit`。区分两种 ImportError：
+    Check order: Python version first (below 3.11 there is no point even trying to install patentkit),
+    then `import patentkit`. Two kinds of ImportError are distinguished:
 
-    * 缺 `patentkit` 本身 —— 没装，给安装命令；
-    * 缺第三方依赖（如 `yaml`）—— 装了但依赖不全，给补装命令。
-      原来的写法一律提示「没装 patentkit」，用户会白重装一遍。
+    * `patentkit` itself is missing — not installed; print the install command;
+    * a third-party dependency (e.g. `yaml`) is missing — installed but incomplete; print the
+      add-on install command. The previous version always said "patentkit is not installed", so
+      users would reinstall it for nothing.
     """
     global _REQUIRED
     if _REQUIRED:
@@ -91,66 +95,66 @@ def require_patentkit() -> None:
 
     if sys.version_info < MIN_PYTHON:
         _die(
-            f"需要 Python ≥ {MIN_PYTHON[0]}.{MIN_PYTHON[1]}，"
-            f"当前是 {platform.python_version()}",
+            f"Python ≥ {MIN_PYTHON[0]}.{MIN_PYTHON[1]} required, "
+            f"current version is {platform.python_version()}",
             EXIT_DEPENDENCY,
             hints=(
-                "本技能脚本使用 3.11+ 语法（`X | None`、内建泛型）",
-                '升级 Python 后重装：pip install -e ".[dev]"',
+                "These skill scripts use 3.11+ syntax (`X | None`, built-in generics)",
+                'After upgrading Python, reinstall: pip install -e ".[dev]"',
             ),
         )
 
     try:
-        import patentkit  # noqa: F401  # 只做可用性探测
+        import patentkit  # noqa: F401  # availability probe only
     except ModuleNotFoundError as exc:
         missing = exc.name or ""
         if missing == "patentkit" or missing.startswith("patentkit."):
             _die(
-                "没有找到 patentkit 包",
+                "The patentkit package was not found",
                 EXIT_DEPENDENCY,
                 hints=(
-                    '在仓库根（含 pyproject.toml）安装：pip install -e ".[dev]"',
-                    "或安装发布版：pip install patentkit",
-                    "装完自检：python -m patentkit doctor",
+                    'Install from the repo root (containing pyproject.toml): pip install -e ".[dev]"',
+                    "Or install the released version: pip install patentkit",
+                    "Self-check after installing: python -m patentkit doctor",
                 ),
             )
         _die(
-            f"patentkit 已安装，但缺少依赖模块 '{missing}'",
+            f"patentkit is installed, but the dependency module '{missing}' is missing",
             EXIT_DEPENDENCY,
             hints=(
-                '补齐依赖：pip install -e ".[dev]"',
-                "依赖清单见仓库根 pyproject.toml 的 [project] dependencies",
+                'Complete the dependencies: pip install -e ".[dev]"',
+                "See [project] dependencies in the repo-root pyproject.toml for the dependency list",
             ),
         )
 
     _REQUIRED = True
 
 
-# ── 工作区 ────────────────────────────────────────────────────────────
+# ── Workspace ────────────────────────────────────────────────────────
 
 
 def _workspace_hints() -> tuple[str, ...]:
-    """定位失败时的三条修法。固定顺序，方便调用方 grep。"""
+    """The three fixes for a failed resolution. Fixed order, easy for callers to grep."""
     return (
-        "1) cd 到工作区根目录（含 workspace.yml）后再运行",
-        "2) 加 --root <工作区路径> 显式指定",
-        "3) 设环境变量 PATENTKIT_WORKSPACE=<工作区路径>，之后在任何目录都能用",
+        "1) cd into the workspace root (the directory containing workspace.yml), then run again",
+        "2) add --root <workspace-path> to specify it explicitly",
+        "3) set the environment variable PATENTKIT_WORKSPACE=<workspace-path>; afterwards it works from any directory",
     )
 
 
 def resolve_workspace(explicit: str | None = None, *, as_json: bool = False) -> Path:
-    """定位工作区根，**找不到就 exit 2**（不返回、不静默回退）。
+    """Locate the workspace root; **exit 2 if not found** (no return, no silent fallback).
 
-    定位顺序与 `patentkit.paths.find_workspace` 一致：
+    Resolution order matches `patentkit.paths.find_workspace`:
 
-    1. `--root PATH`：显式指定。指错了直接报错 —— **绝不悄悄回退**，
-       否则用户会以为在改 A 工作区，实际算了 B。
-    2. 环境变量 `PATENTKIT_WORKSPACE`：显式指定；指错了同样直接报错。
-    3. 从当前目录向上找 `workspace.yml`（兼容旧标志组合）。
+    1. `--root PATH`: explicit. A wrong path is reported directly — **never fall back silently**,
+       otherwise the user thinks they are editing workspace A while B is actually used.
+    2. environment variable `PATENTKIT_WORKSPACE`: explicit; a wrong value is likewise reported directly.
+    3. search upward from the current directory for `workspace.yml` (compatible with older flag combinations).
 
-    这里没有直接调用 `find_workspace()` 就完事，是因为要先区分「--root 指错」
-    与「环境变量指错」两种语境，给出对应的修法；直接透传异常消息会让
-    `--root` 场景的提示指错方向。
+    This does not simply call `find_workspace()` and stop, because the two contexts "wrong --root" and
+    "wrong environment variable" must first be distinguished so the matching fix can be given; passing
+    the exception message straight through would point `--root` scenarios in the wrong direction.
     """
     require_patentkit()
     from patentkit import paths
@@ -159,7 +163,7 @@ def resolve_workspace(explicit: str | None = None, *, as_json: bool = False) -> 
         root = Path(explicit).expanduser()
         if not paths.is_workspace(root):
             _die(
-                f"--root 指向的目录不是 patentkit 工作区：{root}",
+                f"The directory given by --root is not a patentkit workspace: {root}",
                 EXIT_WORKSPACE,
                 hints=_workspace_hints(),
                 as_json=as_json,
@@ -171,10 +175,10 @@ def resolve_workspace(explicit: str | None = None, *, as_json: bool = False) -> 
         root = Path(env_value).expanduser()
         if not paths.is_workspace(root):
             _die(
-                f"环境变量 {paths.ENV_WORKSPACE} 指向的目录不是工作区：{env_value}",
+                f"The directory given by the environment variable {paths.ENV_WORKSPACE} is not a workspace: {env_value}",
                 EXIT_WORKSPACE,
                 hints=(
-                    f"改指向含 workspace.yml 的目录，或清掉 {paths.ENV_WORKSPACE} 让它退回向上查找",
+                    f"Point it to a directory containing workspace.yml, or clear {paths.ENV_WORKSPACE} to fall back to upward search",
                     *_workspace_hints(),
                 ),
                 as_json=as_json,
@@ -185,40 +189,40 @@ def resolve_workspace(explicit: str | None = None, *, as_json: bool = False) -> 
         return paths.find_workspace()
     except paths.WorkspaceNotFound:
         _die(
-            f"从 {Path.cwd()} 向上找不到 patentkit 工作区（没有 workspace.yml）",
+            f"No patentkit workspace (workspace.yml) found upward from {Path.cwd()}",
             EXIT_WORKSPACE,
             hints=_workspace_hints(),
             as_json=as_json,
         )
 
 
-# ── 通用参数与输出 ────────────────────────────────────────────────────
+# ── Common arguments and output ──────────────────────────────────────
 
 
 def add_common_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
-    """给子命令加统一的 `--root` / `--json` 两个参数。
+    """Add the uniform `--root` / `--json` arguments to a subcommand.
 
-    参数说明里写明定位顺序与 JSON 契约 —— 很多人只看 `--help`。
+    The help text spells out the resolution order and the JSON contract — many people only read `--help`.
     """
     parser.add_argument(
         "--root",
         metavar="PATH",
         default=None,
-        help="工作区根；默认按 --root → PATENTKIT_WORKSPACE → 向上找 workspace.yml 定位",
+        help="workspace root; by default resolved as --root → PATENTKIT_WORKSPACE → upward search for workspace.yml",
     )
     parser.add_argument(
         "--json",
         action="store_true",
-        help="只输出机器可读 JSON（stdout 仅一个 JSON 文档，人类提示只走 stderr）",
+        help="output machine-readable JSON only (stdout is exactly one JSON document; human hints go to stderr only)",
     )
     return parser
 
 
 def emit_json(data: Any) -> None:
-    """--json 模式**唯一**允许的 stdout 输出。
+    """The **only** permitted stdout output in --json mode.
 
-    `ensure_ascii=False`：中文原样输出，日志与人工排查都直接可读；
-    `indent=2`：与 `patentkit` 其它 `--json` 输出保持同一种形态。
+    `ensure_ascii=False`: output non-ASCII text as-is so logs and manual inspection stay readable;
+    `indent=2`: keeps the same shape as the other `--json` outputs of `patentkit`.
     """
     print(json.dumps(data, ensure_ascii=False, indent=2))
 
@@ -230,10 +234,10 @@ def failure(
     hints: Iterable[str] = (),
     as_json: bool = False,
 ) -> int:
-    """统一的失败出口：人类提示走 stderr；--json 模式输出结构化错误到 stdout。
+    """Uniform failure exit: human hints go to stderr; --json mode emits a structured error to stdout.
 
-    返回退出码而不是抛异常，方便 `main()` 直接 `return _env.failure(...)`；
-    需要立即退出的地方用 `_die()`。
+    Returns the exit code instead of raising, so `main()` can simply `return _env.failure(...)`;
+    places that need to exit immediately use `_die()`.
     """
     hint_list = list(hints)
     if as_json:
@@ -252,23 +256,24 @@ def _die(
     hints: Iterable[str] = (),
     as_json: bool = False,
 ) -> NoReturn:
-    """同 `failure()`，但以 `SystemExit(code)` 立即退出。"""
+    """Like `failure()`, but exits immediately with `SystemExit(code)`."""
     raise SystemExit(failure(message, code, hints=hints, as_json=as_json))
 
 
-# ── 脚本入口 ──────────────────────────────────────────────────────────
+# ── Script entry point ───────────────────────────────────────────────
 
 
 def run_script(main: Any) -> int:
-    """脚本统一入口：锁编码 → 跑 main → 把意外异常收敛成一个退出码。
+    """Uniform script entry: lock encoding → run main → collapse unexpected exceptions into an exit code.
 
-    为什么要兜底异常：LLM 客户端读到 traceback 只会把整段贴回来，
-    真正有用的信息（重跑哪条命令、退出码几）反而淹没。可预期的失败
-    （工作区/业务）在各自 `main()` 里已处理成 1/2/3；走到这里的都是意外，
-    给一行摘要 + 自检命令，退出码按「业务失败」算。
+    Why catch unexpected exceptions: an LLM client that reads a traceback just pastes the whole thing
+    back, drowning the genuinely useful information (which command to re-run, what the exit code is).
+    Expected failures (workspace/business) are already handled as 1/2/3 inside each `main()`; anything
+    reaching this point is unexpected, so print a one-line summary + self-check command and count it as
+    "business failure".
 
-    argparse 的用法错误（exit 2）与 resolve_workspace 的退出（exit 2）
-    都是 `SystemExit`，必须原样穿过去，不能重新归类。
+    argparse usage errors (exit 2) and resolve_workspace exits (exit 2) are both `SystemExit` and must
+    pass through unchanged; they must not be reclassified.
     """
     configure_stdio()
     try:
@@ -276,10 +281,10 @@ def run_script(main: Any) -> int:
     except SystemExit:
         raise
     except KeyboardInterrupt:
-        print("\n⚠️ 已中断", file=sys.stderr)
+        print("\n⚠️ Interrupted", file=sys.stderr)
         return EXIT_INTERRUPTED
-    except Exception as exc:  # noqa: BLE001 - 见函数说明：故意兜底
-        print(f"❌ 未预期错误：{type(exc).__name__}: {exc}", file=sys.stderr)
-        print("   · 先跑 python -m patentkit doctor 自检", file=sys.stderr)
-        print("   · 需要结构化错误时加 --json", file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001 - see the function docstring: deliberately caught
+        print(f"❌ Unexpected error: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print("   · Run python -m patentkit doctor first to self-check", file=sys.stderr)
+        print("   · Add --json when a structured error is needed", file=sys.stderr)
         return EXIT_FAIL

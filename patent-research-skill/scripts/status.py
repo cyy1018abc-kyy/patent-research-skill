@@ -1,19 +1,20 @@
 #!/usr/bin/env python
-"""一眼看全工作区状态 —— 薄封装 `patentkit.api.status`。
+"""See the whole workspace status at a glance — thin wrapper over `patentkit.api.status`.
 
-看什么：当前目标、五门 PASS/FAIL 一行汇总、校验 error/warn、候选与日志分布、
-下一步 hints。**门禁怎么算、校验查什么，全部由 patentkit 决定**，本脚本只负责
-选择要展示的字段与排版 —— 规则实现只有一处，不在这里复制。
+What it shows: the current target, a one-line summary of the five gates' PASS/FAIL, validation
+error/warn counts, candidate and log distribution, and next-step hints. **How gates are computed and
+what validation checks are entirely decided by patentkit**; this script only chooses which fields to
+display and how to lay them out — the rules are implemented in exactly one place and are not copied here.
 
-用法：
+Usage:
 
     python patent-research-skill/scripts/status.py
-    python patent-research-skill/scripts/status.py --root <工作区路径>
+    python patent-research-skill/scripts/status.py --root <workspace-path>
     python patent-research-skill/scripts/status.py --json
 
-退出码：0 数据可读（**门是否 PASS 不影响本命令退出码**）。
-要拿「能不能过门」当退出码，用 `gates.py` 或 `check.py`。
-依赖缺失 3 / 工作区问题 2；数据不可解析（术语表坏了等）也算工作区问题 2。
+Exit code: 0 data readable (**whether the gates PASS does not affect this command's exit code**).
+To use "can the gates be passed" as the exit code, use `gates.py` or `check.py`.
+Missing dependency 3 / workspace problem 2; unparseable data (e.g. a broken glossary) is also workspace problem 2.
 """
 
 from __future__ import annotations
@@ -22,28 +23,28 @@ import argparse
 
 import _env
 
-#: gate.status → 展示符号。状态值是 patentkit 算出来的，这里只做视觉映射。
+#: gate.status → display symbol. Status values come from patentkit; this is only a visual mapping.
 _GATE_MARK = {"PASS": "✅ PASS", "FAIL": "❌ FAIL", "N/A": "⬜ N/A"}
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="status.py",
-        description="一眼看全：目标、五门汇总、校验、候选分布、下一步 hints",
+        description="Everything at a glance: target, five-gate summary, validation, candidate distribution, next-step hints",
     )
     _env.add_common_args(parser)
     return parser
 
 
 def _fmt_counts(counts: dict) -> str:
-    """把 {key: count} 排成一行 `key count · key count`；空字典显示「无」。"""
+    """Lay out {key: count} as one line `key count · key count`; an empty dict displays "none"."""
     if not counts:
-        return "无"
+        return "none"
     return " · ".join(f"{key} {value}" for key, value in counts.items())
 
 
 def render(data: dict) -> str:
-    """人类可读渲染。短、带状态符号，和 `patentkit status` 的风格保持一致。"""
+    """Human-readable rendering. Short, with status symbols, matching the style of `patentkit status`."""
     gates = data["gates"]["gates"]
     gate_line = " · ".join(
         f"{gate['gate_id']} {_GATE_MARK.get(gate['status'], gate['status'])}"
@@ -60,26 +61,26 @@ def render(data: dict) -> str:
     title = f" · {data['target_title']}" if data.get("target_title") else ""
 
     lines = [
-        f"✅ 工作区：{data['workspace']}",
-        f"目标：{data['active_target']}{title}",
-        f"验收门：{gate_line}  →  "
-        + ("✅ 五门全 PASS（只认 verified 列）" if all_pass else "❌ 有门未过，详见 gates.py"),
-        f"校验：error {validation['errors']} / warn {validation['warnings']} / info {info}"
-        + ("  →  ✅ 严格模式也能过" if strict_ok else "  →  ❌ 严格模式会失败"),
-        f"候选：{candidates['total']} 条 · 证据等级 {_fmt_counts(candidates['by_evidence_level'])}"
-        f" · relevance≥4 共 {candidates['with_relevance_ge4']} 条",
-        f"      角色 {_fmt_counts(candidates['by_role'])}"
+        f"✅ Workspace: {data['workspace']}",
+        f"Target: {data['active_target']}{title}",
+        f"Acceptance gates: {gate_line}  →  "
+        + ("✅ all five PASS (verified column only)" if all_pass else "❌ some gate failed; see gates.py for details"),
+        f"Validation: error {validation['errors']} / warn {validation['warnings']} / info {info}"
+        + ("  →  ✅ strict mode would also pass" if strict_ok else "  →  ❌ strict mode would fail"),
+        f"Candidates: {candidates['total']} total · evidence level {_fmt_counts(candidates['by_evidence_level'])}"
+        f" · relevance≥4: {candidates['with_relevance_ge4']}",
+        f"      role {_fmt_counts(candidates['by_role'])}"
         f" · relevance {_fmt_counts(candidates['by_relevance'])}",
-        f"检索日志：{logs['total']} 份（live {logs['live']} / retrospective {logs['retrospective']}）",
+        f"Search logs: {logs['total']} total (live {logs['live']} / retrospective {logs['retrospective']})",
         "",
     ]
 
     hints = data.get("hints") or []
     if hints:
-        lines.append("下一步：")
+        lines.append("Next steps:")
         lines.extend(f"  · {hint}" for hint in hints)
     else:
-        lines.append("下一步：无阻塞项（数据一致、五门齐 PASS）")
+        lines.append("Next steps: no blockers (data consistent, all five gates PASS)")
     return "\n".join(lines)
 
 
@@ -88,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     _env.require_patentkit()
     root = _env.resolve_workspace(args.root, as_json=args.json)
 
-    # 延迟 import：没装包时由 require_patentkit() 给安装指引，而不是抛 traceback
+    # Deferred import: when the package is missing, require_patentkit() gives install guidance instead of a traceback
     from patentkit import api
     from patentkit.registry import TerminologyError
 
@@ -96,9 +97,9 @@ def main(argv: list[str] | None = None) -> int:
         data = api.status(root)
     except (api.WorkspaceError, TerminologyError, ValueError) as exc:
         return _env.failure(
-            f"读取工作区数据失败：{exc}",
+            f"Failed to read workspace data: {exc}",
             _env.EXIT_WORKSPACE,
-            hints=("先跑 python -m patentkit doctor 定位是术语表还是数据文件的问题",),
+            hints=("Run python -m patentkit doctor first to locate whether the glossary or a data file is the problem",),
             as_json=args.json,
         )
 

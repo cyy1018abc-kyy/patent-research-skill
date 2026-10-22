@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-22 · Skill 2.3.2
+
+- Full English edition: skill runtime (`SKILL.md`, `references/`, script messages, assets),
+  installers, documentation, and release notes are now entirely in English.
+- Repository paths renamed to English; install guide source file is
+  `install-guide-for-colleagues.md` (the Release asset is `INSTALL-colleagues.md`).
+- Kernel `patentkit` remains 0.1.1.
+
 ## 2026-10-22 · Skill 2.3.1
 
 - Repository documentation, release notes, and installer messages translated to English.
