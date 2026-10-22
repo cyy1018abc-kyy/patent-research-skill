@@ -36,6 +36,6 @@ jobs:
           test -f release/install.ps1
           test -f release/install-oneclick.cmd
           test -f release/INSTALL.md
-          test -f release/INSTALL-colleagues.md
+          test -f release/install-guide-for-colleagues.md
           test -f patent-research-skill/agents/openai.yaml
           echo "package layout ok"
