@@ -17,8 +17,8 @@ Claude Code、Codex CLI、Codex 桌面端（ChatGPT App）通用。
 
 | 附件 | SHA-256 |
 |---|---|
-| `patent-research-skill-v2.3.0.zip` | `affdd410919ef21ab6f3157d421d46af3ccf066003ba60710f428d957fcd1f16` |
-| `INSTALL-colleagues.md`（一页纸，中文内容） | `666bb0253d103254f96aa03fa30938817026e996da007a674758e115ef517a02` |
+| `patent-research-skill-v2.3.0.zip` | `7cf6523f49508e82f9b77b444e30e18ad789dfd99661e8924dac2a807406d31c` |
+| `INSTALL-colleagues.md`（一页纸，中文内容） | 见 `SHA256SUMS-skill-v2.3.0.txt` |
 | `SHA256SUMS-skill-v2.3.0.txt` | — |
 
 ## 安装（三种方式）
