@@ -32,6 +32,8 @@ jobs:
               assert required in names, f"缺少 {required}"
           print("ok:", zips[0].name, len(names), "entries")
           PY
-      - name: 安装脚本 dry-run
+      - name: 安装脚本 dry-run（从构建包解压后运行）
         run: |
-          bash release/install.sh --dry-run --dest "$RUNNER_TEMP/skills" --no-self-check
+          cd dist
+          unzip -q patent-research-skill-v*.zip -d pkg
+          bash pkg/install.sh --dry-run --dest "$RUNNER_TEMP/skills" --no-self-check
