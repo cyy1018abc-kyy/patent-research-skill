@@ -10,7 +10,7 @@ description: >
   「五项验收门是不是 PASS」「asserted 能不能当依据」「证据等级」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 2.3.0
+  version: 2.3.1
 ---
 
 # 专利调研

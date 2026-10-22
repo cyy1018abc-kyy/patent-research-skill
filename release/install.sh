@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# 安装 / 卸载 patent-research-skill（发布包内自带）。
+# Install / uninstall patent-research-skill (bundled in the release package).
 #
-# 把发布包里的 `patent-research/` 复制到本地 AI 客户端技能目录；
-# 目录名 = SKILL.md 的 name（客户端按这个识别技能）。
-# 安装后默认用包内 `samples/示例工作区/` 跑一次自检（需要已安装 patentkit）。
+# Copy `patent-research/` from the release package into the local AI client's skills directory.
+# Directory name = `name` in SKILL.md (clients identify skills by it).
+# After installation, a self-check runs against the bundled `samples/sample-workspace/` (requires patentkit).
 #
-# 退出码：0 成功；1 失败（自检不过/目标已存在等）；2 发布包结构不完整。
+# Exit codes: 0 success; 1 failure (self-check failed / destination exists); 2 invalid release package.
 #
-# 用法：
-#   ./install.sh                          # 装到 ~/.claude/skills（默认）
-#   ./install.sh --client both            # Claude Code + Codex CLI 都装
-#   ./install.sh --dest /opt/skills       # 自定义技能根目录
-#   ./install.sh --dry-run                # 只打印，不写文件
+# Usage:
+#   ./install.sh                          # install into ~/.claude/skills (default)
+#   ./install.sh --client both            # install for both Claude Code and Codex CLI
+#   ./install.sh --dest /opt/skills       # custom skills root
+#   ./install.sh --dry-run                # print actions only; do not write files
 #   ./install.sh --uninstall --client both
-#   ./install.sh --force                  # 覆盖已存在的旧版本
-#   ./install.sh --no-self-check          # 跳过自检（调试用）
+#   ./install.sh --force                  # overwrite an existing installation
+#   ./install.sh --no-self-check          # skip the self-check (debugging)
 
 set -u
 
@@ -30,7 +30,7 @@ usage() {
 }
 
 fail() {
-    # $1 = 消息；$2 = 退出码（默认 1）
+    # $1 = message; $2 = exit code (default 1)
     printf '❌ %s\n' "$1" >&2
     exit "${2:-1}"
 }
@@ -40,13 +40,13 @@ note() { printf '  · %s\n' "$1"; }
 while [ $# -gt 0 ]; do
     case "$1" in
         --client)
-            [ $# -ge 2 ] || fail "--client 需要取值（claude/codex/both）" 2
+            [ $# -ge 2 ] || fail "--client requires a value (claude/codex/both)" 2
             CLIENT=$2
             shift 2
             ;;
         --client=*) CLIENT=${1#*=}; shift ;;
         --dest)
-            [ $# -ge 2 ] || fail "--dest 需要目录路径" 2
+            [ $# -ge 2 ] || fail "--dest requires a directory path" 2
             DEST=$2
             shift 2
             ;;
@@ -56,22 +56,22 @@ while [ $# -gt 0 ]; do
         --no-self-check) NO_SELF_CHECK=1; shift ;;
         --force) FORCE=1; shift ;;
         -h|--help) usage; exit 0 ;;
-        *) fail "未知参数：$1（--help 看用法）" 2 ;;
+        *) fail "Unknown option: $1 (see --help)" 2 ;;
     esac
 done
 
 case "$CLIENT" in
     claude|codex|both) ;;
-    *) fail "--client 只能是 claude / codex / both（当前：$CLIENT）" 2 ;;
+    *) fail "--client must be claude / codex / both (current: $CLIENT）" 2 ;;
 esac
 
 PKG_ROOT=$(cd "$(dirname "$0")" && pwd)
 MANIFEST="$PKG_ROOT/manifest.json"
-[ -f "$MANIFEST" ] || fail "找不到 manifest.json —— 请在解压后的发布包根目录运行本脚本（当前：$PKG_ROOT）" 2
+[ -f "$MANIFEST" ] || fail "manifest.json not found - run this script from the extracted release package root (current: $PKG_ROOT）" 2
 
 PYTHON_BIN=""
-# 不能只靠 `command -v python3`：Windows Git Bash 里 python3 常是 Microsoft Store
-# 的占位 alias（一执行就失败）。这里逐个候选实际跑一次，并校验 3.11+。
+# Do not rely on `command -v python3`: on Windows Git Bash, python3 is often a Microsoft Store
+# placeholder alias (it fails as soon as it runs). Try each candidate and verify 3.11+.
 for cand in python3 python; do
     p=$(command -v "$cand" 2>/dev/null || true)
     [ -n "$p" ] || continue
@@ -80,7 +80,7 @@ for cand in python3 python; do
         break
     fi
 done
-[ -n "$PYTHON_BIN" ] || fail "需要 Python ≥ 3.11（没找到可用的 python3/python）。装好后执行 pip install patentkit" 1
+[ -n "$PYTHON_BIN" ] || fail "Python >= 3.11 is required (no usable python3/python found). Install Python, then run pip install patentkit" 1
 
 read_manifest() {
     "$PYTHON_BIN" -c '
@@ -92,14 +92,14 @@ print(value)
 ' "$MANIFEST" "$1"
 }
 
-SKILL_NAME=$(read_manifest "skill.name" 2>/dev/null) || fail "manifest.json 解析失败" 2
-SKILL_VERSION=$(read_manifest "skill.version" 2>/dev/null) || fail "manifest.json 解析失败" 2
-INSTALL_DIR_NAME=$(read_manifest "skill.install_dir" 2>/dev/null) || fail "manifest.json 解析失败" 2
-[ -n "$SKILL_NAME" ] && [ -n "$INSTALL_DIR_NAME" ] || fail "manifest.json 缺 skill.name / skill.install_dir" 2
-[ "$INSTALL_DIR_NAME" = "$SKILL_NAME" ] || fail "manifest 自相矛盾：install_dir 必须等于 name" 2
+SKILL_NAME=$(read_manifest "skill.name" 2>/dev/null) || fail "Failed to parse manifest.json" 2
+SKILL_VERSION=$(read_manifest "skill.version" 2>/dev/null) || fail "Failed to parse manifest.json" 2
+INSTALL_DIR_NAME=$(read_manifest "skill.install_dir" 2>/dev/null) || fail "Failed to parse manifest.json" 2
+[ -n "$SKILL_NAME" ] && [ -n "$INSTALL_DIR_NAME" ] || fail "manifest.json is missing skill.name / skill.install_dir" 2
+[ "$INSTALL_DIR_NAME" = "$SKILL_NAME" ] || fail "Inconsistent manifest: install_dir must equal name" 2
 
 PAYLOAD="$PKG_ROOT/$INSTALL_DIR_NAME"
-SAMPLE_ROOT="$PKG_ROOT/samples/示例工作区"
+SAMPLE_ROOT="$PKG_ROOT/samples/sample-workspace"
 
 if [ -n "$DEST" ]; then
     ROOTS=("$DEST")
@@ -111,13 +111,13 @@ else
     esac
 fi
 
-MODE="安装"
-[ "$UNINSTALL" -eq 1 ] && MODE="卸载"
+MODE="Install"
+[ "$UNINSTALL" -eq 1 ] && MODE="Uninstall"
 echo ""
 echo "patent-research-skill v$SKILL_VERSION  ·  $MODE"
-echo "技能名   : $SKILL_NAME（安装目录名必须一致）"
-echo "目标位置 : ${ROOTS[*]}"
-[ "$DRY_RUN" -eq 1 ] && echo "模式     : DRY-RUN（不改任何文件）"
+echo "Skill name: $SKILL_NAME(install directory must match)"
+echo "Targets  : ${ROOTS[*]}"
+[ "$DRY_RUN" -eq 1 ] && echo "Mode     : DRY-RUN (no files changed)"
 echo ""
 
 if [ "$UNINSTALL" -eq 1 ]; then
@@ -125,75 +125,75 @@ if [ "$UNINSTALL" -eq 1 ]; then
     for root in "${ROOTS[@]}"; do
         target="$root/$INSTALL_DIR_NAME"
         if [ ! -e "$target" ]; then
-            note "未安装：$target"
+            note "Not installed: $target"
             continue
         fi
         if [ "$DRY_RUN" -eq 1 ]; then
-            note "[dry-run] 将删除：$target"
+            note "[dry-run] would remove: $target"
             continue
         fi
         rm -rf "$target"
-        echo "✅ 已卸载：$target"
+        echo "OK, uninstalled: $target"
         removed=$((removed + 1))
     done
     if [ "$DRY_RUN" -eq 1 ]; then
-        note "dry-run 结束：没有删除任何文件"
+        note "Dry-run finished: no files were deleted"
     elif [ "$removed" -eq 0 ]; then
-        note "没有找到已安装的技能包（换 --client / --dest 再试）"
+        note "No installed skill package found (try another --client / --dest)"
     fi
     exit 0
 fi
 
-[ -d "$PAYLOAD" ] || fail "发布包缺 payload 目录：$INSTALL_DIR_NAME（zip 可能没解压完整）" 2
+[ -d "$PAYLOAD" ] || fail "Release package is missing the payload directory: $INSTALL_DIR_NAME (the zip may not be fully extracted)" 2
 
 for root in "${ROOTS[@]}"; do
     target="$root/$INSTALL_DIR_NAME"
 
     if [ -e "$target" ]; then
         if [ "$FORCE" -ne 1 ]; then
-            fail "目标已存在：$target
-  升级：先 --uninstall 再安装；或加 --force 直接覆盖。"
+            fail "Destination already exists: $target
+  Upgrade: run --uninstall then install; or add --force to overwrite."
         fi
         if [ "$DRY_RUN" -eq 1 ]; then
-            note "[dry-run] 将覆盖：$target"
+            note "[dry-run] would overwrite: $target"
         else
             rm -rf "$target"
         fi
     fi
 
     if [ "$DRY_RUN" -eq 1 ]; then
-        note "[dry-run] 将复制：$PAYLOAD  ->  $target"
+        note "[dry-run] would copy: $PAYLOAD  ->  $target"
         continue
     fi
 
     mkdir -p "$root"
     cp -R "$PAYLOAD" "$target"
-    echo "✅ 已安装：$target"
+    echo "OK, installed: $target"
 done
 
 if [ "$DRY_RUN" -eq 1 ]; then
-    note "dry-run 结束：没有写入任何文件"
+    note "Dry-run finished: no files were written"
     exit 0
 fi
 
 if [ "$NO_SELF_CHECK" -ne 1 ]; then
     PROBE="${ROOTS[0]}/$INSTALL_DIR_NAME"
     echo ""
-    echo "自检（用包内示例工作区，不接触真实数据）..."
+    echo "Self-check (using the bundled sample workspace, no real data)..."
     if [ -d "$SAMPLE_ROOT" ]; then
         "$PYTHON_BIN" "$PROBE/scripts/status.py" --root "$SAMPLE_ROOT" --json >/dev/null
     else
         "$PYTHON_BIN" -c 'import patentkit' >/dev/null
     fi
     if [ $? -ne 0 ]; then
-        fail "自检失败。多半是没装 patentkit 内核：pip install patentkit"
+        fail "Self-check failed. Most likely the patentkit kernel is missing: pip install patentkit"
     fi
-    echo "✅ 自检通过：脚本能定位工作区并算出状态"
+    echo "OK: the scripts can locate the workspace and compute status"
 fi
 
 echo ""
-echo "下一步："
-echo "  1) 在客户端里说「跑一遍专利新颖性核查」或「看看工作区状态」"
-echo "  2) 工作区还没有？python -m patentkit init <目录> --target TGT-0002 --title <名称>"
-echo "  3) 用真实工作区时，技能会用 PATENTKIT_WORKSPACE 或从当前目录向上找 workspace.yml"
+echo "Next steps:"
+echo "  1) In the client, ask: "run a patent novelty check" or "show workspace status""
+echo "  2) No workspace yet? python -m patentkit init <dir> --target TGT-0002 --title <title>"
+echo "  3) With a real workspace, the skill uses PATENTKIT_WORKSPACE or searches upward for workspace.yml"
 exit 0

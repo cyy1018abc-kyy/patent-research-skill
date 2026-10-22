@@ -10,10 +10,10 @@
 dist/patent-research-skill-v<版本>.zip
 ├── manifest.json          # 版本、兼容性、文件 sha256 清单
 ├── INSTALL.md             # 完整安装说明（随包）
-├── 安装说明-给同事.md       # 一页纸（随包，也单独上传 Release 方便转发）
+├── INSTALL-colleagues.md       # 一页纸（随包，也单独上传 Release 方便转发）
 ├── install.ps1 / install.sh / install-oneclick.cmd
 ├── patent-research/       # ← 安装进客户端技能目录的就是它（目录名 = SKILL.md name）
-└── samples/示例工作区/     # 脱敏工作区（TGT-0002，合成数据），给自检/P3 测试用
+└── samples/sample-workspace/     # 脱敏工作区（TGT-0002，合成数据），给自检/P3 测试用
 ```
 
 设计约束
@@ -64,7 +64,7 @@ SKILL_NAME = "patent-research"
 PACKAGE_NAME = "patent-research-skill"
 INSTALL_MD = RELEASE_DIR / "INSTALL.md"
 #: 给同事看的一页纸（随包分发；也单独上传到 GitHub Release 方便直接转发）
-INSTALL_GUIDE = RELEASE_DIR / "安装说明-给同事.md"
+INSTALL_GUIDE = RELEASE_DIR / "INSTALL-colleagues.md"
 INSTALLERS = (
     RELEASE_DIR / "install.ps1",
     RELEASE_DIR / "install.sh",
@@ -74,7 +74,7 @@ INSTALLERS = (
 #: 示例工作区固定目标（合成数据；真实项目编号，构建时会拦（见 LEAK_PATTERNS））
 SAMPLE_TARGET = "TGT-0002"
 SAMPLE_TITLE = "示例目标：燃料电池与气路循环（合成数据，非真实项目）"
-SAMPLE_DIR_NAME = "示例工作区"
+SAMPLE_DIR_NAME = "sample-workspace"
 SAMPLE_README = """# 示例工作区（脱敏合成数据）
 
 > ⚠️ **这是合成数据，不是真实项目。** 用它只为演示/自检：
@@ -558,7 +558,7 @@ def main(argv: list[str] | None = None) -> int:
     print("下一步：")
     print(f"  1) 自检 manifest : python tools/build_skill_release.py --out {args.out} --json")
     print("  2) 本机安装      : pwsh -File dist/patent-research-skill-v<版本>/install.ps1 -DryRun")
-    print("  3) 跨客户端测试  : 见 跨客户端测试/README.md（用包内 samples/示例工作区）")
+    print("  3) 跨客户端测试  : 见 跨客户端测试/README.md（用包内 samples/sample-workspace）")
     return 0
 
 

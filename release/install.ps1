@@ -1,30 +1,30 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  安装 / 卸载 patent-research-skill（发布包内自带）。
+  Install / uninstall patent-research-skill (bundled in the release package).
 
 .DESCRIPTION
-  把发布包里的 `patent-research/` 复制到本地 AI 客户端的技能目录，
-  默认目录名 = `SKILL.md` 的 name（客户端按这个识别技能）。
-  安装后自动用包内 `samples/示例工作区/` 跑一次自检（需要已安装 patentkit）。
+  Copy `patent-research/` from the release package into the local AI client's skills directory.
+  The default directory name is `name` from `SKILL.md` (clients identify skills by it).
+  After installation, a self-check runs against the bundled `samples/sample-workspace/` (requires patentkit).
 
-  退出码：0 成功；1 失败（自检不过/目标已存在等）；2 发布包结构不完整。
+  Exit codes: 0 success; 1 failure (self-check failed / destination exists); 2 invalid release package.
 
 .EXAMPLE
   pwsh -File .\install.ps1 -DryRun
-  预览：不改任何文件，只打印会装到哪里。
+  Preview: do not write anything, only print the destination.
 
 .EXAMPLE
   pwsh -File .\install.ps1 -Client both
-  同时装到 Claude Code（~/.claude/skills）与 Codex CLI（~/.agents/skills）。
+  Install for both Claude Code (~/.claude/skills) and Codex CLI (~/.agents/skills).
 
 .EXAMPLE
-  pwsh -File .\install.ps1 -Dest <技能根目录>
-  装到自定义技能根目录（会在其下创建 patent-research\）。
+  pwsh -File .\install.ps1 -Dest <skills-root>
+  Install into a custom skills root (creates patent-research\ under it).
 
 .EXAMPLE
   pwsh -File .\install.ps1 -Uninstall -Client both
-  从两个默认位置卸载。
+  Uninstall from both default locations.
 #>
 [CmdletBinding()]
 param(
@@ -55,27 +55,27 @@ function Note {
 }
 
 if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) {
-    Fail "找不到 manifest.json —— 请在解压后的发布包根目录运行本脚本（当前：$PackageRoot）" 2
+    Fail "manifest.json not found - run this script from the extracted release package root (current: $PackageRoot）" 2
 }
 try {
     $manifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
 } catch {
-    Fail "manifest.json 解析失败：$($_.Exception.Message)" 2
+    Fail "Failed to parse manifest.json：$($_.Exception.Message)" 2
 }
 
 $skillName = [string]$manifest.skill.name
 $skillVersion = [string]$manifest.skill.version
 $installDirName = [string]$manifest.skill.install_dir
 if (-not $skillName -or -not $installDirName) {
-    Fail "manifest.json 缺 skill.name / skill.install_dir" 2
+    Fail "manifest.json is missing skill.name / skill.install_dir" 2
 }
 if ($installDirName -ne $skillName) {
-    Fail "manifest 自相矛盾：install_dir（$installDirName）必须等于 name（$skillName）" 2
+    Fail "Inconsistent manifest: install_dir ($installDirName) must equal name ($skillName）" 2
 }
 
 $payload = Join-Path $PackageRoot $installDirName
 
-# 技能根目录：优先 -Dest，否则按 -Client 取客户端默认位置
+# Skills root: use -Dest if provided, otherwise the client default for -Client
 if ($Dest -ne '') {
     $roots = @($Dest)
 } else {
@@ -86,13 +86,13 @@ if ($Dest -ne '') {
     }
 }
 
-$sampleRoot = Join-Path $PackageRoot "samples/示例工作区"
-$mode = if ($Uninstall) { '卸载' } else { '安装' }
+$sampleRoot = Join-Path $PackageRoot "samples/sample-workspace"
+$mode = if ($Uninstall) { 'Uninstall' } else { 'Install' }
 Write-Host ""
 Write-Host "patent-research-skill v$skillVersion  ·  $mode"
-Write-Host "技能名   : $skillName（安装目录名必须一致）"
-Write-Host "目标位置 : $($roots -join '  ;  ')"
-if ($DryRun) { Write-Host "模式     : DRY-RUN（不改任何文件）" }
+Write-Host "Skill name: $skillName(install directory must match)"
+Write-Host "Targets  : $($roots -join '  ;  ')"
+if ($DryRun) { Write-Host "Mode     : DRY-RUN (no files changed)" }
 Write-Host ""
 
 if ($Uninstall) {
@@ -100,24 +100,24 @@ if ($Uninstall) {
     foreach ($root in $roots) {
         $target = Join-Path $root $installDirName
         if (-not (Test-Path -LiteralPath $target)) {
-            Note "未安装：$target"
+            Note "Not installed: $target"
             continue
         }
         if ($DryRun) {
-            Note "[dry-run] 将删除：$target"
+            Note "[dry-run] would remove: $target"
             continue
         }
         Remove-Item -LiteralPath $target -Recurse -Force
-        Write-Host "✅ 已卸载：$target"
+        Write-Host "OK, uninstalled: $target"
         $removed++
     }
-    if ($DryRun) { Note "dry-run 结束：没有删除任何文件" }
-    elseif ($removed -eq 0) { Note "没有找到已安装的技能包（换 -Client / -Dest 再试）" }
+    if ($DryRun) { Note "Dry-run finished: no files were deleted" }
+    elseif ($removed -eq 0) { Note "No installed skill package found (try another -Client / -Dest)" }
     exit 0
 }
 
 if (-not (Test-Path -LiteralPath $payload -PathType Container)) {
-    Fail "发布包缺 payload 目录：$installDirName（zip 可能没解压完整）" 2
+    Fail "Release package is missing the payload directory: $installDirName (the zip may not be fully extracted)" 2
 }
 
 $installedTargets = @()
@@ -126,28 +126,28 @@ foreach ($root in $roots) {
 
     if (Test-Path -LiteralPath $target) {
         if (-not $Force) {
-            Fail "目标已存在：$target`n  升级：先 -Uninstall 再安装；或加 -Force 直接覆盖。"
+            Fail "Destination already exists: $target`n  Upgrade: run -Uninstall then install; or add -Force to overwrite."
         }
         if ($DryRun) {
-            Note "[dry-run] 将覆盖：$target"
+            Note "[dry-run] would overwrite: $target"
         } else {
             Remove-Item -LiteralPath $target -Recurse -Force
         }
     }
 
     if ($DryRun) {
-        Note "[dry-run] 将复制：$payload  ->  $target"
+        Note "[dry-run] would copy: $payload  ->  $target"
         continue
     }
 
     New-Item -ItemType Directory -Force -Path $target | Out-Null
     Copy-Item -Path (Join-Path $payload '*') -Destination $target -Recurse -Force
-    Write-Host "✅ 已安装：$target"
+    Write-Host "OK, installed: $target"
     $installedTargets += $target
 }
 
 if ($DryRun) {
-    Note "dry-run 结束：没有写入任何文件"
+    Note "Dry-run finished: no files were written"
     exit 0
 }
 
@@ -155,27 +155,27 @@ if (-not $NoSelfCheck) {
     $python = Get-Command python -ErrorAction SilentlyContinue
     if (-not $python) { $python = Get-Command python3 -ErrorAction SilentlyContinue }
     if (-not $python) {
-        Fail "安装完成，但没找到 python：技能脚本需要 Python ≥ 3.11 + patentkit。`n  修法：安装 Python 后执行  pip install patentkit"
+        Fail "Installation finished, but python was not found: skill scripts require Python >= 3.11 + patentkit.`n  Fix: install Python, then run  pip install patentkit"
     }
 
     $probe = $installedTargets[0]
     $statusScript = Join-Path $probe 'scripts/status.py'
     Write-Host ""
-    Write-Host "自检（用包内示例工作区，不接触真实数据）..."
+    Write-Host "Self-check (using the bundled sample workspace, no real data)..."
     if (Test-Path -LiteralPath $sampleRoot) {
         & $python.Source $statusScript --root $sampleRoot --json | Out-Null
     } else {
         & $python.Source '-c' 'import patentkit' | Out-Null
     }
     if ($LASTEXITCODE -ne 0) {
-        Fail "自检失败（exit $LASTEXITCODE）。多半是没装 patentkit 内核：pip install patentkit"
+        Fail "Self-check failed (exit $LASTEXITCODE). Most likely the patentkit kernel is missing: pip install patentkit"
     }
-    Write-Host "✅ 自检通过：脚本能定位工作区并算出状态"
+    Write-Host "OK: the scripts can locate the workspace and compute status"
 }
 
 Write-Host ""
-Write-Host "下一步："
-Write-Host "  1) 在客户端里说「跑一遍专利新颖性核查」或「看看工作区状态」"
-Write-Host "  2) 工作区还没有？python -m patentkit init <目录> --target TGT-0002 --title <名称>"
-Write-Host "  3) 用真实工作区时，技能会用 PATENTKIT_WORKSPACE 或从当前目录向上找 workspace.yml"
+Write-Host "Next steps:"
+Write-Host "  1) In the client, ask: "run a patent novelty check" or "show workspace status""
+Write-Host "  2) No workspace yet? python -m patentkit init <dir> --target TGT-0002 --title <title>"
+Write-Host "  3) With a real workspace, the skill uses PATENTKIT_WORKSPACE or searches upward for workspace.yml"
 exit 0

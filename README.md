@@ -1,80 +1,94 @@
 # patent-research-skill
 
-> 面向「专利现有技术检索 / 新颖性创造性自检 / 检索证据链与验收门（G-S）」的 **Agent Skill** 发行仓库。
-> 支持 Claude Code、Codex CLI、Codex 桌面端（ChatGPT App）。
+> An **Agent Skill** for patent prior-art search, novelty/inventiveness self-check,
+> evidence-chain management, and acceptance gates (G-S).
+> Works with Claude Code, Codex CLI, and the Codex desktop app.
 
-本仓库只包含**可分发物**：技能包源码、安装器、构建工具与发行说明。
-**不含任何真实项目数据、专利稿件、目标 ID 或候选编号**；示例工作区为合成数据（`TGT-0002`）。
+This repository contains only distributable assets: the skill source, installers,
+the release builder, and release notes.
+**No real project data, patent drafts, target IDs, or candidate IDs are included**;
+the sample workspace is synthetic (`TGT-0002`).
 
-## 下载与安装
+## Download & install
 
-到 [Releases](https://github.com/cyy1018abc-kyy/patent-research-skill/releases) 下载：
+Download from [Releases](https://github.com/cyy1018abc-kyy/patent-research-skill/releases):
 
-| 附件 | 说明 |
+| Asset | Purpose |
 |---|---|
-| `patent-research-skill-v<版本>.zip` | 技能包（含安装脚本 + 脱敏示例工作区） |
-| `patentkit-<版本>-py3-none-any.whl` | 内核（Python 包；`patentkit` ≥0.1.1） |
-| `INSTALL-colleagues.md` | 给同事的一页纸安装说明 |
+| `patent-research-skill-v<version>.zip` | Skill package (with installer + synthetic sample workspace) |
+| `patentkit-<version>-py3-none-any.whl` | Kernel (Python package; `patentkit` >= 0.1.1) |
+| `INSTALL-colleagues.md` | One-page install guide |
 
-### Windows 一键
+### Windows (one click)
 
-把 zip、wheel、`install-oneclick.cmd`（从 zip 解压）放同一文件夹，双击 `install-oneclick.cmd`。
+Put the zip, the wheel, and `install-oneclick.cmd` (extracted from the zip) in the
+same folder, then double-click `install-oneclick.cmd`.
 
-### 手动（任意平台）
+### Manual (any platform)
 
 ```powershell
 pip install ./patentkit-0.1.1-py3-none-any.whl
-Expand-Archive ./patent-research-skill-v2.3.0.zip -DestinationPath ./pkg
+Expand-Archive ./patent-research-skill-v2.3.1.zip -DestinationPath ./pkg
 pwsh -File ./pkg/install.ps1 -Client both -Force
 ```
 
 ```bash
 python3 -m pip install ./patentkit-0.1.1-py3-none-any.whl
-unzip patent-research-skill-v2.3.0.zip -d pkg
+unzip patent-research-skill-v2.3.1.zip -d pkg
 chmod +x pkg/install.sh && ./pkg/install.sh --client both --force
 ```
 
-安装后重启客户端：Codex 桌面端侧边栏 **Skills** 出现「专利调研」，对话里用 `@` 选择；
-Claude Code 直接说「按 patent-research 技能……」即可。
+After installation, restart the client:
 
-## 目录
+- **Codex desktop**: open **Skills** in the sidebar, select "Patent Research", or type `@` to pick it.
+- **Claude Code**: ask "use the patent-research skill to locate the workspace and run the self-check".
+
+## Repository layout
 
 ```
 patent-research-skill/   SKILL.md + references/ + scripts/ + assets/ + agents/openai.yaml
-release/                 安装脚本（ps1/sh/oneclick）、安装说明、发布说明
-tools/build_skill_release.py   发布包构建（manifest + sha256 + 脱敏示例工作区）
-.github/workflows/ci.yml       构建冒烟 + 安装脚本 dry-run
+release/                 installers (ps1/sh/oneclick), install docs, release notes
+tools/build_skill_release.py   release builder (manifest + sha256 + synthetic sample workspace)
+.github/workflows/ci.yml       build smoke test + installer dry-run
 ```
 
-## 构建发布包
+## Build a release package
 
 ```bash
 pip install pyyaml
 PATENTKIT_COMPAT_VERSION=0.1.1 python tools/build_skill_release.py --out dist --json
-# 默认生成含 samples/示例工作区 的 zip（需要本机装有 patentkit >=0.1.1）
+# produces a zip including samples/sample-workspace (requires patentkit >= 0.1.1 locally)
 ```
 
-## 要求
+## Requirements
 
-- Python ≥ 3.11（技能脚本运行需要）
-- `patentkit` ≥ 0.1.1（从 Releases 的 wheel 安装）
-- Codex CLI ≥ 0.161（桌面端自带新版运行时，无需升级）
+- Python >= 3.11 (required by the skill scripts)
+- `patentkit` >= 0.1.1 (install the wheel from Releases)
+- Codex CLI >= 0.161 (the desktop app bundles a newer runtime, no upgrade needed)
 
-## 关于基底 skills 与许可
+## Language
 
-本技能的方法论参考了以下公开 Agent Skills 的思路（**未 vendor 其代码/文档**）：
+Repository documentation and installers are in English.
+The **skill runtime content** (`SKILL.md`, `references/`, script output, sample data)
+remains in Chinese because the skill targets Chinese patent practice. A fully English
+skill runtime would be a separate translated edition; open an issue if you need it.
 
-- `cn-patent-drafter`（Apache-2.0）
-- `patent-disclosure-skill`（Apache-2.0）
-- `patent-validity-checker`（Apache-2.0）
+## Credits & license
 
-本仓库代码与技能包以 **Apache-2.0** 发布（见 [LICENSE](LICENSE)）。
+The methodology was informed by ideas from these public Agent Skills
+(**no code or documentation is vendored**):
 
-## 安全边界
+- `cn-patent-drafter` (Apache-2.0)
+- `patent-disclosure-skill` (Apache-2.0)
+- `patent-validity-checker` (Apache-2.0)
 
-- 技能包与示例数据均为合成内容；使用真实工作区时请勿把未公开材料上传到云端客户端；
-- 内核 `patentkit` 按 wheel 分发；本仓库不含其源码。
+This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICENSE)).
 
-## 版本
+## Security notes
 
-当前技能包 **2.3.0**；变更见 [CHANGELOG.md](CHANGELOG.md)。
+- All bundled data is synthetic. Do not upload unpublished material to cloud clients.
+- The `patentkit` kernel is distributed as a wheel; its source is maintained separately.
+
+## Version
+
+Current skill version: **2.3.1**. See [CHANGELOG.md](CHANGELOG.md).

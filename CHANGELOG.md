@@ -1,21 +1,29 @@
-# 变更记录（CHANGELOG）
+# Changelog
 
-## 2026-10-22 · 技能包 2.3.0
+## 2026-10-22 · Skill 2.3.1
 
-- 新增 Windows 一键安装器 `install-oneclick.cmd`（检查 Python → 装内核 wheel → 装技能），
-  支持 `--quiet`；新增一页纸《安装说明-给同事.md》。
-- 构建期校验发布包必须包含以上文件；新增回归测试。
-- 内核 `patentkit` 保持 0.1.1。
+- Repository documentation, release notes, and installer messages translated to English.
+- The one-page install guide is now shipped as `INSTALL-colleagues.md` (ASCII filename).
+- Skill runtime content (`SKILL.md`, `references/`, script output, sample data) remains
+  in Chinese because the skill targets Chinese patent practice.
+- Kernel `patentkit` remains 0.1.1.
 
-## 2026-10-22 · 技能包 2.2.0
+## 2026-10-22 · Skill 2.3.0
 
-- 新增 `agents/openai.yaml`：桌面端 Skills 显示中文名「专利调研」+ 简介，`@` 选中后带默认提问。
-- 构建期校验（缺/格式错构建失败）+ 回归测试。
-- 版本 2.1.0 → 2.2.0。
+- Added `install-oneclick.cmd` for Windows: checks Python, installs the kernel wheel,
+  extracts the skill package, and runs `install.ps1 -Client both` (supports `--quiet`).
+- Added the one-page install guide (now `INSTALL-colleagues.md`).
+- Build-time validation requires these files in every release package.
 
-## 2026-10-22 · 技能包 2.1.0 / 内核 0.1.1
+## 2026-10-22 · Skill 2.2.0
 
-- 技能包拆分出 `scripts/` 执行层（status/validate/gates/report/check）；
-  新增独立安装包（install 脚本 + manifest + 脱敏示例工作区）；
-  新增跨客户端测试资产（Claude Code / Codex CLI）。
-- 内核修复 G-S-01 提示文案带出历史目标 ID；版本口径统一。
+- Added `agents/openai.yaml`: the desktop app shows a localized name and description,
+  and `@` inserts a default prompt.
+- Build-time validation and regression tests for the metadata.
+
+## 2026-10-22 · Skill 2.1.0 / kernel 0.1.1
+
+- Extracted the `scripts/` execution layer (status/validate/gates/report/check).
+- Added the standalone installer (installers + manifest + synthetic sample workspace).
+- Added cross-client test assets (Claude Code / Codex CLI).
+- Kernel: fixed a hint that could echo a historical target ID; unified versioning.

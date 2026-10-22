@@ -1,139 +1,86 @@
-# 安装 `patent-research-skill`
+# Install `patent-research-skill`
 
-> 这是一个**可独立分发的技能包**：给 Codex CLI / Claude Code 等能读写本地文件、
-> 能执行本地命令的 AI 客户端用。它包含方法论（`SKILL.md` + `references/`）和
-> 可执行脚本（`scripts/`），**不含任何真实项目的检索数据或专利稿件**。
->
-> 证据口径、五门验收门等规则实现在 `patentkit` 内核里；本包只做「怎么做事」。
+> A standalone, distributable skill package for AI clients that can read/write local
+> files and run local commands (Codex CLI, Claude Code, Codex desktop app).
+> It contains the methodology (`SKILL.md` + `references/`) and executable scripts
+> (`scripts/`). It contains **no real project data or patent drafts**.
 
-## 获取安装包
+## Prerequisites
 
-- 技能包 zip：<https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v2.3.0> →
-  `patent-research-skill-v2.3.0.zip`
-- 内核 wheel / sdist：<https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.1.1>
-- 校验：同页 `SHA256SUMS-*.txt`；Windows 可用 `Get-FileHash <文件> -Algorithm SHA256` 核对。
-
-## 前置条件
-
-| 依赖 | 要求 | 检查 |
+| Dependency | Requirement | Check |
 |---|---|---|
-| Python | ≥ 3.11 | `python --version` |
-| patentkit | 已安装（内核） | `python -m patentkit doctor` |
+| Python | >= 3.11 | `python --version` |
+| patentkit | installed (kernel) | `python -c "import patentkit; print(patentkit.__version__)"` |
+| Client | Codex CLI >= 0.161 / Claude Code >= 2.1.206 / current Codex desktop app | — |
 
 ```powershell
-pip install patentkit                 # 有发布源时
-# 或从内网 git / 仓库安装：
-pip install "git+https://<内网git地址>"
+pip install patentkit-0.1.1-py3-none-any.whl
 ```
 
-> 没装内核也能装技能包，但脚本会以 exit 3 提示你先装 `patentkit`。
+## Quick install
 
-## 三步安装
-
-在**解压后的发布包根目录**执行（目录里应有 `manifest.json`、`patent-research/`、`samples/`）：
+Extract the release zip, then run the installer from the package root:
 
 ```powershell
-# 1) 预览（不写任何文件）
-pwsh -File .\install.ps1 -DryRun
-
-# 2) 安装：Claude Code 默认（~/.claude/skills/patent-research/）
-pwsh -File .\install.ps1 -Client claude
-#    Codex CLI：~/.agents/skills/patent-research/
-pwsh -File .\install.ps1 -Client codex
-#    两个都装：
-pwsh -File .\install.ps1 -Client both
-
-# 3) 自检（安装脚本默认已跑；也可手动）
-python "$HOME/.claude/skills/patent-research/scripts/status.py" --root ".\samples\示例工作区"
+Expand-Archive .\patent-research-skill-v2.3.1.zip -DestinationPath .\pkg
+pwsh -File .\pkg\install.ps1 -DryRun          # preview
+pwsh -File .\pkg\install.ps1 -Client both     # Claude Code + Codex
 ```
 
-macOS / Linux / WSL：
+macOS / Linux:
 
 ```bash
-chmod +x install.sh
-./install.sh --dry-run
-./install.sh --client claude
+unzip patent-research-skill-v2.3.1.zip -d pkg
+chmod +x pkg/install.sh
+./pkg/install.sh --dry-run
+./pkg/install.sh --client both
 ```
 
-### 安装到哪里
+Options:
 
-| 客户端 | 默认技能根目录 | 安装后 |
-|---|---|---|
-| Claude Code | `~/.claude/skills/` | `~/.claude/skills/patent-research/` |
-| Codex CLI | `~/.agents/skills/` | `~/.agents/skills/patent-research/` |
-| 自定义 | `-Dest <技能根目录>` / `--dest <目录>` | `<目录>/patent-research/` |
+| Option | Meaning |
+|---|---|
+| `-Client claude` | install only for Claude Code (`~/.claude/skills`) |
+| `-Client codex` | install only for Codex (`~/.agents/skills`) |
+| `-Client both` | install both |
+| `-Dest <dir>` | custom skills root (a `patent-research/` directory is created) |
+| `-DryRun` / `--dry-run` | print actions without writing |
+| `-Force` / `--force` | overwrite an existing installation |
+| `-NoSelfCheck` / `--no-self-check` | skip the post-install smoke test |
+| `-Uninstall` / `--uninstall` | remove the installed skill |
 
-> **目录名必须等于 `SKILL.md` 的 `name`（`patent-research`）** —— 客户端按目录/name 识别技能，
-> 改错名字可能识别不到。安装脚本会自动处理。
+The installer copies the payload to a directory named `patent-research` (the value of
+`name` in `SKILL.md`), then runs a smoke test against the bundled synthetic
+`samples/sample-workspace/` if `patentkit` is installed.
 
-## 验证可用
+Exit codes: `0` success, `1` failure (self-check failed / destination exists), `2` invalid package.
 
-1. 装完自检应显示「✅ 自检通过」。
-2. 在客户端里说：「跑一遍专利新颖性核查」/「看看这个专利工作区的状态」/
-   「N1 轴的检索式是什么」——技能应被触发并执行 `scripts/` 里的命令。
-3. 用真实工作区前，先在包里 `samples/示例工作区/` 上练手（合成数据，随便折腾）。
-
-## 升级
+## Verify
 
 ```powershell
-# 1) 换新包：解压到新目录，先预览
-pwsh -File .\install.ps1 -DryRun
-
-# 2) 覆盖安装（会替换旧版本）
-pwsh -File .\install.ps1 -Client both -Force
-
-# 3) 升级内核（如发布说明要求）
-pip install -U patentkit
+python "$HOME/.agents/skills/patent-research/scripts/status.py" --root .\pkg\samples\sample-workspace
 ```
 
-> 升级前可先看 `manifest.json` 的 `skill.version` 与 `compat.patentkit`；
-> 跨大版本升级以发布说明为准。手工安装的，直接替换技能目录即可。
+Expected: exit code 0 and a JSON object with `workspace`, `active_target`, `gates`, `ok`, ...
 
-## 卸载
+Then restart the client:
+
+- **Codex desktop**: sidebar **Skills** -> select "Patent Research" (or `@`).
+- **Claude Code**: ask "use the patent-research skill, locate the workspace and run the self-check".
+
+## Upgrade / uninstall
 
 ```powershell
-pwsh -File .\install.ps1 -Uninstall -Client both
+pwsh -File .\pkg\install.ps1 -Client both -Force      # upgrade
+pwsh -File .\pkg\install.ps1 -Uninstall -Client both  # uninstall
 ```
 
-`patentkit` 内核用 `pip uninstall patentkit` 移除；工作区数据不受影响。
+## Troubleshooting
 
-## 手动安装（不想用脚本）
-
-1. 把 `patent-research/` 复制到客户端技能根目录，并**改名为 `patent-research`**（包内已叫这个名）。
-2. 确认 `SKILL.md` 在目录第一层。
-3. 跑自检：`python <技能目录>/scripts/status.py --root samples/示例工作区`。
-
-## 故障排查
-
-| 现象 | 原因 | 处理 |
-|---|---|---|
-| `install.ps1` 报「找不到 manifest.json」 | 没在发布包根目录运行 | `cd` 到解压目录再跑，或 `chmod +x install.sh` |
-| 自检 exit 3 | 没装 `patentkit` / Python 版本低 | `pip install patentkit`；确认 `python --version` ≥ 3.11 |
-| 自检 exit 2 | 工作区定位失败 | 用 `--root <工作区>`；或 `cd` 进含 `workspace.yml` 的目录 |
-| 客户端识别不到技能 | 技能目录名 ≠ `SKILL.md` 的 `name` | 目录改名为 `patent-research` |
-| 客户端不自动触发 | 客户端版本/设置问题 | 手动 `/patent-research` 或把需求说得更具体（检索/新颖性/证据链） |
-| 中文乱码 | 控制台编码 | 脚本已强制 UTF-8；客户端捕获按 UTF-8 解码 |
-
-## 安全与保密
-
-- 本包不含真实候选、检索日志、判定结论、稿件正文；`samples/` 是**合成数据**。
-- 脚本只调用本地 `patentkit` 读你指定的工作区，不联网、不上传。
-- 但**客户端本身可能联网**（云端推理）：真实工作区的候选标题、判定结论、稿件正文
-  **不要**贴给公网客户端。纯对话客户端只能到 `asserted` 等级，结论必须标
-  「⚠️ 未经验证工具校验」。
-
-## 包结构
-
-```
-patent-research-skill-v<版本>/
-├── manifest.json       版本 + 兼容性 + 全部文件 sha256
-├── INSTALL.md          本文件
-├── install.ps1 / install.sh
-├── patent-research/    ← 安装到客户端的就是它
-│   ├── SKILL.md        主入口：何时触发 / 执行顺序 / 硬约束 / 结果格式
-│   ├── references/     6 份方法论（按需加载）
-│   ├── scripts/        status / validate / gates / report / check
-│   ├── assets/         报告模板、空白对比矩阵、合成示例
-│   └── README.md
-└── samples/示例工作区/  脱敏工作区（TGT-0002，合成数据）
-```
+| Symptom | Cause / fix |
+|---|---|
+| `manifest.json not found` | run the installer from the extracted package root |
+| self-check fails / script exit 3 | `patentkit` is not installed: `pip install patentkit-*.whl` |
+| `workspace not found` (exit 2) | `cd` into a directory containing `workspace.yml`, or pass `--root` |
+| desktop app does not list the skill | restart the app; confirm `~/.agents/skills/patent-research/SKILL.md` exists |
+| skill answers are generic | select the skill explicitly with `@`; keep the global `~/.codex/AGENTS.md` guidance |
