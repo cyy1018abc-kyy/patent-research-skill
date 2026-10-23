@@ -97,6 +97,7 @@ SKILL_VERSION=$(read_manifest "skill.version" 2>/dev/null) || fail "failed to pa
 INSTALL_DIR_NAME=$(read_manifest "skill.install_dir" 2>/dev/null) || fail "failed to parse manifest.json" 2
 [ -n "$SKILL_NAME" ] && [ -n "$INSTALL_DIR_NAME" ] || fail "manifest.json is missing skill.name / skill.install_dir" 2
 [ "$INSTALL_DIR_NAME" = "$SKILL_NAME" ] || fail "manifest is self-contradictory: install_dir must equal name" 2
+[ "$INSTALL_DIR_NAME" = "patent-research" ] || fail "unsupported skill directory in manifest.json" 2
 
 PAYLOAD="$PKG_ROOT/$INSTALL_DIR_NAME"
 SAMPLE_ROOT="$PKG_ROOT/samples/sample_workspace"
@@ -146,6 +147,10 @@ fi
 
 [ -d "$PAYLOAD" ] || fail "release package is missing the payload directory: $INSTALL_DIR_NAME (the zip may not have been fully extracted)" 2
 
+if [ "$DRY_RUN" -eq 0 ] && [ "$NO_SELF_CHECK" -eq 0 ]; then
+    "$PYTHON_BIN" -c 'from patentkit.assessment import PROTOCOL_VERSION; assert PROTOCOL_VERSION == 1' || fail "Install the patentkit 0.2.0 wheel before replacing the skill"
+fi
+
 for root in "${ROOTS[@]}"; do
     target="$root/$INSTALL_DIR_NAME"
 
@@ -183,10 +188,10 @@ if [ "$NO_SELF_CHECK" -ne 1 ]; then
     if [ -d "$SAMPLE_ROOT" ]; then
         "$PYTHON_BIN" "$PROBE/scripts/status.py" --root "$SAMPLE_ROOT" --json >/dev/null
     else
-        "$PYTHON_BIN" -c 'import patentkit' >/dev/null
+        fail "sample workspace is missing from the release package" 2
     fi
     if [ $? -ne 0 ]; then
-        fail "self-check failed. Most likely the patentkit core is not installed: pip install patentkit"
+        fail "self-check failed. Install the matching patentkit 0.2.0 wheel and retry"
     fi
     echo "✅ Self-check passed: the scripts can locate the workspace and compute the status"
 fi

@@ -1,6 +1,6 @@
 # patentkit 0.2.0 source patch
 
-The skill 2.4.0 development branch requires patentkit 0.2.0 with assessment protocol 1.
+Skill 2.4.0 requires patentkit 0.2.0 with assessment protocol 1.
 The complete kernel change, including 31 independent regression cases, is provided as
 `patentkit-0.1.2-to-0.2.0.patch`. Kernel source remains separate from the skill runtime.
 
@@ -39,5 +39,6 @@ python -m pytest kernel-build/patentkit-0.1.2/regression_tests -o addopts= -q
 
 The extracted directory retains its upstream `0.1.2` name; the patched package declares
 version `0.2.0`. CI repeats the download, checksum verification, patch application and
-regression tests. No real patent data is needed. This branch does not publish new
-wheel/zip Release assets; the previous published installers still target the previous release.
+regression tests. No real patent data is needed. CI builds the wheel/sdist and the
+official installation ZIP, runs Windows/Linux acceptance, and publishes the paired
+Releases after merge to main. See `../notes/skill-v2.4.0.md` for installation and migration.

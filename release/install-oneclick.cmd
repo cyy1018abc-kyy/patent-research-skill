@@ -11,10 +11,27 @@ rem  Exit codes: 0 success; 1 missing files/environment problem; 2 install scrip
 rem ============================================================
 
 set "QUIET="
-if /i "%~1"=="--quiet" set "QUIET=1"
-cd /d "%~dp0"
-
+set "DEST="
 set "HERE=%~dp0"
+:args
+if "%~1"=="" goto :args_done
+if /i "%~1"=="--quiet" (
+    set "QUIET=1"
+    shift
+    goto :args
+)
+if /i "%~1"=="--dest" (
+    if "%~2"=="" goto :fail
+    set "DEST=%~2"
+    shift
+    shift
+    goto :args
+)
+echo [X] Unknown argument: %~1
+goto :fail
+:args_done
+cd /d "%HERE%"
+
 set "WHEEL="
 set "SKILLZIP="
 set "PY="
@@ -52,13 +69,13 @@ echo [1/4] Python: OK
 echo       interpreter: %PYDIR%
 
 rem ---------- 2. Find the files ----------
-for %%f in ("patentkit-*.whl") do set "WHEEL=%%~ff"
+for %%f in ("patentkit-0.2.0-py3-none-any.whl") do if exist "%%~ff" set "WHEEL=%%~ff"
 if not defined WHEEL (
     echo [X] There is no patentkit-*.whl kernel package in the current folder.
-    echo     Please put patentkit-0.1.1-py3-none-any.whl in the same folder as this file.
+    echo     Please put patentkit-0.2.0-py3-none-any.whl in the same folder as this file.
     goto :fail
 )
-for %%f in ("patent-research-skill-v*.zip") do set "SKILLZIP=%%~ff"
+for %%f in ("patent-research-skill-v2.4.0.zip") do if exist "%%~ff" set "SKILLZIP=%%~ff"
 if not defined SKILLZIP (
     echo [X] There is no patent-research-skill-v*.zip skill package in the current folder.
     echo     Please put the skill package zip in the same folder as this file.
@@ -81,7 +98,7 @@ if errorlevel 1 (
         goto :fail
     )
 )
-%PY% -c "import patentkit; print('    kernel version:', patentkit.__version__)"
+%PY% -c "import patentkit; from patentkit.assessment import PROTOCOL_VERSION; assert PROTOCOL_VERSION == 1; print('    kernel version:', patentkit.__version__)"
 if errorlevel 1 (
     echo [X] The kernel was installed but import failed; please check the pip environment.
     goto :fail
@@ -102,9 +119,17 @@ set "PS=pwsh"
 where pwsh >nul 2>nul
 if errorlevel 1 set "PS=powershell"
 if /i "%PS%"=="powershell" (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%TMPDIR%\install.ps1" -Client both -Force
+    if defined DEST (
+        powershell -NoProfile -ExecutionPolicy Bypass -File "%TMPDIR%\install.ps1" -Dest "%DEST%" -Force
+    ) else (
+        powershell -NoProfile -ExecutionPolicy Bypass -File "%TMPDIR%\install.ps1" -Client both -Force
+    )
 ) else (
-    pwsh -NoProfile -File "%TMPDIR%\install.ps1" -Client both -Force
+    if defined DEST (
+        pwsh -NoProfile -File "%TMPDIR%\install.ps1" -Dest "%DEST%" -Force
+    ) else (
+        pwsh -NoProfile -File "%TMPDIR%\install.ps1" -Client both -Force
+    )
 )
 if errorlevel 1 (
     echo.

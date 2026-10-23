@@ -8,9 +8,9 @@
 
 ## Getting the installation package
 
-- Skill package zip: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v2.3.0> →
-  `patent-research-skill-v2.3.0.zip`
-- Kernel wheel / sdist: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.1.1>
+- Skill package zip: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v2.4.0> →
+  `patent-research-skill-v2.4.0.zip`
+- Kernel wheel / sdist: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.2.0>
 - Verification: `SHA256SUMS-*.txt` on the same page; on Windows you can check with `Get-FileHash <file> -Algorithm SHA256`.
 
 ## Prerequisites
@@ -18,12 +18,10 @@
 | Dependency | Requirement | Check |
 |---|---|---|
 | Python | ≥ 3.11 | `python --version` |
-| patentkit | installed (core) | `python -m patentkit doctor` |
+| patentkit | >= 0.2.0, assessment protocol 1 | `python -m patentkit doctor` |
 
 ```powershell
-pip install patentkit                 # when a release index is available
-# or install from an internal git / repo:
-pip install "git+https://<internal-git-url>"
+python -m pip install ./patentkit-0.2.0-py3-none-any.whl
 ```
 
 > You can install the skill package without the core, but the scripts will exit with code 3 and tell you to install `patentkit` first.
@@ -83,11 +81,23 @@ pwsh -File .\install.ps1 -DryRun
 pwsh -File .\install.ps1 -Client both -Force
 
 # 3) Upgrade the kernel (if the release notes require it)
-pip install -U patentkit
+python -m pip install --upgrade ./patentkit-0.2.0-py3-none-any.whl
 ```
 
 > Before upgrading, check `skill.version` and `compat.patentkit` in `manifest.json`;
 > for cross-major upgrades follow the release notes. For a manual install, just replace the skill directory.
+
+Before using existing research data, back it up and preview the schema migration:
+
+```bash
+python -m patentkit review migrate-assessments --root /path/to/workspace
+python -m patentkit review migrate-assessments --root /path/to/workspace --apply
+python -m patentkit validate --root /path/to/workspace --strict
+```
+
+Migration preserves source grades, records legacy judgment identity as unknown, and
+does not create human confirmations. Prior gate counts may decrease. See the
+[release notes](https://github.com/cyy1018abc-kyy/patent-research-skill/blob/main/release/notes/skill-v2.4.0.md).
 
 ## Uninstalling
 
@@ -131,7 +141,7 @@ patent-research-skill-v<version>/
 ├── install.ps1 / install.sh
 ├── patent-research/    ← what gets installed into the client
 │   ├── SKILL.md        main entry: when to trigger / execution order / hard constraints / result format
-│   ├── references/     6 methodology references (loaded on demand)
+│   ├── references/     7 methodology references (loaded on demand)
 │   ├── scripts/        status / validate / gates / report / check
 │   ├── assets/         report templates, blank comparison matrix, synthetic examples
 │   └── README.md

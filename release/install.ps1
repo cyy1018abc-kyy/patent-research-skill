@@ -72,6 +72,9 @@ if (-not $skillName -or -not $installDirName) {
 if ($installDirName -ne $skillName) {
     Fail "manifest is self-contradictory: install_dir ($installDirName) must equal name ($skillName)" 2
 }
+if ($installDirName -ne 'patent-research') {
+    Fail "unsupported skill directory in manifest.json" 2
+}
 
 $payload = Join-Path $PackageRoot $installDirName
 
@@ -121,6 +124,13 @@ if (-not (Test-Path -LiteralPath $payload -PathType Container)) {
 }
 
 $installedTargets = @()
+if (-not $DryRun -and -not $NoSelfCheck) {
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $python) { $python = Get-Command python3 -ErrorAction SilentlyContinue }
+    if (-not $python) { Fail "Python 3.11+ with patentkit 0.2.0 is required before installation" }
+    & $python.Source '-c' 'import sys; from patentkit.assessment import PROTOCOL_VERSION; assert sys.version_info >= (3, 11) and PROTOCOL_VERSION == 1' | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "Install the patentkit 0.2.0 wheel before replacing the skill" }
+}
 foreach ($root in $roots) {
     $target = Join-Path $root $installDirName
 
@@ -152,12 +162,6 @@ if ($DryRun) {
 }
 
 if (-not $NoSelfCheck) {
-    $python = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $python) { $python = Get-Command python3 -ErrorAction SilentlyContinue }
-    if (-not $python) {
-        Fail "Installation completed, but python was not found: the skill scripts need Python ≥ 3.11 + patentkit.`n  Fix: install Python, then run  pip install patentkit"
-    }
-
     $probe = $installedTargets[0]
     $statusScript = Join-Path $probe 'scripts/status.py'
     Write-Host ""
@@ -165,10 +169,10 @@ if (-not $NoSelfCheck) {
     if (Test-Path -LiteralPath $sampleRoot) {
         & $python.Source $statusScript --root $sampleRoot --json | Out-Null
     } else {
-        & $python.Source '-c' 'import patentkit' | Out-Null
+        Fail "sample workspace is missing from the release package" 2
     }
     if ($LASTEXITCODE -ne 0) {
-        Fail "self-check failed (exit $LASTEXITCODE). Most likely the patentkit core is not installed: pip install patentkit"
+        Fail "self-check failed (exit $LASTEXITCODE). Install the matching patentkit 0.2.0 wheel and retry"
     }
     Write-Host "✅ Self-check passed: the scripts can locate the workspace and compute the status"
 }

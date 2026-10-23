@@ -9,18 +9,19 @@ the release builder, and release notes.
 **No real project data, patent drafts, target IDs, or candidate IDs are included**;
 the sample workspace is synthetic (`TGT-0002`).
 
-## Development update: skill 2.4.0 / kernel 0.2.0
+## Skill 2.4.0 / kernel 0.2.0
 
-Source provenance and judgment are now separate. Supported AI assessments may count for G-S-02; G-S-03 requires explicit human confirmation bound to the current judgment. See [assessment protocol](patent-research-skill/references/07-assessment-protocol.md) and [implementation plan](docs/superpowers/plans/2026-10-23-source-assessment-separation.md). Reconstruct and install patentkit 0.2.0 using the [published source patch and verification instructions](release/patches/README.md), then migrate the workspace schema before using development scripts. CI applies the kernel patch to the checksum-verified public source and runs all 31 new regressions. These changes are not yet published as a Release.
+Source provenance and judgment are now separate. Supported AI assessments may count for G-S-02; G-S-03 requires explicit human confirmation bound to the current judgment. See [assessment protocol](patent-research-skill/references/07-assessment-protocol.md), [implementation plan](docs/superpowers/plans/2026-10-23-source-assessment-separation.md), and [release and migration notes](release/notes/skill-v2.4.0.md). Back up existing workspaces and preview `python -m patentkit review migrate-assessments --root <workspace>` before applying migration. CI reconstructs the kernel from the [verified public source and patch](release/patches/README.md), builds both packages, and validates installation on Windows/Linux with Python 3.11/3.12 before publishing.
 
-## Download & install (previous published release)
+## Download & install
 
-Download from [Releases](https://github.com/cyy1018abc-kyy/patent-research-skill/releases):
+Download the paired [Skill 2.4.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v2.4.0) and [patentkit 0.2.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.2.0) releases:
 
 | Asset | Purpose |
 |---|---|
-| `patent-research-skill-v<version>.zip` | Skill package (with installer + synthetic sample workspace) |
-| `patentkit-<version>-py3-none-any.whl` | Kernel (Python package; `patentkit` >= 0.1.2) |
+| `patent-research-skill-v2.4.0.zip` | Skill installation package (with installers + synthetic sample workspace) |
+| `patentkit-0.2.0-py3-none-any.whl` | Matching kernel, assessment protocol 1 |
+| `install-oneclick.cmd` | Windows installer, also included in the ZIP |
 | `INSTALL-colleagues.md` | One-page install guide (repo source: `release/install-guide-for-colleagues.md`) |
 
 ### Windows (one click)
@@ -31,14 +32,14 @@ same folder, then double-click `install-oneclick.cmd`.
 ### Manual (any platform)
 
 ```powershell
-pip install ./patentkit-0.1.2-py3-none-any.whl
-Expand-Archive ./patent-research-skill-v2.3.3.zip -DestinationPath ./pkg
+python -m pip install ./patentkit-0.2.0-py3-none-any.whl
+Expand-Archive ./patent-research-skill-v2.4.0.zip -DestinationPath ./pkg
 pwsh -File ./pkg/install.ps1 -Client both -Force
 ```
 
 ```bash
-python3 -m pip install ./patentkit-0.1.2-py3-none-any.whl
-unzip patent-research-skill-v2.3.3.zip -d pkg
+python3 -m pip install ./patentkit-0.2.0-py3-none-any.whl
+unzip patent-research-skill-v2.4.0.zip -d pkg
 chmod +x pkg/install.sh && ./pkg/install.sh --client both --force
 ```
 
@@ -52,22 +53,22 @@ After installation, restart the client:
 ```
 patent-research-skill/   SKILL.md + references/ + scripts/ + assets/ + agents/openai.yaml
 release/                 installers (ps1/sh/oneclick), install docs, release notes
-.github/workflows/ci.yml       build smoke test + installer dry-run
+tools/                   reproducible ZIP builder + paired release publisher
+.github/workflows/ci.yml  wheel/ZIP builds, regressions, installation and publication
 ```
 
 ## Build a release package
 
 ```bash
-pip install pyyaml
-PATENTKIT_COMPAT_VERSION=0.1.1 python tools/build_skill_release.py --out dist --json
-# produces a zip including samples/sample-workspace (requires patentkit >= 0.1.2 locally)
+python -m pip install ./patentkit-0.2.0-py3-none-any.whl
+python tools/build_skill_release.py --out dist --built-at 2026-10-23T00:00:00+00:00 --json
+python -m unittest discover -s tests -v
 ```
 
 ## Requirements
 
 - Python >= 3.11 (required by the skill scripts)
-- Development skill 2.4.0: `patentkit` >= 0.2.0, assessment protocol 1
-- Published skill 2.3.3: `patentkit` >= 0.1.2
+- Skill 2.4.0: `patentkit` >= 0.2.0, assessment protocol 1
 - Codex CLI >= 0.161 (the desktop app bundles a newer runtime, no upgrade needed)
 
 ## Language
@@ -93,4 +94,4 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 
 ## Version
 
-Development skill version: **2.4.0**; previous published version: **2.3.3**. See [CHANGELOG.md](CHANGELOG.md).
+Skill version: **2.4.0**, companion kernel: **0.2.0**. See [CHANGELOG.md](CHANGELOG.md).
