@@ -113,7 +113,7 @@ def render(data: dict) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    _env.require_patentkit()
+    _env.require_patentkit(as_json=args.json)
     root = _env.resolve_workspace(args.root, as_json=args.json)
 
     # Deferred import: when the package is missing, require_patentkit() gives install guidance instead of a traceback

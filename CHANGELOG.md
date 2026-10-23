@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-23 · Skill 2.4.0 / kernel 0.2.0
+
+- Separate source evidence_level from assessment actor, support and human confirmation.
+- Allow supported AI scoring for G-S-02; require explicit current human confirmation for G-S-03.
+- Preserve human decisions; conflicting AI outputs become proposals.
+- Bind confirmation to substantive judgment content and located original passages; preserve history and ignore unrelated metadata changes.
+- Add conservative schema migration and reject old kernels lacking assessment protocol 1.
+- Restore reproducible installation ZIP builds, manifests and checksums; verify actual wheel installation, skill installation/upgrade/uninstall and legacy migration on Windows/Linux with Python 3.11/3.12.
+- Publish the matched kernel and skill assets only after all CI checks pass; align download and migration instructions with this version pair.
+
 ## 2026-10-22 · Skill 2.3.3 + kernel 0.1.2
 
 - Compatibility release for the English workspace layout: the skill now requires

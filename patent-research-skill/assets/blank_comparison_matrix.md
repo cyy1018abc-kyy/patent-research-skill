@@ -24,7 +24,9 @@ D1 — <title>  <publication number or URL>
 - Relationship: □ blocking (blocks novelty) / □ partial overlap / □ marginal
 - Key passages: <cite 1–3 original paragraphs; must be traceable to raw/ or the original text>
 - Distinguishing points: <our distinguishing features / what the other document does not disclose>
-- Evidence level: verified (has raw/) / attested (has sha256 binding) / asserted (self-report only)
+- Source level: verified / attested / asserted
+- Judgment: actor / problem and means original-text support / current fingerprint
+- Human confirmation: pending / valid / stale; reviewer and time
 ```
 
 ## Three-tier determination (fill in together with the table)
@@ -36,7 +38,7 @@ D1 — <title>  <publication number or URL>
 | Tier 3: technical effect | Is there a non-obvious effect that must presuppose the distinguishing features? | holds / doubtful / does not hold |  |
 
 > Tier 2 must include a **self-attack**: list the examiner's most likely motivation to combine and objections, then write the responses.
-> All three conclusions must carry an evidence level; a judgment without `raw/` support can only be `asserted`.
+> Report source provenance and judgment state separately. AI scoring does not downgrade genuine sources; G-S-03 requires explicit valid human confirmation.
 
 ## Proposed amendments
 

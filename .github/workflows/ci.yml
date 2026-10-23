@@ -5,37 +5,91 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   check:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - name: Install validation dependency
-        run: python -m pip install pyyaml
-      - name: Validate skill frontmatter
+          python-version: ${{ matrix.python }}
+      - name: Install build and test dependencies
+        run: python -m pip install build pytest pyyaml
+      - name: Reconstruct patched kernel from verified public source
         run: |
           python - <<'PY'
-          import pathlib, yaml
-          text = pathlib.Path("patent-research-skill/SKILL.md").read_text(encoding="utf-8")
-          assert text.startswith("---"), "missing YAML frontmatter"
-          fm = yaml.safe_load(text.split("---", 2)[1])
-          assert fm["name"] == "patent-research"
-          assert fm["description"].strip()
-          assert fm.get("metadata", {}).get("version")
-          print("skill version:", fm["metadata"]["version"])
+          import hashlib, io, pathlib, tarfile, urllib.request
+          url = "https://github.com/cyy1018abc-kyy/patent-research-skill/releases/download/patentkit-v0.1.2/patentkit-0.1.2.tar.gz"
+          data = urllib.request.urlopen(url, timeout=60).read()
+          assert hashlib.sha256(data).hexdigest() == "5ab1ff6e6387c1b6f30e8e084b0da88d93bf71426e9cb901158562d9b52aae14"
+          destination = pathlib.Path("kernel-build")
+          destination.mkdir()
+          with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
+              archive.extractall(destination, filter="data")
           PY
-      - name: Syntax check scripts
-        run: python -m compileall -q patent-research-skill/scripts
-      - name: Shell syntax check
-        run: bash -n release/install.sh
-      - name: Required files
+          git apply --directory=kernel-build/patentkit-0.1.2 "$GITHUB_WORKSPACE/release/patches/patentkit-0.1.2-to-0.2.0.patch"
+          test -f kernel-build/patentkit-0.1.2/patentkit/assessment.py
+      - name: Build and install the actual kernel wheel
         run: |
-          test -f release/install.ps1
-          test -f release/install-oneclick.cmd
-          test -f release/INSTALL.md
-          test -f release/install-guide-for-colleagues.md
-          test -f patent-research-skill/agents/openai.yaml
-          echo "package layout ok"
+          python -m build ./kernel-build/patentkit-0.1.2 --outdir dist
+          python -m pip install dist/patentkit-0.2.0-py3-none-any.whl
+          python -c "import patentkit; from patentkit.assessment import PROTOCOL_VERSION; assert patentkit.__version__ == '0.2.0' and PROTOCOL_VERSION == 1; assert 'site-packages' in patentkit.__file__"
+      - name: Kernel assessment regressions
+        run: python -m pytest kernel-build/patentkit-0.1.2/regression_tests -o addopts= -q
+      - name: Build the official skill package
+        run: |
+          python tools/build_skill_release.py --out dist --built-at "$(git show -s --format=%cI HEAD)" --json > build-result.json
+          python - <<'PY'
+          import hashlib, pathlib, shutil
+          dist = pathlib.Path("dist")
+          assets = sorted(dist.glob("patentkit-0.2.0*"))
+          assert len(assets) == 2
+          (dist / "SHA256SUMS-patentkit-v0.2.0.txt").write_text("".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n" for p in assets), encoding="utf-8")
+          shutil.copy2("release/install-oneclick.cmd", dist)
+          PY
+      - name: Skill protocol and installation acceptance
+        run: python -m unittest discover -s tests -v
+      - name: Syntax checks
+        run: |
+          python -m compileall -q patent-research-skill/scripts tools
+          bash -n release/install.sh
+          bash -n tools/publish_release.sh
+          git diff --check
+      - name: Preserve verified release assets
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: dist
+      - name: Publish the paired releases after all installation checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/publish_release.sh

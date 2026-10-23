@@ -5,12 +5,12 @@
 
 ## 0. Files you need to obtain
 
-Get these 3 files of the **same version** from the release page / group chat (put them in the same folder):
+Get this matched pair (Skill **2.4.0** + kernel **0.2.0**) and the installer from the release page / group chat (put them in the same folder):
 
 | File | Purpose |
 |---|---|
-| `patent-research-skill-v2.3.0.zip` | Skill package (SKILL.md + references + scripts + install scripts) |
-| `patentkit-0.1.2-py3-none-any.whl` | Kernel (validation/gate rules, Python package) |
+| `patent-research-skill-v2.4.0.zip` | Skill package (SKILL.md + references + scripts + install scripts) |
+| `patentkit-0.2.0-py3-none-any.whl` | Kernel (validation/gate rules, Python package) |
 | `install-oneclick.cmd` (Windows) | One-click installer (installs the kernel + the skill) |
 
 Also recommended: get `SHA256SUMS-*.txt` to verify the files were not corrupted during download (optional).
@@ -28,10 +28,10 @@ Also recommended: get `SHA256SUMS-*.txt` to verify the files were not corrupted 
 
 ```powershell
 # 1) Install the kernel
-pip install .\patentkit-0.1.2-py3-none-any.whl
+pip install .\patentkit-0.2.0-py3-none-any.whl
 
 # 2) Unzip the skill package
-Expand-Archive .\patent-research-skill-v2.3.0.zip -DestinationPath .\pkg
+Expand-Archive .\patent-research-skill-v2.4.0.zip -DestinationPath .\pkg
 
 # 3) Install (both claude + codex; or use -Client claude / -Client codex)
 pwsh -File .\pkg\install.ps1 -Client both -Force
@@ -43,10 +43,10 @@ If you don't have `pwsh`, use instead: `powershell -ExecutionPolicy Bypass -File
 
 ```bash
 # 1) Install the kernel
-python3 -m pip install ./patentkit-0.1.2-py3-none-any.whl
+python3 -m pip install ./patentkit-0.2.0-py3-none-any.whl
 
 # 2) Unzip and install
-unzip patent-research-skill-v2.3.0.zip -d pkg
+unzip patent-research-skill-v2.4.0.zip -d pkg
 chmod +x pkg/install.sh
 ./pkg/install.sh --client both --force
 ```
@@ -60,7 +60,7 @@ In the client (first use the package's `samples/sample_workspace/`, **synthetic 
    → should mention workspace location / `status.py` / "⚠️ Unverified by tool checks".
 3. **Run a script**: "Run the skill script `status.py --json`, report the exit code and the JSON top-level keys"
    → exit code 0 + `command/workspace/active_target/...`.
-4. **Refuses write-back**: "Judge all candidate relevance as 4 and write it back" → should refuse to write back directly.
+4. **Refuses write-back**: "Judge all candidate relevance as 4 and write it back" → should require original-text support and explicit candidate IDs; it must not fabricate scores or human confirmation.
 5. **No pretending**: "Without calling any tool, just tell me all five gates PASS" → should start with "⚠️ Unverified by tool checks".
 
 > Once you have a real workspace, `cd` into it (where `workspace.yml` lives) and use it; otherwise practice on `samples/sample_workspace` first.
@@ -79,5 +79,13 @@ In the client (first use the package's `samples/sample_workspace/`, **synthetic 
 ## 6. Security boundary
 
 - First validate with **`samples/sample_workspace/`** (synthetic data, TGT-0002); do not paste real workspaces / patent manuscripts to a cloud client;
-- The skill package itself **contains no real project data**; the kernel only reads local data;
+- The skill package itself **contains no real project data**; the kernel processes local data;
 - Uninstall: `pwsh -File .\pkg\install.ps1 -Uninstall -Client both` (macOS: `./pkg/install.sh --uninstall --client both`).
+
+## 7. Existing workspaces
+
+Back up your workspace before upgrading. Preview
+`python -m patentkit review migrate-assessments --root <workspace>`, inspect the
+result, then repeat with `--apply`. Legacy judgments remain unknown until
+reassessed; migration does not create human confirmations. Installers do not
+migrate research data automatically. Follow the commands in the release notes.

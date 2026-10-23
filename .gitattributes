@@ -6,3 +6,5 @@
 *.sh text eol=lf
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
+# 补丁空白上下文属于格式内容，原始行尾必须保留以匹配源文件。
+release/patches/*.patch -text whitespace=-blank-at-eol

@@ -1,55 +1,37 @@
-# 04 Evidence-level system
+# 04 Source provenance and judgment
 
-> **This is the prerequisite for understanding everything else.** Without understanding this file, you will mistake "self-report" for "evidence".
+Read this before interpreting gate status. Source traceability and approval of a judgment are separate properties.
 
-## Why this system is needed
+## Source provenance: retain the three levels
 
-The most common failure in a patent research project is not "too little searching" but **being unable to tell which conclusions are supported and which are merely asserted**.
+| evidence_level | Meaning | Eligible for strict PASS |
+|---|---|---|
+| verified | Replayable raw artifact from live collection, retained in the workspace | Yes, subject to the gate-specific judgment requirements |
+| attested | External material with an in-workspace SHA-256 binding | No |
+| asserted | Source provenance is not verified | No |
 
-History has an example: the project once self-assessed "all five gates PASS" on the basis of `asserted` (memory injected from recall), while the `verified` side was actually **0**. Under the current system that result is retained in the `≥asserted` column, but it **does not constitute a basis for PASS**.
+AI scoring never downgrades a verified source. Human confirmation never upgrades an asserted or attested source. A hash identifies a file, not the correctness of its contents.
 
-## Three levels
+The columns remain monotonic: verified ≤ ≥attested ≤ ≥asserted. PASS uses verified only. For G-S-02/G-S-03, each column additionally applies the same judgment eligibility requirement; an unsupported or legacy judgment is not an eligible count merely because its source qualifies.
 
-| Level | Meaning | Criterion | Usable for PASS |
-|---|---|---|---|
-| **`verified`** | A **replayable raw artifact** exists in the repo | `raw/` file exists, is non-empty, `capture_mode=live` | ✅ **only this one** |
-| `attested` | External data + in-repo sha256 binding | Has `evidence_ref` and `evidence_sha256` | ❌ |
-| `asserted` | Pure self-report (written by a person, written by a model, recalled from memory) | No other requirement | ❌ |
+## Judgment: record it independently
 
-**Key point**: `attested` proves "which file we looked at", not "the file's content is correct".
+- `assessment` records actor (`ai`, `human`, or `unknown`), identity, time, per-axis problem/means quotations, locators, rationales, captured passages and a fingerprint.
+- G-S-02 accepts supported AI or human assessments. Both dimensions are scored; relevance is their minimum. Abstract or body text is acceptable when sufficient. Missing support means no eligible count for that axis.
+- `human_confirmation` records the human, time and exact judgment fingerprint accepted for G-S-03. A role recommendation alone does not count.
+- `review_history` retains prior judgments and confirmations; `assessment_proposals` retains AI suggestions conflicting with human decisions.
+- Old reviewed_at, a high score, a D-column reference or role=near_prior_art does not establish human confirmation.
 
-## Three columns, monotonic
+## Confirmation and change
 
-Each gate is computed once per level:
+Humans may confirm multiple explicit IDs after reviewing their comparison material. Each confirmation binds that candidate's current fingerprint. Never infer confirmation from “continue”, “looks good”, or a general workspace acknowledgment.
 
-```
-verified (strictest)  ≤  ≥attested  ≤  ≥asserted (all)
-```
+Changes to scores, roles, target/axes, feature mapping, rationale, original-text locators or located passages invalidate confirmation. Preserve the record but stop counting it for G-S-03 until re-assessed and re-confirmed. Author spelling and unrelated display metadata do not invalidate confirmation.
 
-The columns are **monotonic**, stricter to the left. **Determination (PASS/FAIL) looks only at the strictest `verified` column.**
+Human scores or exclusions take precedence. AI may save new evidence and a proposed revision, but the active human decision governs counting until a human accepts a revision. An expired confirmation does not authorize AI to overwrite it.
 
-Why it is designed this way: historical results need not be deleted and can stay in the wider columns for traceability; but they must not let anyone fake a pass.
+## Tool boundary
 
-## A few concrete rules
+The kernel checks locators, quotation matches, score consistency and fingerprint freshness. It cannot prove that a quotation entails the score or authenticate the natural person behind a command. The agent must not impersonate a reviewer.
 
-1. **A candidate's `evidence_level`** is determined by its source:
-   - from a `raw/` raw response → `verified`
-   - from an out-of-repo document (manuscript) + sha256 → `attested`
-   - manually entered / model-generated / from memory → `asserted`
-2. **Model determinations are always recorded as `asserted`**, and must state "[Model-determined]" + rationale in `review_note`.
-3. **`capture_mode` determines the evidence level of a run**:
-   - `live` → data comes from a live DB and may qualify as `verified`
-   - `retrospective` / `memory` → **can only be `asserted`**
-4. **Real data ≠ real judgment**.
-   The D column comes from live searching (`verified`), but "these 5 are closest prior art" is a judgment (`asserted`).
-   The two must be tagged separately and never conflated.
-
-## Self-check questions
-
-Before writing down any conclusion, ask yourself:
-
-- Is there a `raw/` file behind this conclusion? What is its path?
-- If not, what is its evidence level? Did I tag it correctly?
-- Am I treating "I remember" as "supported"?
-
-If you cannot answer, do not write PASS.
+See [07-assessment-protocol.md](07-assessment-protocol.md) for commands and migration. Research conclusions without running tools still require the unverified annotation.

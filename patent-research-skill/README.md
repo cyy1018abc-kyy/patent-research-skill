@@ -14,7 +14,7 @@
 ```
 patent-research-skill/
 ├── SKILL.md          Main entry: when to use, execution order, hard constraints, result format (resident in client context)
-├── references/       6 methodology documents, loaded on demand (04 evidence-level system is the prerequisite)
+├── references/       7 methodology documents, loaded on demand (04 evidence-level system is the prerequisite)
 ├── scripts/          Thin wrappers for status/validation/gates/report (rules stay in the patentkit core)
 ├── assets/           Report template, blank comparison matrix, sample data (synthetic)
 └── README.md         This file
@@ -70,6 +70,8 @@ pip install patentkit                 # when an internal index/release package i
 # or develop in the repo: cd <repo-root>; pip install -e ".[dev]"
 ```
 
+Development skill 2.4.0 requires patentkit ≥0.2.0 with assessment protocol 1. Install the matching built wheel before using these wrappers; older release installation examples below describe the previous distribution.
+
 Requirements: Python ≥ 3.11; dependencies `jsonschema`, `PyYAML` (pip installs them automatically).
 
 #### 2. Place the skill package
@@ -110,8 +112,7 @@ Just speak plainly, for example:
 - "Check whether the claim values have support before hand-off" → reads `references/06` + `scripts/check.py`
 
 **Hard constraints** (full version in `SKILL.md`): gate PASS is recognized only on the `verified` column;
-do not decide `relevance` for the user; when tools cannot run, you must mark the answer with
-"⚠️ Unverified by tool checks". Any model determination is downgraded to `asserted`.
+supported AI judgments may count for G-S-02; G-S-03 needs explicit human confirmation. Source evidence_level remains unchanged by AI participation or human review. When tools cannot run, mark conclusions "⚠️ Unverified by tool checks". See references/07-assessment-protocol.md.
 
 ## Scripts at a glance
 
