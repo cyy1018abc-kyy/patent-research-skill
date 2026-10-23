@@ -43,10 +43,12 @@ jobs:
           with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
               archive.extractall(destination, filter="data")
           PY
-          git -C kernel-build/patentkit-0.1.2 apply "$GITHUB_WORKSPACE/release/patches/patentkit-0.1.2-to-0.2.0.patch"
+          git apply --directory=kernel-build/patentkit-0.1.2 "$GITHUB_WORKSPACE/release/patches/patentkit-0.1.2-to-0.2.0.patch"
+          test -f kernel-build/patentkit-0.1.2/patentkit/assessment.py
       - name: Install and test patched kernel
         run: |
           python -m pip install -e "./kernel-build/patentkit-0.1.2[dev]"
+          python -c "import patentkit; assert patentkit.__version__ == '0.2.0', patentkit.__version__"
           python -m pytest kernel-build/patentkit-0.1.2/regression_tests -o addopts= -q
       - name: Shell syntax check
         run: bash -n release/install.sh

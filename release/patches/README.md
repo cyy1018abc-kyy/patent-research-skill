@@ -26,7 +26,8 @@ assert hashlib.sha256(data).hexdigest() == "5ab1ff6e6387c1b6f30e8e084b0da88d93bf
 with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
     archive.extractall(destination, filter="data")
 kernel = destination / "patentkit-0.1.2"
-subprocess.run(["git", "-C", str(kernel), "apply", str(repo / "release/patches/patentkit-0.1.2-to-0.2.0.patch")], check=True)
+subprocess.run(["git", "apply", "--directory=kernel-build/patentkit-0.1.2", str(repo / "release/patches/patentkit-0.1.2-to-0.2.0.patch")], cwd=repo, check=True)
+assert (kernel / "patentkit/assessment.py").is_file()
 ```
 
 Then install into the chosen virtual environment and run the new regressions:
