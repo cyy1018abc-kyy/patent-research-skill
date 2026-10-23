@@ -78,7 +78,7 @@ def configure_stdio() -> None:
 # ── Dependencies ─────────────────────────────────────────────────────
 
 
-def require_patentkit() -> None:
+def require_patentkit(*, as_json: bool = False) -> None:
     """Confirm the Python version and that patentkit is usable; otherwise print fixes and exit 3.
 
     Check order: Python version first (below 3.11 there is no point even trying to install patentkit),
@@ -98,6 +98,7 @@ def require_patentkit() -> None:
             f"Python ≥ {MIN_PYTHON[0]}.{MIN_PYTHON[1]} required, "
             f"current version is {platform.python_version()}",
             EXIT_DEPENDENCY,
+            as_json=as_json,
             hints=(
                 "These skill scripts use 3.11+ syntax (`X | None`, built-in generics)",
                 'After upgrading Python, reinstall: pip install -e ".[dev]"',
@@ -112,6 +113,7 @@ def require_patentkit() -> None:
             _die(
                 "The patentkit package was not found",
                 EXIT_DEPENDENCY,
+                as_json=as_json,
                 hints=(
                     'Install from the repo root (containing pyproject.toml): pip install -e ".[dev]"',
                     "Or install the released version: pip install patentkit",
@@ -121,12 +123,24 @@ def require_patentkit() -> None:
         _die(
             f"patentkit is installed, but the dependency module '{missing}' is missing",
             EXIT_DEPENDENCY,
+            as_json=as_json,
             hints=(
                 'Complete the dependencies: pip install -e ".[dev]"',
                 "See [project] dependencies in the repo-root pyproject.toml for the dependency list",
             ),
         )
 
+    try:
+        from patentkit.assessment import PROTOCOL_VERSION
+        if PROTOCOL_VERSION != 1:
+            raise ImportError("unsupported assessment protocol")
+    except ImportError:
+        _die(
+            "This skill requires patentkit >= 0.2.0 with assessment protocol 1",
+            EXIT_DEPENDENCY,
+            as_json=as_json,
+            hints=("Install the matching patentkit-0.2.0 wheel; old kernels cannot enforce human confirmation for G-S-03",),
+        )
     _REQUIRED = True
 
 
@@ -156,7 +170,7 @@ def resolve_workspace(explicit: str | None = None, *, as_json: bool = False) -> 
     "wrong environment variable" must first be distinguished so the matching fix can be given; passing
     the exception message straight through would point `--root` scenarios in the wrong direction.
     """
-    require_patentkit()
+    require_patentkit(as_json=as_json)
     from patentkit import paths
 
     if explicit:

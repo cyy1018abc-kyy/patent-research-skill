@@ -9,7 +9,11 @@ the release builder, and release notes.
 **No real project data, patent drafts, target IDs, or candidate IDs are included**;
 the sample workspace is synthetic (`TGT-0002`).
 
-## Download & install
+## Development update: skill 2.4.0 / kernel 0.2.0
+
+Source provenance and judgment are now separate. Supported AI assessments may count for G-S-02; G-S-03 requires explicit human confirmation bound to the current judgment. See [assessment protocol](patent-research-skill/references/07-assessment-protocol.md) and [implementation plan](docs/superpowers/plans/2026-10-23-source-assessment-separation.md). Reconstruct and install patentkit 0.2.0 using the [published source patch and verification instructions](release/patches/README.md), then migrate the workspace schema before using development scripts. CI applies the kernel patch to the checksum-verified public source and runs all 31 new regressions. These changes are not yet published as a Release.
+
+## Download & install (previous published release)
 
 Download from [Releases](https://github.com/cyy1018abc-kyy/patent-research-skill/releases):
 
@@ -62,13 +66,14 @@ PATENTKIT_COMPAT_VERSION=0.1.1 python tools/build_skill_release.py --out dist --
 ## Requirements
 
 - Python >= 3.11 (required by the skill scripts)
-- `patentkit` >= 0.1.2 (install the wheel from Releases)
+- Development skill 2.4.0: `patentkit` >= 0.2.0, assessment protocol 1
+- Published skill 2.3.3: `patentkit` >= 0.1.2
 - Codex CLI >= 0.161 (the desktop app bundles a newer runtime, no upgrade needed)
 
 ## Language
 
-The repository and the skill runtime are fully in English, including `SKILL.md`,
-`references/`, script messages, assets, installers, and release notes.
+The distributable skill runtime is in English, including `SKILL.md`,
+`references/`, script messages, assets, installers, and release notes. Implementation plans and verification notes under `docs/` use Chinese.
 
 ## Credits & license
 
@@ -88,4 +93,4 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 
 ## Version
 
-Current skill version: **2.3.3**. See [CHANGELOG.md](CHANGELOG.md).
+Development skill version: **2.4.0**; previous published version: **2.3.3**. See [CHANGELOG.md](CHANGELOG.md).

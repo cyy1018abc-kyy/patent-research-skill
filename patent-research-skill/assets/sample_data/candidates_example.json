@@ -2,17 +2,23 @@
   "id": "P-900",
   "kind": "patent",
   "title": "Example document title (synthetic data, not a real patent)",
-  "authors_or_applicants": ["Example applicant"],
+  "authors_or_applicants": [
+    "Example applicant"
+  ],
   "year": 2026,
   "source_db": "Espacenet",
   "url_or_doc_number": "EXAMPLE-0001",
   "summary_zh": "Synthetic summary: demonstrates the field structure only; it describes no real technical solution.",
   "relevance": 4,
   "novelty_check": "partial",
-  "tags": ["N1@TGT-0002"],
+  "tags": [
+    "N1@TGT-0002"
+  ],
   "logged_at": "2026-01-01T00:00:00+08:00",
   "source_log": "2026-01-01_sample.log.json",
-  "family": ["EXAMPLE-0001-A1"],
+  "family": [
+    "EXAMPLE-0001-A1"
+  ],
   "cited_by": [],
   "pdf_path": null,
   "evidence_level": "asserted",
@@ -26,5 +32,15 @@
   "relevance_means": 4,
   "abstract_raw": null,
   "abstract_source": null,
-  "abstract_fetched_at": null
+  "abstract_fetched_at": null,
+  "assessment": {
+    "actor": "unknown",
+    "by": "",
+    "at": null,
+    "basis": {},
+    "fingerprint": null
+  },
+  "human_confirmation": null,
+  "review_history": [],
+  "assessment_proposals": []
 }

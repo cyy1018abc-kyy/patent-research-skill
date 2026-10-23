@@ -13,12 +13,12 @@ description: >
   "can asserted be used as evidence", or "evidence level".
 license: Apache-2.0
 metadata:
-  version: 2.3.3
+  version: 2.4.0
 ---
 
 # Patent Research
 
-> **Companion**: `patentkit` (the Python core where the rules are implemented) + this package's `scripts/` (thin wrappers).
+> **Companion**: `patentkit >= 0.2.0` with assessment protocol 1 (the single implementation of rules) + this package's `scripts/` (thin wrappers).
 > You can still work from `references/` without the tools, but conclusions must be marked "⚠️ Unverified by tool checks".
 
 ## When to use
@@ -39,8 +39,8 @@ if you cannot tell "self-report" from "evidence", every later step will produce 
 |---|---|---|---|---|
 | 0 | Locate and self-check | — | `python scripts/status.py` (`patentkit status` if scripts are unavailable) | Workspace and `active_target` correct; validation has no error |
 | 1 | Broad search | [`01-search-framework.md`](references/01-search-framework.md) | `patentkit search-plan --axis N1` → `patentkit fetch-cnipa` / `fetch-crossref` → `patentkit ingest --apply` | **G-S-01**: patents ≥200 + literature ≥200 (verified column) |
-| 2 | Deep search | [`02-query-templates.md`](references/02-query-templates.md) | `patentkit review export --with-abstract` → **human determination** → `patentkit review apply --apply` | **G-S-02**: ≥10 documents with relevance≥4 per axis, plus buffer ≥+3 |
-| 3 | Comparative analysis | [`03-three-tier-determination.md`](references/03-three-tier-determination.md) | `patentkit report <TGT-ID>` → fill in per-document / combination / technical-effect layers | **G-S-03** ≥5 closest prior-art documents; **G-S-04** families/citations complete |
+| 2 | Deep search | [`02-query-templates.md`](references/02-query-templates.md), [`07-assessment-protocol.md`](references/07-assessment-protocol.md) | Export JSON → supported AI/human assessment → `patentkit review assess ... --apply` | **G-S-02**: ≥10 eligible documents per axis, buffer ≥+3; both dimensions need original-text support |
+| 3 | Comparative analysis | [`03-three-tier-determination.md`](references/03-three-tier-determination.md) | AI recommends → human reviews explicit IDs/fingerprints → `patentkit review confirm ... --by <human> --apply` → report | **G-S-03** ≥5 documents with valid human confirmation; **G-S-04** families/citations complete |
 | 4 | Gate checks | [`05-acceptance-gates.md`](references/05-acceptance-gates.md) | `python scripts/gates.py` (or `patentkit gates`) | All five gates PASS on the **verified column**; asserted does not count |
 | 5 | Hand-off checks | [`06-drafting-and-polishing-rules.md`](references/06-drafting-and-polishing-rules.md) | `python scripts/check.py` + `patentkit attest --check` | validate 0 error/warn; no manuscript sha256 drift |
 
@@ -56,19 +56,20 @@ if you cannot tell "self-report" from "evidence", every later step will produce 
 
 1. **Do not tag `verified` without the `raw/` original artifact** — validation rules V009/V013 block it.
 2. **Gate PASS is only recognized on the strictest `verified` column**; `asserted` is historical record, not a basis for passing.
-3. **Do not decide `relevance` / `role` for the user.** When the model makes a determination, it must write "[Model-determined]" + rationale in `review_note`, and the conclusion is downgraded to `asserted`.
+3. **Source provenance and judgment are separate.** Keep `evidence_level` unchanged when assessing. AI may score G-S-02 only with per-axis problem/means quotations, locators and rationales; abstract or body text is acceptable when sufficient. AI may recommend `near_prior_art`, but G-S-03 requires explicit human confirmation of named IDs and current fingerprints. Never impersonate a human reviewer or treat a vague reply as confirmation. AI conflicts are proposals and never overwrite human decisions. Substantive changes invalidate confirmation; unrelated metadata corrections do not.
 4. **When tools are unavailable / not running**, **the answer must explicitly start with "⚠️ Unverified by tool checks"**, then give methodological advice; do not omit it, and do not disguise the result as verified.
 5. **Hit count ≠ core-document count**: a database's `hits` is its whole-library hit surface, not "found N documents".
 6. **A primary query has at most 3 AND sub-queries**; use IPC as a post-filter, not inside the primary query.
 7. **A gate FAIL is not "think it over"** — it means "the search is insufficient": prioritize supplementary searching/determination, not loosening thresholds.
-8. **Thresholds and determination criteria live only in `patentkit/validate.py` and `patentkit/gates.py`**; this file and `references/` only explain them and must not introduce a second set of criteria.
+8. **Quantity thresholds live in `patentkit/gates.py`; shared judgment eligibility lives in `patentkit/assessment.py`, called by gates and validation.** This file, references and wrappers explain these rules and must not implement a second set.
 
 ## Result format (use this whenever you report research conclusions; nothing may be omitted)
 
 | Item | Requirement |
 |---|---|
 | **Conclusion** | State explicitly "holds / doubtful / does not hold" (for novelty, inventive step, or evidence sufficiency); **do not conclude whether a patent can be granted** |
-| **Evidence level** | `verified` / `attested` / `asserted`; anything whose source is not `raw/` is `asserted` |
+| **Evidence level** | Source provenance only: `verified` / `attested` / `asserted`; external hash-bound material may be attested; report the judgment actor separately |
+| **Assessment status** | Show actor, per-axis original-text basis and valid/pending/stale human confirmation separately; source `verified` never guarantees judgment correctness |
 | **Gate status** | Cite the actual value from the `verified` column (e.g. G-S-02 minimum axis 12 documents); do not write "should pass" |
 | **Unverified annotation** | When tools have not run or data is incomplete, explicitly write "⚠️ Unverified by tool checks; the following is methodological advice" |
 
@@ -91,6 +92,7 @@ Unverified: none
 | [`03-three-tier-determination.md`](references/03-three-tier-determination.md) | Judging relevance, writing the comparison matrix and three-tier conclusions |
 | [`05-acceptance-gates.md`](references/05-acceptance-gates.md) | A gate fails, the buffer is insufficient, or `validate` reports errors |
 | [`06-drafting-and-polishing-rules.md`](references/06-drafting-and-polishing-rules.md) | Cross-checking claim-specification values/support before hand-off |
+| [`07-assessment-protocol.md`](references/07-assessment-protocol.md) | Assessment imports, explicit batch confirmation, conflicts, fingerprints and migration |
 
 > See this package's [`README.md`](README.md) for `scripts/` and installation instructions. The scripts are only thin wrappers around `patentkit`;
 > the rules are not implemented in them. If `patentkit` is not installed, the scripts print installation guidance (exit 3).

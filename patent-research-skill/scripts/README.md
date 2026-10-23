@@ -17,8 +17,9 @@
 | Capability | Single implementation site |
 |---|---|
 | Programmatic entry point (every command here calls only this) | `patentkit/api.py` |
-| Consistency validation V001-V028 | `patentkit/validate.py` |
+| Consistency validation V001-V030 | `patentkit/validate.py` |
 | Acceptance gates G-S-01..05 | `patentkit/gates.py` |
+| Shared assessment eligibility, original-text support and human confirmation | `patentkit/assessment.py` |
 | Comparison run skeleton | `patentkit/report.py` |
 
 ## Dependencies
@@ -26,7 +27,7 @@
 | Dependency | Requirement | How to check / install |
 |---|---|---|
 | Python | ≥ 3.11 | `python --version`; below this version the scripts exit 3 |
-| patentkit | installed (an editable install is fine) | `pip install -e ".[dev]"`; or `pip install patentkit` |
+| patentkit | ≥0.2.0, assessment protocol 1 (older kernels exit 3) | `pip install -e ".[dev]"`; or `pip install patentkit` |
 | Self-check | workspace resolvable, dependencies complete | `python -m patentkit doctor` |
 
 > When patentkit is not installed, the scripts do **not** throw a traceback; they print the install instructions and exit 3.
@@ -165,7 +166,7 @@ python patent-research-skill/scripts/status.py
 2. Run `check.py --json` only when you need a machine verdict; only exit code 0 means "the current data passes".
 3. The only basis for determination is `gates[].values.verified`; `attested` / `asserted` are historical record and **do not constitute a basis for PASS**.
 4. When the client cannot execute code, every conclusion must be marked "⚠️ Unverified by tool checks" and must not be disguised as verified.
-5. Do not decide `relevance` for the user; when the model makes a determination it must write "[Model-determined]" + rationale and tag the conclusion `asserted`.
+5. Keep source grades separate from judgments: supported AI scoring is allowed for G-S-02; G-S-03 requires actual human confirmation of explicit IDs/fingerprints. AI conflicts remain proposals. See ../references/07-assessment-protocol.md.
 6. `report.py` **really writes to disk**; first confirm the path in the `out` field of the `--json` result, and do not try it casually in a real workspace.
 
 ## What it does not do

@@ -29,6 +29,25 @@ jobs:
           PY
       - name: Syntax check scripts
         run: python -m compileall -q patent-research-skill/scripts
+      - name: Assessment protocol contract
+        run: python -m unittest discover -s tests -v
+      - name: Reconstruct patched kernel from verified public source
+        run: |
+          python - <<'PY'
+          import hashlib, io, pathlib, tarfile, urllib.request
+          url = "https://github.com/cyy1018abc-kyy/patent-research-skill/releases/download/patentkit-v0.1.2/patentkit-0.1.2.tar.gz"
+          data = urllib.request.urlopen(url, timeout=60).read()
+          assert hashlib.sha256(data).hexdigest() == "5ab1ff6e6387c1b6f30e8e084b0da88d93bf71426e9cb901158562d9b52aae14"
+          destination = pathlib.Path("kernel-build")
+          destination.mkdir()
+          with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
+              archive.extractall(destination, filter="data")
+          PY
+          git -C kernel-build/patentkit-0.1.2 apply "$GITHUB_WORKSPACE/release/patches/patentkit-0.1.2-to-0.2.0.patch"
+      - name: Install and test patched kernel
+        run: |
+          python -m pip install -e "./kernel-build/patentkit-0.1.2[dev]"
+          python -m pytest kernel-build/patentkit-0.1.2/regression_tests -o addopts= -q
       - name: Shell syntax check
         run: bash -n release/install.sh
       - name: Required files

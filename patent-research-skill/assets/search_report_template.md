@@ -29,7 +29,8 @@
 | Total candidates |  |
 | Patents / literature |  |
 | Evidence-level distribution | verified:  / attested:  / asserted:  |
-| relevance ≥4 (counted toward G-S-02) |  |
+| Supported per-axis judgments with both dimensions ≥4 (G-S-02) |  |
+| Judgment state distribution | unknown / needs_review / ai_assessed / human_assessed / human_confirmed |
 | Closest prior-art documents (role=near_prior_art) |  |
 
 ## 4. Gate status (verified column only)
@@ -38,7 +39,7 @@
 |---|---|---|---|
 | G-S-01 | patents ≥200 + literature ≥200 |  |  |
 | G-S-02 | ≥10 documents with relevance≥4 per axis | minimum axis:  documents |  |
-| G-S-03 | closest prior art ≥5 documents |  |  |
+| G-S-03 | ≥5 closest-prior-art documents with valid human confirmation |  |  |
 | G-S-04 | families/citations complete |  |  |
 | G-S-05 | replayability 100% |  |  |
 
@@ -76,6 +77,8 @@
 
 - [ ] Have all tools been run? List every part that was not run, item by item
 - [ ] Are there any conclusions supported only by `asserted`?
-- [ ] Did a model take part in any determination? If so, was it marked "[Model-determined]" and downgraded to `asserted`?
+- [ ] Are source grades and judgment actors reported separately, without downgrading genuine sources because AI participated?
+- [ ] Does each G-S-02 axis have problem/means quotations, locators and rationale?
+- [ ] Do G-S-03 rows have explicit human confirmation for the current fingerprint, with stale records excluded?
 
 > Any statement of an unverified conclusion must carry "⚠️ Unverified by tool checks".

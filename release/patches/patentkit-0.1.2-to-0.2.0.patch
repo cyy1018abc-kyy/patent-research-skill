@@ -1,0 +1,2683 @@
+diff --git a/MANIFEST.in b/MANIFEST.in
+--- a/MANIFEST.in
++++ b/MANIFEST.in
+@@ -1,3 +1,6 @@
+ # The sdist must also ship the workspace templates — otherwise wheels built from the sdist will likewise lack the templates for `patentkit init`.
+ # The wheel side is covered by [tool.setuptools.package-data] in pyproject.toml; both are indispensable.
+ recursive-include patentkit/templates *
++
++# 新协议的独立回归测试随源码包分发。
++recursive-include regression_tests *.py
+diff --git a/patentkit/__init__.py b/patentkit/__init__.py
+--- a/patentkit/__init__.py
++++ b/patentkit/__init__.py
+@@ -28,6 +28,6 @@
+ #:
+ #: The semantic version increments under the rules in [`plugin plan`](../docs/plugin_plan.md):
+ #: new tool/rule -> minor; bug fix / copy change -> patch; breaking interface -> major.
+-__version__ = "0.1.2"
++__version__ = "0.2.0"
+ 
+ __all__ = ["__version__"]
+diff --git a/patentkit/api.py b/patentkit/api.py
+--- a/patentkit/api.py
++++ b/patentkit/api.py
+@@ -43,6 +43,7 @@
+ from . import runs as runs_mod
+ from . import validate as validate_mod
+ from .model import load_candidates, load_logs
++from . import assessment as assessment_mod
+ from .paths import WorkspaceNotFound, find_workspace, is_workspace
+ from .registry import TerminologyError, load_registry
+ 
+@@ -71,6 +72,9 @@
+ #: Hard constraints — handed to the caller together with the search results (especially pure chat clients).
+ #: The purpose is to prevent "self-assertion masquerading as evidence", the biggest disease this repo had.
+ HARD_CONSTRAINTS: list[str] = [
++    "evidence_level describes source provenance only; AI scoring never downgrades a verified source.",
++    "G-S-02 allows supported AI assessments; G-S-03 additionally requires a current explicit human confirmation.",
++    "AI proposals cannot overwrite an existing human judgment, including an exclusion.",
+     "Without a raw/ artifact, verified may not be claimed — V009/V013 will stop it.",
+     "A gate PASS only trusts the verified column; asserted is historical record, not a basis for PASS.",
+     "When tools cannot be run (pure chat clients), the conclusion must be marked \"⚠️ Unverified by tool checks\".",
+@@ -219,7 +223,9 @@
+             "by_evidence_level": dict(sorted(by_level.items())),
+             "by_role": dict(sorted(by_role.items())),
+             "by_relevance": dict(sorted(by_relevance.items())),
+-            "with_relevance_ge4": sum(v for k, v in by_relevance.items() if k >= 4),
++            "with_relevance_ge4": sum(any(assessment_mod.eligible_axis(c, root, axis) for axis in c.tags) for c in tgt_cands),
++            "by_assessment_state": {state: sum(assessment_mod.state(c, root) == state for c in tgt_cands)
++                                    for state in ("unknown", "needs_review", "ai_assessed", "human_assessed", "human_confirmed")},
+         },
+         "logs": {
+             "total": len(tgt_logs),
+@@ -254,7 +260,7 @@
+     if cands and rel_ok == 0:
+         hints.append(
+             f"The relevance of all {len(cands)} candidates is the default value — G-S-02 counts only relevance≥4, "
+-            f"so this axis currently counts 0. Relevance needs manual review (the tool does not make that determination for you)"
++            f"so this axis currently counts 0. Add supported AI or human assessments with per-axis problem/means citations"
+         )
+ 
+     report = gates_mod.compute_all(root, term, target)
+@@ -428,6 +434,10 @@
+                 "role": c.data.get("role"),
+                 "novelty_check": c.data.get("novelty_check"),
+                 "evidence_level": c.effective_level(root).value,
++                "assessment_state": assessment_mod.state(c, root),
++                "assessment_fingerprint": assessment_mod.fingerprint(c, root),
++                "assessment": c.data.get("assessment"),
++                "human_confirmation": c.data.get("human_confirmation"),
+                 "path": c.path.relative_to(root).as_posix(),
+             }
+         )
+@@ -888,16 +898,38 @@
+ 
+ 
+ def review_apply(
+-    ws: str | Path | None = None, sheet: str = "", apply: bool = False
++    ws: str | Path | None = None, sheet: str = "", apply: bool = False, by: str = "", target: str = ""
+ ) -> dict[str, Any]:
+     """Write the determinations filled into the worksheet back to the candidate JSON (dry-run by default)."""
+     root = workspace(ws)
+     from . import review as review_mod
+ 
+     argv = ["apply", *_root_args(root), sheet]
++    if by:
++        argv += ["--by", by]
++    if target:
++        argv += ["--target", target]
+     if apply:
+         argv.append("--apply")
+     return _capture(review_mod.main, argv)
++
++
++def review_assess(ws=None, rows=None, *, actor, by, apply=False, target=""):
++    """导入具备双维原文依据的判断；AI 不覆盖人工判断。"""
++    from .assessment import assess_batch
++    return assess_batch(workspace(ws), rows, actor=actor, by=by, apply=apply, target=target)
++
++
++def review_confirm(ws=None, rows=None, *, by, apply=False, target=""):
++    """人工确认明确名单，逐篇绑定判断指纹。"""
++    from .assessment import confirm_batch
++    return confirm_batch(workspace(ws), rows, by=by, apply=apply, target=target)
++
++
++def review_migrate(ws=None, *, apply=False):
++    """迁移结构，不补造来源等级、人工身份或确认。"""
++    from .assessment import migrate_workspace
++    return migrate_workspace(workspace(ws), apply=apply)
+ 
+ 
+ def report(
+diff --git a/patentkit/assessment.py b/patentkit/assessment.py
+new file mode 100644
+--- /dev/null
++++ b/patentkit/assessment.py
+@@ -0,0 +1,349 @@
++"""独立于来源等级的判断协议：原文依据、人工确认、冲突建议和历史。"""
++
++from __future__ import annotations
++
++import copy
++import hashlib
++import json
++import os
++import re
++import tempfile
++from datetime import datetime
++from pathlib import Path
++
++from .model import Candidate, load_candidates
++from .registry import load_registry
++
++PROTOCOL_VERSION = 1
++DECISION_FIELDS = (
++    "id", "kind", "url_or_doc_number", "target", "tags", "relevance",
++    "relevance_problem", "relevance_means", "role", "novelty_check", "review_note",
++    "feature_mapping",
++)
++EDIT_FIELDS = ("relevance_problem", "relevance_means", "role", "novelty_check", "review_note", "feature_mapping")
++
++
++def _now():
++    return datetime.now().astimezone().isoformat(timespec="seconds")
++
++
++def _timestamp(value):
++    try:
++        return bool(datetime.fromisoformat(value).utcoffset() is not None)
++    except (TypeError, ValueError):
++        return False
++
++
++def _required_text(value, name):
++    if not isinstance(value, str) or not value.strip():
++        raise ValueError(f"{name}: non-empty text required")
++    return value
++
++
++def validate_data(data):
++    """写入前按发行模板校验完整记录，避免先写坏数据再等待 validate 报错。"""
++    from jsonschema import Draft7Validator
++    schema = json.loads((Path(__file__).parent / "templates/workspace/03_candidates/candidates_schema.json").read_text(encoding="utf-8"))
++    error = next(Draft7Validator(schema).iter_errors(data), None)
++    if error:
++        raise ValueError(f"candidate schema: {error.message}")
++
++
++def passage(root: Path, citation: dict) -> str:
++    """只读取工作区内明确定位的原文，引用和解释不可留空。"""
++    if not isinstance(citation, dict):
++        raise ValueError("citation must be an object")
++    ref = _required_text(citation.get("ref"), "ref")
++    location = _required_text(citation.get("locator"), "locator")
++    quote = _required_text(citation.get("quote"), "quote")
++    _required_text(citation.get("rationale"), "rationale")
++    path = (root / ref).resolve()
++    if not path.is_relative_to(root.resolve()):
++        raise ValueError("citation must stay within the workspace")
++    try:
++        text = path.read_text(encoding="utf-8")
++        if path.suffix.lower() == ".json":
++            if not location.startswith("/"):
++                raise ValueError("JSON locator must be a JSON Pointer")
++            value = json.loads(text)
++            for token in location[1:].split("/"):
++                if re.search(r"~(?![01])", token):
++                    raise ValueError("invalid JSON Pointer escape")
++                token = token.replace("~1", "/").replace("~0", "~")
++                if isinstance(value, list):
++                    if not re.fullmatch(r"0|[1-9]\d*", token):
++                        raise ValueError("invalid JSON Pointer array index")
++                    value = value[int(token)]
++                else:
++                    value = value[token]
++            if not isinstance(value, str):
++                raise ValueError("JSON Pointer must identify original text")
++            text = value
++        else:
++            match = re.fullmatch(r"L([1-9]\d*)(?:-L?([1-9]\d*))?", location)
++            if not match:
++                raise ValueError("text locator must be L1 or L1-L5")
++            first, last = int(match[1]), int(match[2] or match[1])
++            lines = text.splitlines()
++            if first > last or last > len(lines):
++                raise ValueError("text locator out of range")
++            text = "\n".join(lines[first - 1:last])
++    except (OSError, UnicodeError, KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
++        raise ValueError(f"cannot locate citation {ref}#{location}: {exc}") from exc
++    if quote not in text:
++        raise ValueError(f"quote not found at {ref}#{location}")
++    return text
++
++
++def _materials(cand: Candidate, root: Path):
++    basis = (cand.data.get("assessment") or {}).get("basis") or {}
++    if not isinstance(basis, dict):
++        raise ValueError("basis must be an axis-keyed object")
++    materials = {}
++    for axis, dimensions in basis.items():
++        if axis not in cand.tags or not axis.endswith("@" + cand.target):
++            raise ValueError(f"basis axis does not match candidate: {axis}")
++        if not isinstance(dimensions, dict) or set(dimensions) != {"problem", "means"}:
++            raise ValueError(f"both problem and means citations required: {axis}")
++        materials[axis] = {key: passage(root, dimensions[key]) for key in ("problem", "means")}
++    return materials
++
++
++def fingerprint(cand: Candidate, root: Path) -> str:
++    """仅绑定判断与引用段落，无关元数据变化不撤销确认。"""
++    record = cand.data.get("assessment") or {}
++    if not isinstance(record, dict):
++        record = {"invalid": record}
++    try:
++        materials = _materials(cand, root)
++    except (ValueError, AttributeError, TypeError) as exc:
++        materials = {"unavailable": str(exc)}
++    view = {key: cand.data.get(key) for key in DECISION_FIELDS}
++    view["assessment"] = {k: v for k, v in record.items() if k not in {"fingerprint", "at"}}
++    view["located_materials"] = materials
++    return hashlib.sha256(json.dumps(view, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
++
++
++def assessment_errors(cand: Candidate, root: Path) -> list[str]:
++    record = cand.data.get("assessment")
++    if not isinstance(record, dict) or not isinstance(record.get("actor"), str) or record.get("actor") not in {"ai", "human"}:
++        return ["assessment actor is unknown; re-assessment required"]
++    try:
++        _required_text(record.get("by"), "assessment.by")
++        if not _timestamp(record.get("at")):
++            raise ValueError("assessment.at must include timezone")
++        dims = [cand.data.get(key) for key in ("relevance_problem", "relevance_means")]
++        if any(type(v) is not int or not 1 <= v <= 5 for v in dims):
++            raise ValueError("both relevance dimensions must be integers 1..5")
++        if cand.relevance != min(dims):
++            raise ValueError("relevance must equal min(problem, means)")
++        _required_text(cand.data.get("review_note"), "review_note")
++        if not _materials(cand, root):
++            raise ValueError("at least one axis requires problem and means citations")
++        if record.get("fingerprint") != fingerprint(cand, root):
++            raise ValueError("assessment fingerprint is stale")
++    except (ValueError, TypeError, AttributeError) as exc:
++        return [str(exc)]
++    return []
++
++
++def eligible_axis(cand: Candidate, root: Path, axis: str) -> bool:
++    return (cand.relevance >= 4 and cand.data.get("role") != "excluded"
++            and not assessment_errors(cand, root)
++            and axis in cand.data["assessment"]["basis"])
++
++
++def confirmation_valid(cand: Candidate, root: Path) -> bool:
++    confirmation = cand.data.get("human_confirmation")
++    return bool(isinstance(confirmation, dict) and cand.data.get("role") == "near_prior_art"
++                and isinstance(confirmation.get("by"), str) and confirmation["by"].strip()
++                and _timestamp(confirmation.get("at")) and not assessment_errors(cand, root)
++                and confirmation.get("fingerprint") == fingerprint(cand, root))
++
++
++def human_priority(cand: Candidate) -> bool:
++    """失效的人工确认仍代表人工曾作出判断，AI 不得借失效覆盖。"""
++    record = cand.data.get("assessment") or {}
++    if not isinstance(record, dict):
++        return True
++    if record.get("actor") == "human" or cand.data.get("human_confirmation"):
++        return True
++    for event in cand.data.get("review_history") or []:
++        if not isinstance(event, dict):
++            return True
++        before = event.get("before") or {}
++        if not isinstance(before, dict):
++            return True
++        prior = before.get("assessment") or {}
++        if not isinstance(prior, dict):
++            return True
++        if prior.get("actor") == "human" or before.get("human_confirmation"):
++            return True
++    # 旧记录不推定为人工确认，但有审阅痕迹或排除标记时禁止静默覆盖。
++    return record.get("actor", "unknown") == "unknown" and bool(cand.data.get("reviewed_at") or cand.data.get("role") == "excluded")
++
++
++def state(cand: Candidate, root: Path) -> str:
++    record = cand.data.get("assessment")
++    if not isinstance(record, dict) or record.get("actor") not in ("ai", "human"):
++        return "unknown"
++    if assessment_errors(cand, root):
++        return "needs_review"
++    if confirmation_valid(cand, root):
++        return "human_confirmed"
++    return record["actor"] + "_assessed"
++
++
++def with_history(cand: Candidate, updated: dict, action: str) -> dict:
++    data = copy.deepcopy(updated)
++    before = {key: copy.deepcopy(cand.data.get(key)) for key in (*DECISION_FIELDS, "assessment", "human_confirmation", "reviewed_at")}
++    data["review_history"] = [*cand.data.get("review_history", []), {"at": _now(), "action": action, "before": before}]
++    return data
++
++
++def commit_batch(updates: list[tuple[Path, dict, dict]], apply: bool):
++    """先校验并准备所有文件；失败时回滚已替换文件，避免普通 IO 异常留下半批。"""
++    if not apply:
++        return
++    originals, staged, replaced = {}, {}, []
++    try:
++        for path, old, new in updates:
++            original = path.read_bytes()
++            if json.loads(original.decode("utf-8")) != old:
++                raise ValueError(f"concurrent change detected: {path.name}")
++            originals[path] = original
++            payload = (json.dumps(new, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
++            fd, name = tempfile.mkstemp(prefix=".assessment-", suffix=".tmp", dir=path.parent)
++            staged[path] = Path(name)
++            with os.fdopen(fd, "wb") as stream:
++                stream.write(payload)
++                stream.flush()
++                os.fsync(stream.fileno())
++        for path, tmp in staged.items():
++            os.replace(tmp, path)
++            replaced.append(path)
++    except BaseException:
++        for path in reversed(replaced):
++            path.write_bytes(originals[path])
++        raise
++    finally:
++        for tmp in staged.values():
++            tmp.unlink(missing_ok=True)
++
++
++def _batch(root, rows, target):
++    term = load_registry(root)
++    target = target or term.active_target
++    if target not in term.targets:
++        raise ValueError(f"unregistered target: {target}")
++    if not isinstance(rows, list) or not rows:
++        raise ValueError("a non-empty explicit candidate list is required")
++    candidates = load_candidates(root)
++    by_id = {c.id: c for c in candidates}
++    if len(by_id) != len(candidates):
++        raise ValueError("duplicate candidate IDs in workspace")
++    seen, selected = set(), []
++    for row in rows:
++        if not isinstance(row, dict):
++            raise ValueError("batch row must be an object")
++        cid = row.get("candidate_id")
++        if not isinstance(cid, str) or cid in seen or cid not in by_id:
++            raise ValueError(f"unknown or duplicate candidate ID: {cid}")
++        seen.add(cid)
++        cand = by_id[cid]
++        for field in ("review_history", "assessment_proposals"):
++            if field in cand.data and not isinstance(cand.data[field], list):
++                raise ValueError(f"invalid {field}: {cid}")
++        if cand.target != target:
++            raise ValueError(f"candidate belongs to another target: {cid}")
++        if row.get("expected_fingerprint") != fingerprint(cand, root):
++            raise ValueError(f"stale or missing expected_fingerprint: {cid}")
++        selected.append((cand, row))
++    return term, selected
++
++
++def assess_batch(root: Path, rows: list, *, actor: str, by: str, apply: bool = False, target: str = "") -> dict:
++    if actor not in {"ai", "human"}:
++        raise ValueError("actor must be ai or human")
++    _required_text(by, "by")
++    term, selected = _batch(root, rows, target)
++    updates, proposed = [], 0
++    for cand, row in selected:
++        allowed = {"candidate_id", "expected_fingerprint", "basis", *EDIT_FIELDS}
++        if set(row) - allowed:
++            raise ValueError(f"unknown assessment fields: {sorted(set(row) - allowed)}")
++        for key in ("relevance_problem", "relevance_means"):
++            if type(row.get(key)) is not int or not 1 <= row[key] <= 5:
++                raise ValueError(f"{key}: both dimensions required, 1..5")
++        data = copy.deepcopy(cand.data)
++        data.update({k: row[k] for k in EDIT_FIELDS if k in row})
++        if not isinstance(data.get("role"), str) or not isinstance(data.get("novelty_check"), str) or data["role"] not in term.roles or data["novelty_check"] not in term.novelty_states:
++            raise ValueError("unregistered role or novelty_check")
++        data["relevance"] = min(data["relevance_problem"], data["relevance_means"])
++        data["assessment"] = {"actor": actor, "by": by, "at": _now(), "basis": copy.deepcopy(row.get("basis"))}
++        new = Candidate(data, cand.path)
++        materials = _materials(new, root)
++        if not materials or any(axis not in term.axes_for(cand.target) for axis in materials):
++            raise ValueError("registered axis basis required")
++        data["assessment"]["materials"] = materials
++        data["assessment"]["fingerprint"] = fingerprint(new, root)
++        errors = assessment_errors(new, root)
++        if errors:
++            raise ValueError(f"{cand.id}: {'; '.join(errors)}")
++        if fingerprint(new, root) == fingerprint(cand, root):
++            continue
++        if actor == "ai" and human_priority(cand):
++            suggestion = {"at": _now(), "by": by, "changes": {k: data.get(k) for k in (*EDIT_FIELDS, "relevance")}, "assessment": data["assessment"]}
++            data = copy.deepcopy(cand.data)
++            data["assessment_proposals"] = [*data.get("assessment_proposals", []), suggestion]
++            proposed += 1
++        else:
++            data["reviewed_at"] = data["assessment"]["at"]
++            data = with_history(cand, data, "assess:" + actor)
++        validate_data(data)
++        updates.append((cand.path, cand.data, data))
++    commit_batch(updates, apply)
++    return {"ok": True, "changed": len(updates), "proposed": proposed, "written": len(updates) if apply else 0}
++
++
++def confirm_batch(root: Path, rows: list, *, by: str, apply: bool = False, target: str = "") -> dict:
++    _required_text(by, "by")
++    _, selected = _batch(root, rows, target)
++    updates = []
++    for cand, row in selected:
++        if set(row) != {"candidate_id", "expected_fingerprint"}:
++            raise ValueError("confirmation rows require only candidate_id and expected_fingerprint")
++        if cand.data.get("role") != "near_prior_art" or assessment_errors(cand, root):
++            raise ValueError(f"{cand.id}: current supported near_prior_art assessment required")
++        if confirmation_valid(cand, root) and cand.data["human_confirmation"]["by"] == by:
++            continue
++        data = copy.deepcopy(cand.data)
++        data["human_confirmation"] = {"by": by, "at": _now(), "fingerprint": fingerprint(cand, root)}
++        data = with_history(cand, data, "confirm:human")
++        validate_data(data)
++        updates.append((cand.path, cand.data, data))
++    commit_batch(updates, apply)
++    return {"ok": True, "changed": len(updates), "written": len(updates) if apply else 0}
++
++
++def schema_properties() -> dict:
++    """由内核模板提供同一份结构，迁移不复制另一套定义。"""
++    schema = json.loads((Path(__file__).parent / "templates/workspace/03_candidates/candidates_schema.json").read_text(encoding="utf-8"))
++    return {key: schema["properties"][key] for key in ("assessment", "human_confirmation", "review_history", "assessment_proposals", "feature_mapping")}
++
++
++def migrate_workspace(root: Path, *, apply: bool = False) -> dict:
++    updates = []
++    for cand in load_candidates(root):
++        if "assessment" not in cand.data:
++            data = copy.deepcopy(cand.data)
++            data["assessment"] = {"actor": "unknown", "by": "", "at": None, "basis": {}, "fingerprint": None}
++            updates.append((cand.path, cand.data, data))
++    path = root / "03_candidates/candidates_schema.json"
++    old = json.loads(path.read_text(encoding="utf-8"))
++    new = copy.deepcopy(old)
++    new.setdefault("properties", {}).update(schema_properties())
++    if new != old:
++        updates.append((path, old, new))
++    commit_batch(updates, apply)
++    return {"ok": True, "changed": len(updates), "written": len(updates) if apply else 0}
+diff --git a/patentkit/cli.py b/patentkit/cli.py
+--- a/patentkit/cli.py
++++ b/patentkit/cli.py
+@@ -1,522 +1,522 @@
+-"""Unified entry point: ``python -m patentkit <subcommand>`` or ``patentkit <subcommand>``.
+-
+-Two categories
+---------------
+-* **Pass-through** (validate/gates/migrate/index/report/ingest/bibsync/attest) —
+-  forwarded directly to each module's own `main()`; behavior identical to the historical commands.
+-* **API** (status/doctor/search-plan) — goes through `patentkit.api`,
+-  renders human-readable text by default, or structured JSON with `--json` (for scripts / MCP reuse).
+-"""
+-
+-from __future__ import annotations
+-
+-import json
+-import sys
+-
+-from . import api
+-from . import attest as attest_mod
+-from . import backfill as backfill_mod
+-from . import bibsync as bibsync_mod
+-from . import cnipa as cnipa_mod
+-from . import doi_abstract as doi_abstract_mod
+-from . import fetch_crossref as fetch_crossref_mod
+-from . import gates as gates_mod
+-from . import index as index_mod
+-from . import init as init_mod
+-from . import ingest as ingest_mod
+-from . import migrate as migrate_mod
+-from . import report as report_mod
+-from . import review as review_mod
+-from . import validate as validate_mod
+-
+-USAGE = """\
+-python -m patentkit <subcommand> [options]
+-
+-Workspace selection: status / doctor / search-plan accept --workspace <path> (--root also works)
+-
+-Workspace
+-  status        Everything at a glance: target, gates, validation, candidate distribution, next-step suggestions
+-  doctor        Self-check: whether the workspace parses, whether dependencies are complete, whether results can be computed
+-  search-plan   Fetch queries (--axis N1 [--db espacenet] [--json])
+-  init          Initialize a new workspace from a template (--target TGT-0002 --title <title>)
+-
+-Search
+-  fetch-cnipa   Fetch CNIPA publication/grant search results into raw/ + log (really goes online)
+-  fetch-crossref Fetch Crossref literature (fills in the literature side of G-S-01) into raw/ + log
+-  backfill      Backfill patent abstracts from Google Patents by publication number (incremental, resumable)
+-  backfill-doi  Backfill literature abstracts from OpenAlex / Semantic Scholar by DOI
+-
+-Validation and gates
+-  validate      Consistency validation (V001-V028); exits 1 on any error
+-  gates         G-S-01..05 three-column acceptance gates; exits 2 when not all gates PASS
+-  check         = validate --strict + gates --quiet (CI entry point)
+-
+-Data pipeline
+-  review        Manual relevance review (export worksheet / apply written-back determinations / progress view)
+-  ingest        Raw response → candidate skeleton (dry-run by default; only --apply writes to disk)
+-  bibsync       Generate missing BibTeX entries for candidates (dry-run by default)
+-  attest        Manuscript sha256 binding (--check exits 1 on drift / --apply re-binds)
+-  report        Generate the 04_comparative_analysis/runs/ report skeleton
+-  index         Generate INDEX.md (--write writes to disk)
+-  migrate       Step-1a data migration (dry-run by default; only --apply writes to disk)
+-
+-AI adapter
+-  mcp           Start the MCP service (stdio) for Cursor / Claude Code / Cline
+-
+-Examples
+-  python -m patentkit status
+-  python -m patentkit init D:\\patents\\new_project --target TGT-0002 --title "Invention title"
+-  python -m patentkit search-plan --axis N1 --db espacenet
+-  python -m patentkit fetch-cnipa --axis N1 --abstract "fuel cell and gas-liquid separation" --class H01M8
+-  python -m patentkit fetch-crossref --axis N1 --query "PEM fuel cell water management" --apply
+-  python -m patentkit backfill-doi --ids L-201,L-216
+-  python -m patentkit review export --min-relevance 4 --with-topics --out worksheet.csv
+-  python -m patentkit validate --strict
+-  python -m patentkit check
+-  python -m patentkit mcp
+-"""
+-
+-#: Pass-through subcommands → module main
+-PASSTHROUGH = {
+-    "validate": validate_mod.main,
+-    "gates": gates_mod.main,
+-    "migrate": migrate_mod.main,
+-    "index": index_mod.main,
+-    "report": report_mod.main,
+-    "ingest": ingest_mod.main,
+-    "bibsync": bibsync_mod.main,
+-    "attest": attest_mod.main,
+-    "review": review_mod.main,
+-    "backfill": backfill_mod.main,
+-    "fetch-crossref": fetch_crossref_mod.main,
+-    "backfill-doi": doi_abstract_mod.main,
+-}
+-
+-#: Subcommands with dedicated handling (not pass-through).
+-#:
+-#: ⚠️ Together with `PASSTHROUGH`, this list constitutes the **complete** set of subcommands;
+-#: `test_cli_help.py` verifies that the help text lists every one of them —
+-#: there was once a case where "fetch-crossref / backfill-doi were newly added but the help text was still old",
+-#: so users consulting `--help` had no idea those commands existed. Misleading help text is worse than none.
+-SPECIAL_COMMANDS = (
+-    "status",
+-    "doctor",
+-    "search-plan",
+-    "init",
+-    "fetch-cnipa",
+-    "check",
+-    "mcp",
+-)
+-
+-#: All available subcommands
+-ALL_COMMANDS = tuple(PASSTHROUGH) + SPECIAL_COMMANDS
+-
+-
+-# ── Rendering ─────────────────────────────────────────────────────────
+-
+-_STATUS_MARK = {"PASS": "PASS", "FAIL": "FAIL", "N/A": " N/A"}
+-
+-
+-def render_status(d: dict) -> str:
+-    lines: list[str] = []
+-    lines.append(f"Workspace  : {d['workspace']}")
+-    lines.append(f"Active target : {d['active_target']}")
+-    if d.get("target_title"):
+-        lines.append(f"           {d['target_title']}")
+-    lines.append("")
+-
+-    c = d["candidates"]
+-    lines.append(f"Candidates : {c['total']}")
+-    lines.append(f"  Evidence level : {c['by_evidence_level'] or 'none'}")
+-    lines.append(f"  Role           : {c['by_role'] or 'none'}")
+-    lines.append(f"  relevance      : {c['by_relevance'] or 'none'}")
+-    if c["total"] and c["with_relevance_ge4"] == 0:
+-        lines.append("  ⚠️ all are the default relevance — G-S-02 counts only ≥4, so this axis currently counts 0")
+-    lines.append("")
+-
+-    lg = d["logs"]
+-    lines.append(f"Search logs: {lg['total']} (live {lg['live']} / retrospective {lg['retrospective']})")
+-    lines.append("")
+-
+-    v = d["validation"]
+-    lines.append(f"Validation : error {v['errors']} / warn {v['warnings']} / total {v['total']}")
+-    if v["by_code"]:
+-        lines.append(f"  By rule    : {v['by_code']}")
+-    lines.append("")
+-
+-    lines.append("Acceptance gates:")
+-    for g in d["gates"]["gates"]:
+-        mark = _STATUS_MARK.get(g["status"], g["status"])
+-        lines.append(f"  [{mark}] {g['gate_id']}  {g['threshold']}")
+-        lines.append(f"          verified={g['values'].get('verified', '-')}")
+-    lines.append("")
+-
+-    hints = d.get("hints") or []
+-    if hints:
+-        lines.append("Next steps:")
+-        for h in hints:
+-            lines.append(f"  · {h}")
+-        lines.append("")
+-
+-    lines.append("Hard constraints:")
+-    for c2 in d.get("hard_constraints", []):
+-        lines.append(f"  · {c2}")
+-    return "\n".join(lines)
+-
+-
+-def render_doctor(d: dict) -> str:
+-    lines = [f"Self-check result: {'passed' if d['ok'] else '**problems found**'}", ""]
+-    for c in d["checks"]:
+-        mark = "OK  " if c["ok"] else "FAIL"
+-        detail = f"  {c['detail']}" if c["detail"] else ""
+-        lines.append(f"  [{mark}] {c['name']}{detail}")
+-    return "\n".join(lines)
+-
+-
+-def render_search_plan(d: dict) -> str:
+-    if not d.get("ok"):
+-        return f"Failed to fetch queries: {d.get('error')}"
+-
+-    def one(q: dict) -> list[str]:
+-        out = [
+-            f"{q['id']}  ·  {q['title_zh']} / {q['title_en']}",
+-            f"  Status : {q['status']}",
+-            f"  Claims : {q['claims'] or '-'}",
+-            f"  IPC    : {', '.join(q['ipc']) or '-'}",
+-        ]
+-        if not q["registered_axis"]:
+-            out.append(f"  Cross axis: composed of {q.get('composed_of')} → ingest tags {q.get('ingest_tags')}")
+-        if q.get("note"):
+-            out.append(f"  Note   : {q['note']}")
+-        out.append(f"  Chinese form : {q['cn'] or '-'}")
+-        out.append(f"  English form : {q['en'] or '-'}")
+-        out.append(f"  Practical form : {q['query_for_db']}  ({q['query_for_db_note']})")
+-        out.append("")
+-        return out
+-
+-    lines: list[str] = []
+-    if "queries" in d:
+-        for key in sorted(d["queries"]):
+-            lines += one(d["queries"][key])
+-    else:
+-        lines += one(d)
+-    return "\n".join(lines).rstrip()
+-
+-
+-# ── Dispatch ──────────────────────────────────────────────────────────
+-
+-
+-def _arg_value(argv: list[str], flag: str) -> str | None:
+-    if flag in argv:
+-        i = argv.index(flag)
+-        if i + 1 < len(argv):
+-            return argv[i + 1]
+-    for item in argv:
+-        if item.startswith(flag + "="):
+-            return item.split("=", 1)[1]
+-    return None
+-
+-
+-def _ws_arg(argv: list[str]) -> str | None:
+-    """Workspace argument: `--workspace` is the official name, `--root` the historical alias.
+-
+-    Both are accepted: the next steps printed by `init` use `--root`, so accepting only `--workspace`
+-    would make `--root` be **silently ignored** and fall back to the current directory — looking at
+-    data in the wrong workspace is more dangerous than an outright error.
+-    """
+-    return _arg_value(argv, "--workspace") or _arg_value(argv, "--root")
+-
+-
+-def main(argv: list[str] | None = None) -> int:
+-    argv = list(sys.argv[1:] if argv is None else argv)
+-
+-    if not argv or argv[0] in {"-h", "--help", "help"}:
+-        print(USAGE)
+-        return 0
+-
+-    command, rest = argv[0], argv[1:]
+-    as_json = "--json" in rest
+-
+-    if command == "fetch-cnipa":
+-        return _cmd_fetch_cnipa(rest)
+-
+-    # `init` must be dispatched **before workspace resolution** — it creates the workspace itself;
+-    # going through `api.*` below (which calls find_workspace internally) would report "workspace.yml not found" in an empty directory.
+-    if command == "init":
+-        return init_mod.main(rest)
+-
+-    try:
+-        if command == "status":
+-            _cmd_status(api.status(_ws_arg(rest)), as_json)
+-            return 0
+-
+-        if command == "doctor":
+-            data = api.doctor(_ws_arg(rest))
+-            print(json.dumps(data, ensure_ascii=False, indent=2) if as_json else render_doctor(data))
+-            return 0
+-
+-        if command == "search-plan":
+-            data = api.search_plan(
+-                ws=_ws_arg(rest),
+-                axis=_arg_value(rest, "--axis") or (_positional(rest) or None),
+-                db=_arg_value(rest, "--db"),
+-            )
+-            print(json.dumps(data, ensure_ascii=False, indent=2) if as_json else render_search_plan(data))
+-            return 0 if data.get("ok") else 1
+-
+-        if command == "mcp":
+-            from .mcp_server import main as mcp_main
+-
+-            return mcp_main(rest)
+-
+-    except api.WorkspaceError as exc:
+-        print(f"[FATAL] {exc}", file=sys.stderr)
+-        return 2
+-    except KeyError as exc:
+-        print(f"[FATAL] {exc}", file=sys.stderr)
+-        return 2
+-
+-    if command == "check":
+-        # validate blocks (data inconsistency must be stopped); gates do not block (a gate not passing is business state)
+-        rc = validate_mod.main([*rest, "--strict"])
+-        gate_rc = gates_mod.main([*rest, "--quiet"])
+-        return rc or gate_rc
+-
+-    handler = PASSTHROUGH.get(command)
+-    if handler is None:
+-        print(f"Unknown subcommand: {command}\n", file=sys.stderr)
+-        print(USAGE, file=sys.stderr)
+-        return 64
+-
+-    return handler(rest)
+-
+-
+-def _cmd_fetch_cnipa(argv: list[str]) -> int:
+-    """`fetch-cnipa` — fetch CNIPA search results and archive them."""
+-    import argparse
+-
+-    ap = argparse.ArgumentParser(
+-        prog="python -m patentkit fetch-cnipa",
+-        description="Fetch CNIPA publication/grant search results into raw/ + log (really goes online)",
+-    )
+-    ap.add_argument("--workspace", default=None)
+-    ap.add_argument("--axis", required=True, help="axis ID, e.g. N1 or N1@TGT-0001")
+-    ap.add_argument("--target", default="")
+-    ap.add_argument("--abstract", default="", help="abstract query; use only and/or/not, surrounded by spaces")
+-    ap.add_argument("--title", default="")
+-    ap.add_argument("--class", dest="class_code", default="", help="IPC/LOC prefix, e.g. H01M8")
+-    ap.add_argument("--inventor", default="")
+-    ap.add_argument("--applicant", action="append", default=[])
+-    ap.add_argument("--type", dest="patent_type", default="all",
+-                    help="invention | utility_model | design | all")
+-    ap.add_argument("--max-pages", type=int, default=1, help="maximum number of pages to page through (3 records per page)")
+-    ap.add_argument("--complete", action="store_true", help="page through the total number of pages reported by the site")
+-    ap.add_argument("--headless", action="store_true",
+-                    help="headless mode (headed by default — headless is almost always blocked by the WAF)")
+-    ap.add_argument("--waf-wait", type=int, default=cnipa_mod.DEFAULT_WAF_WAIT_SEC)
+-    ap.add_argument("--actor", default="")
+-    ap.add_argument("--tool", default=None, help="path to cnipa_search.py (located automatically by default)")
+-    ap.add_argument("--no-write", action="store_true", help="fetch only, do not archive")
+-    ap.add_argument(
+-        "--from-library",
+-        action="store_true",
+-        help="run the **set of sub-queries** (cnipa_batches) registered for this axis in the query library, writing one log each",
+-    )
+-    ap.add_argument(
+-        "--delay-sec",
+-        type=float,
+-        default=None,
+-        help=f"interval in seconds between adjacent queries in batch mode (default {cnipa_mod.DEFAULT_BATCH_DELAY_SEC:g})",
+-    )
+-    ap.add_argument(
+-        "--only",
+-        default=None,
+-        metavar="N[,M...]",
+-        help="run only these sub-queries (1-based), e.g. to re-run one that the WAF rejected",
+-    )
+-    ap.add_argument("--json", action="store_true")
+-    args = ap.parse_args(argv)
+-
+-    if args.from_library:
+-        return _run_cnipa_batch(args)
+-
+-    try:
+-        data = api.fetch_cnipa(
+-            ws=args.workspace,
+-            axis=args.axis,
+-            target=args.target,
+-            abstract=args.abstract,
+-            title=args.title,
+-            class_code=args.class_code,
+-            inventor=args.inventor,
+-            applicant=args.applicant,
+-            patent_type=args.patent_type,
+-            max_pages=args.max_pages,
+-            complete=args.complete,
+-            headed=not args.headless,
+-            waf_wait=args.waf_wait,
+-            actor=args.actor,
+-            tool=args.tool,
+-            write=not args.no_write,
+-        )
+-    except api.WorkspaceError as exc:
+-        print(f"[FATAL] {exc}", file=sys.stderr)
+-        return 2
+-
+-    if args.json:
+-        print(json.dumps(data, ensure_ascii=False, indent=2))
+-        return 0 if data.get("ok") else 1
+-
+-    if not data.get("ok"):
+-        print(f"[FATAL] {data.get('error')}", file=sys.stderr)
+-        return 1
+-
+-    print(f"Axis       : {data['axis']}")
+-    print(f"Query      : {data['query_text']}")
+-    print(f"Total hits : {data['hit_total']} (reported by the site)")
+-    print(f"Captured this run: {data['captured_count']} records / {data['effective_pages']} pages with data")
+-    print(f"Page attempts: {data['pages_attempted']} (self-reported by the upstream tool)")
+-    if data.get("warning"):
+-        print(f"⚠️  {data['warning']}")
+-    print(f"Complete   : {'yes' if data['complete'] else 'no — honestly recorded in the log'}")
+-    if data.get("note"):
+-        print(f"Paging     : {data['note']}")
+-    if data.get("incomplete"):
+-        print(f"Hint       : {data['incomplete']}")
+-    print()
+-    for h in data.get("hits_preview", []):
+-        print(f"  {h['pub_number']:<16} {h['publication_date'] or '':<12} {(h['title'] or '')[:52]}")
+-    if data["captured_count"] > len(data.get("hits_preview", [])):
+-        print(f"  … {data['captured_count'] - len(data['hits_preview'])} more in the raw artifact")
+-    print()
+-    if data.get("written"):
+-        print(f"Log        : {data['log']}")
+-        print(f"Raw artifact: {data['raw']}")
+-        print(f"Next step  : {data['next']}")
+-    else:
+-        print("Not archived (--no-write)")
+-    return 0
+-
+-
+-def _parse_only(value: str | None) -> list[int] | None:
+-    """Parse `--only 1,3`. Returns None for no restriction; raises ValueError on invalid format."""
+-    if not value:
+-        return None
+-    out: list[int] = []
+-    # NOTE: data literal, intentionally untranslated: the full-width comma is accepted as input
+-    # from Chinese-language users and must stay byte-identical.
+-    for chunk in value.replace("，", ",").split(","):
+-        chunk = chunk.strip()
+-        if not chunk:
+-            continue
+-        if not chunk.isdigit():
+-            raise ValueError(f"--only accepts numeric indices only, got '{chunk}'")
+-        out.append(int(chunk))
+-    return out or None
+-
+-
+-def _run_cnipa_batch(args) -> int:
+-    """`fetch-cnipa --from-library` — run the whole set of sub-queries registered for the axis."""
+-    try:
+-        plan = api.cnipa_batch_plan(ws=args.workspace, axis=args.axis)
+-    except api.WorkspaceError as exc:
+-        print(f"[FATAL] {exc}", file=sys.stderr)
+-        return 2
+-
+-    if not plan.get("ok"):
+-        print(f"[FATAL] {plan.get('error')}", file=sys.stderr)
+-        if plan.get("available"):
+-            print(f"  Available axes: {', '.join(plan['available'])}", file=sys.stderr)
+-        return 2
+-
+-    axis = plan["axis"]
+-    try:
+-        only = _parse_only(getattr(args, "only", None))
+-    except ValueError as exc:
+-        print(f"[FATAL] {exc}", file=sys.stderr)
+-        return 2
+-    if only is not None:
+-        bad = [n for n in only if not 1 <= n <= plan["count"]]
+-        if bad:
+-            print(
+-                f"[FATAL] --only index out of range: {bad} ({axis} has {plan['count']} entries)",
+-                file=sys.stderr,
+-            )
+-            return 2
+-
+-    delay = (
+-        cnipa_mod.DEFAULT_BATCH_DELAY_SEC if args.delay_sec is None else args.delay_sec
+-    )
+-    print(f"Axis       : {axis}")
+-    selected = f" (running only {only})" if only else ""
+-    print(
+-        f"Sub-queries: {len(only) if only else plan['count']}{selected}"
+-        f" (from cnipa_batches in 01_search_plan/query_library.yml)"
+-    )
+-    print(f"Interval   : {delay:g}s each — measured consecutive requests trigger the CNIPA WAF")
+-    n_run = len(only) if only else plan["count"]
+-    print(f"Estimated time: about {delay * max(0, n_run - 1) / 60:.1f} minutes + fetch time")
+-    print()
+-
+-    def progress(msg: str) -> None:
+-        print(msg, flush=True)
+-
+-    try:
+-        data = api.fetch_cnipa_batch(
+-            ws=args.workspace,
+-            axis=args.axis,
+-            target=args.target,
+-            delay_sec=delay,
+-            max_pages=args.max_pages,
+-            actor=args.actor,
+-            write=not args.no_write,
+-            only=only,
+-        )
+-    except api.WorkspaceError as exc:
+-        print(f"[FATAL] {exc}", file=sys.stderr)
+-        return 2
+-
+-    if args.json:
+-        print(json.dumps(data, ensure_ascii=False, indent=2))
+-    else:
+-        print()
+-        print("─" * 62)
+-        print(f"Planned {data['planned']} · succeeded {data['succeeded']} · failed {data['failed']}")
+-        print(f"Captured {data['captured']} records, {data['unique_docs']} after deduplication")
+-        if data.get("stopped_early"):
+-            print(f"⛔ {data['stopped_early']}")
+-        if data.get("unique_pub_numbers"):
+-            print()
+-            print("Publication numbers:")
+-            for pub in data["unique_pub_numbers"]:
+-                print(f"  {pub}")
+-        if data.get("next"):
+-            print()
+-            print(f"Next: {data['next']}")
+-
+-    return 0 if data.get("succeeded") else 1
+-
+-
+-def _cmd_status(data: dict, as_json: bool) -> None:
+-    print(json.dumps(data, ensure_ascii=False, indent=2) if as_json else render_status(data))
+-
+-
+-def _positional(argv: list[str]) -> str | None:
+-    """Return the first non-option argument (and not the value of some option)."""
+-    takes_value = {"--workspace", "--axis", "--db", "--root"}
+-    skip_next = False
+-    for item in argv:
+-        if skip_next:
+-            skip_next = False
+-            continue
+-        if item in takes_value:
+-            skip_next = True
+-            continue
+-        if item.startswith("-"):
+-            continue
+-        return item
+-    return None
+-
+-
+-if __name__ == "__main__":  # pragma: no cover
+-    raise SystemExit(main())
++"""Unified entry point: ``python -m patentkit <subcommand>`` or ``patentkit <subcommand>``.
++
++Two categories
++--------------
++* **Pass-through** (validate/gates/migrate/index/report/ingest/bibsync/attest) —
++  forwarded directly to each module's own `main()`; behavior identical to the historical commands.
++* **API** (status/doctor/search-plan) — goes through `patentkit.api`,
++  renders human-readable text by default, or structured JSON with `--json` (for scripts / MCP reuse).
++"""
++
++from __future__ import annotations
++
++import json
++import sys
++
++from . import api
++from . import attest as attest_mod
++from . import backfill as backfill_mod
++from . import bibsync as bibsync_mod
++from . import cnipa as cnipa_mod
++from . import doi_abstract as doi_abstract_mod
++from . import fetch_crossref as fetch_crossref_mod
++from . import gates as gates_mod
++from . import index as index_mod
++from . import init as init_mod
++from . import ingest as ingest_mod
++from . import migrate as migrate_mod
++from . import report as report_mod
++from . import review as review_mod
++from . import validate as validate_mod
++
++USAGE = """\
++python -m patentkit <subcommand> [options]
++
++Workspace selection: status / doctor / search-plan accept --workspace <path> (--root also works)
++
++Workspace
++  status        Everything at a glance: target, gates, validation, candidate distribution, next-step suggestions
++  doctor        Self-check: whether the workspace parses, whether dependencies are complete, whether results can be computed
++  search-plan   Fetch queries (--axis N1 [--db espacenet] [--json])
++  init          Initialize a new workspace from a template (--target TGT-0002 --title <title>)
++
++Search
++  fetch-cnipa   Fetch CNIPA publication/grant search results into raw/ + log (really goes online)
++  fetch-crossref Fetch Crossref literature (fills in the literature side of G-S-01) into raw/ + log
++  backfill      Backfill patent abstracts from Google Patents by publication number (incremental, resumable)
++  backfill-doi  Backfill literature abstracts from OpenAlex / Semantic Scholar by DOI
++
++Validation and gates
++  validate      Consistency validation (V001-V030); exits 1 on any error
++  gates         G-S-01..05 three-column acceptance gates; exits 2 when not all gates PASS
++  check         = validate --strict + gates --quiet (CI entry point)
++
++Data pipeline
++  review        Assessment and human confirmation (export / assess / confirm / migrate-assessments / progress)
++  ingest        Raw response → candidate skeleton (dry-run by default; only --apply writes to disk)
++  bibsync       Generate missing BibTeX entries for candidates (dry-run by default)
++  attest        Manuscript sha256 binding (--check exits 1 on drift / --apply re-binds)
++  report        Generate the 04_comparative_analysis/runs/ report skeleton
++  index         Generate INDEX.md (--write writes to disk)
++  migrate       Step-1a data migration (dry-run by default; only --apply writes to disk)
++
++AI adapter
++  mcp           Start the MCP service (stdio) for Cursor / Claude Code / Cline
++
++Examples
++  python -m patentkit status
++  python -m patentkit init D:\\patents\\new_project --target TGT-0002 --title "Invention title"
++  python -m patentkit search-plan --axis N1 --db espacenet
++  python -m patentkit fetch-cnipa --axis N1 --abstract "fuel cell and gas-liquid separation" --class H01M8
++  python -m patentkit fetch-crossref --axis N1 --query "PEM fuel cell water management" --apply
++  python -m patentkit backfill-doi --ids L-201,L-216
++  python -m patentkit review export --min-relevance 4 --with-topics --out worksheet.csv
++  python -m patentkit validate --strict
++  python -m patentkit check
++  python -m patentkit mcp
++"""
++
++#: Pass-through subcommands → module main
++PASSTHROUGH = {
++    "validate": validate_mod.main,
++    "gates": gates_mod.main,
++    "migrate": migrate_mod.main,
++    "index": index_mod.main,
++    "report": report_mod.main,
++    "ingest": ingest_mod.main,
++    "bibsync": bibsync_mod.main,
++    "attest": attest_mod.main,
++    "review": review_mod.main,
++    "backfill": backfill_mod.main,
++    "fetch-crossref": fetch_crossref_mod.main,
++    "backfill-doi": doi_abstract_mod.main,
++}
++
++#: Subcommands with dedicated handling (not pass-through).
++#:
++#: ⚠️ Together with `PASSTHROUGH`, this list constitutes the **complete** set of subcommands;
++#: `test_cli_help.py` verifies that the help text lists every one of them —
++#: there was once a case where "fetch-crossref / backfill-doi were newly added but the help text was still old",
++#: so users consulting `--help` had no idea those commands existed. Misleading help text is worse than none.
++SPECIAL_COMMANDS = (
++    "status",
++    "doctor",
++    "search-plan",
++    "init",
++    "fetch-cnipa",
++    "check",
++    "mcp",
++)
++
++#: All available subcommands
++ALL_COMMANDS = tuple(PASSTHROUGH) + SPECIAL_COMMANDS
++
++
++# ── Rendering ─────────────────────────────────────────────────────────
++
++_STATUS_MARK = {"PASS": "PASS", "FAIL": "FAIL", "N/A": " N/A"}
++
++
++def render_status(d: dict) -> str:
++    lines: list[str] = []
++    lines.append(f"Workspace  : {d['workspace']}")
++    lines.append(f"Active target : {d['active_target']}")
++    if d.get("target_title"):
++        lines.append(f"           {d['target_title']}")
++    lines.append("")
++
++    c = d["candidates"]
++    lines.append(f"Candidates : {c['total']}")
++    lines.append(f"  Evidence level : {c['by_evidence_level'] or 'none'}")
++    lines.append(f"  Role           : {c['by_role'] or 'none'}")
++    lines.append(f"  relevance      : {c['by_relevance'] or 'none'}")
++    if c["total"] and c["with_relevance_ge4"] == 0:
++        lines.append("  ⚠️ all are the default relevance — G-S-02 counts only ≥4, so this axis currently counts 0")
++    lines.append("")
++
++    lg = d["logs"]
++    lines.append(f"Search logs: {lg['total']} (live {lg['live']} / retrospective {lg['retrospective']})")
++    lines.append("")
++
++    v = d["validation"]
++    lines.append(f"Validation : error {v['errors']} / warn {v['warnings']} / total {v['total']}")
++    if v["by_code"]:
++        lines.append(f"  By rule    : {v['by_code']}")
++    lines.append("")
++
++    lines.append("Acceptance gates:")
++    for g in d["gates"]["gates"]:
++        mark = _STATUS_MARK.get(g["status"], g["status"])
++        lines.append(f"  [{mark}] {g['gate_id']}  {g['threshold']}")
++        lines.append(f"          verified={g['values'].get('verified', '-')}")
++    lines.append("")
++
++    hints = d.get("hints") or []
++    if hints:
++        lines.append("Next steps:")
++        for h in hints:
++            lines.append(f"  · {h}")
++        lines.append("")
++
++    lines.append("Hard constraints:")
++    for c2 in d.get("hard_constraints", []):
++        lines.append(f"  · {c2}")
++    return "\n".join(lines)
++
++
++def render_doctor(d: dict) -> str:
++    lines = [f"Self-check result: {'passed' if d['ok'] else '**problems found**'}", ""]
++    for c in d["checks"]:
++        mark = "OK  " if c["ok"] else "FAIL"
++        detail = f"  {c['detail']}" if c["detail"] else ""
++        lines.append(f"  [{mark}] {c['name']}{detail}")
++    return "\n".join(lines)
++
++
++def render_search_plan(d: dict) -> str:
++    if not d.get("ok"):
++        return f"Failed to fetch queries: {d.get('error')}"
++
++    def one(q: dict) -> list[str]:
++        out = [
++            f"{q['id']}  ·  {q['title_zh']} / {q['title_en']}",
++            f"  Status : {q['status']}",
++            f"  Claims : {q['claims'] or '-'}",
++            f"  IPC    : {', '.join(q['ipc']) or '-'}",
++        ]
++        if not q["registered_axis"]:
++            out.append(f"  Cross axis: composed of {q.get('composed_of')} → ingest tags {q.get('ingest_tags')}")
++        if q.get("note"):
++            out.append(f"  Note   : {q['note']}")
++        out.append(f"  Chinese form : {q['cn'] or '-'}")
++        out.append(f"  English form : {q['en'] or '-'}")
++        out.append(f"  Practical form : {q['query_for_db']}  ({q['query_for_db_note']})")
++        out.append("")
++        return out
++
++    lines: list[str] = []
++    if "queries" in d:
++        for key in sorted(d["queries"]):
++            lines += one(d["queries"][key])
++    else:
++        lines += one(d)
++    return "\n".join(lines).rstrip()
++
++
++# ── Dispatch ──────────────────────────────────────────────────────────
++
++
++def _arg_value(argv: list[str], flag: str) -> str | None:
++    if flag in argv:
++        i = argv.index(flag)
++        if i + 1 < len(argv):
++            return argv[i + 1]
++    for item in argv:
++        if item.startswith(flag + "="):
++            return item.split("=", 1)[1]
++    return None
++
++
++def _ws_arg(argv: list[str]) -> str | None:
++    """Workspace argument: `--workspace` is the official name, `--root` the historical alias.
++
++    Both are accepted: the next steps printed by `init` use `--root`, so accepting only `--workspace`
++    would make `--root` be **silently ignored** and fall back to the current directory — looking at
++    data in the wrong workspace is more dangerous than an outright error.
++    """
++    return _arg_value(argv, "--workspace") or _arg_value(argv, "--root")
++
++
++def main(argv: list[str] | None = None) -> int:
++    argv = list(sys.argv[1:] if argv is None else argv)
++
++    if not argv or argv[0] in {"-h", "--help", "help"}:
++        print(USAGE)
++        return 0
++
++    command, rest = argv[0], argv[1:]
++    as_json = "--json" in rest
++
++    if command == "fetch-cnipa":
++        return _cmd_fetch_cnipa(rest)
++
++    # `init` must be dispatched **before workspace resolution** — it creates the workspace itself;
++    # going through `api.*` below (which calls find_workspace internally) would report "workspace.yml not found" in an empty directory.
++    if command == "init":
++        return init_mod.main(rest)
++
++    try:
++        if command == "status":
++            _cmd_status(api.status(_ws_arg(rest)), as_json)
++            return 0
++
++        if command == "doctor":
++            data = api.doctor(_ws_arg(rest))
++            print(json.dumps(data, ensure_ascii=False, indent=2) if as_json else render_doctor(data))
++            return 0
++
++        if command == "search-plan":
++            data = api.search_plan(
++                ws=_ws_arg(rest),
++                axis=_arg_value(rest, "--axis") or (_positional(rest) or None),
++                db=_arg_value(rest, "--db"),
++            )
++            print(json.dumps(data, ensure_ascii=False, indent=2) if as_json else render_search_plan(data))
++            return 0 if data.get("ok") else 1
++
++        if command == "mcp":
++            from .mcp_server import main as mcp_main
++
++            return mcp_main(rest)
++
++    except api.WorkspaceError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++    except KeyError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++
++    if command == "check":
++        # validate blocks (data inconsistency must be stopped); gates do not block (a gate not passing is business state)
++        rc = validate_mod.main([*rest, "--strict"])
++        gate_rc = gates_mod.main([*rest, "--quiet"])
++        return rc or gate_rc
++
++    handler = PASSTHROUGH.get(command)
++    if handler is None:
++        print(f"Unknown subcommand: {command}\n", file=sys.stderr)
++        print(USAGE, file=sys.stderr)
++        return 64
++
++    return handler(rest)
++
++
++def _cmd_fetch_cnipa(argv: list[str]) -> int:
++    """`fetch-cnipa` — fetch CNIPA search results and archive them."""
++    import argparse
++
++    ap = argparse.ArgumentParser(
++        prog="python -m patentkit fetch-cnipa",
++        description="Fetch CNIPA publication/grant search results into raw/ + log (really goes online)",
++    )
++    ap.add_argument("--workspace", default=None)
++    ap.add_argument("--axis", required=True, help="axis ID, e.g. N1 or N1@TGT-0001")
++    ap.add_argument("--target", default="")
++    ap.add_argument("--abstract", default="", help="abstract query; use only and/or/not, surrounded by spaces")
++    ap.add_argument("--title", default="")
++    ap.add_argument("--class", dest="class_code", default="", help="IPC/LOC prefix, e.g. H01M8")
++    ap.add_argument("--inventor", default="")
++    ap.add_argument("--applicant", action="append", default=[])
++    ap.add_argument("--type", dest="patent_type", default="all",
++                    help="invention | utility_model | design | all")
++    ap.add_argument("--max-pages", type=int, default=1, help="maximum number of pages to page through (3 records per page)")
++    ap.add_argument("--complete", action="store_true", help="page through the total number of pages reported by the site")
++    ap.add_argument("--headless", action="store_true",
++                    help="headless mode (headed by default — headless is almost always blocked by the WAF)")
++    ap.add_argument("--waf-wait", type=int, default=cnipa_mod.DEFAULT_WAF_WAIT_SEC)
++    ap.add_argument("--actor", default="")
++    ap.add_argument("--tool", default=None, help="path to cnipa_search.py (located automatically by default)")
++    ap.add_argument("--no-write", action="store_true", help="fetch only, do not archive")
++    ap.add_argument(
++        "--from-library",
++        action="store_true",
++        help="run the **set of sub-queries** (cnipa_batches) registered for this axis in the query library, writing one log each",
++    )
++    ap.add_argument(
++        "--delay-sec",
++        type=float,
++        default=None,
++        help=f"interval in seconds between adjacent queries in batch mode (default {cnipa_mod.DEFAULT_BATCH_DELAY_SEC:g})",
++    )
++    ap.add_argument(
++        "--only",
++        default=None,
++        metavar="N[,M...]",
++        help="run only these sub-queries (1-based), e.g. to re-run one that the WAF rejected",
++    )
++    ap.add_argument("--json", action="store_true")
++    args = ap.parse_args(argv)
++
++    if args.from_library:
++        return _run_cnipa_batch(args)
++
++    try:
++        data = api.fetch_cnipa(
++            ws=args.workspace,
++            axis=args.axis,
++            target=args.target,
++            abstract=args.abstract,
++            title=args.title,
++            class_code=args.class_code,
++            inventor=args.inventor,
++            applicant=args.applicant,
++            patent_type=args.patent_type,
++            max_pages=args.max_pages,
++            complete=args.complete,
++            headed=not args.headless,
++            waf_wait=args.waf_wait,
++            actor=args.actor,
++            tool=args.tool,
++            write=not args.no_write,
++        )
++    except api.WorkspaceError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++
++    if args.json:
++        print(json.dumps(data, ensure_ascii=False, indent=2))
++        return 0 if data.get("ok") else 1
++
++    if not data.get("ok"):
++        print(f"[FATAL] {data.get('error')}", file=sys.stderr)
++        return 1
++
++    print(f"Axis       : {data['axis']}")
++    print(f"Query      : {data['query_text']}")
++    print(f"Total hits : {data['hit_total']} (reported by the site)")
++    print(f"Captured this run: {data['captured_count']} records / {data['effective_pages']} pages with data")
++    print(f"Page attempts: {data['pages_attempted']} (self-reported by the upstream tool)")
++    if data.get("warning"):
++        print(f"⚠️  {data['warning']}")
++    print(f"Complete   : {'yes' if data['complete'] else 'no — honestly recorded in the log'}")
++    if data.get("note"):
++        print(f"Paging     : {data['note']}")
++    if data.get("incomplete"):
++        print(f"Hint       : {data['incomplete']}")
++    print()
++    for h in data.get("hits_preview", []):
++        print(f"  {h['pub_number']:<16} {h['publication_date'] or '':<12} {(h['title'] or '')[:52]}")
++    if data["captured_count"] > len(data.get("hits_preview", [])):
++        print(f"  … {data['captured_count'] - len(data['hits_preview'])} more in the raw artifact")
++    print()
++    if data.get("written"):
++        print(f"Log        : {data['log']}")
++        print(f"Raw artifact: {data['raw']}")
++        print(f"Next step  : {data['next']}")
++    else:
++        print("Not archived (--no-write)")
++    return 0
++
++
++def _parse_only(value: str | None) -> list[int] | None:
++    """Parse `--only 1,3`. Returns None for no restriction; raises ValueError on invalid format."""
++    if not value:
++        return None
++    out: list[int] = []
++    # NOTE: data literal, intentionally untranslated: the full-width comma is accepted as input
++    # from Chinese-language users and must stay byte-identical.
++    for chunk in value.replace("，", ",").split(","):
++        chunk = chunk.strip()
++        if not chunk:
++            continue
++        if not chunk.isdigit():
++            raise ValueError(f"--only accepts numeric indices only, got '{chunk}'")
++        out.append(int(chunk))
++    return out or None
++
++
++def _run_cnipa_batch(args) -> int:
++    """`fetch-cnipa --from-library` — run the whole set of sub-queries registered for the axis."""
++    try:
++        plan = api.cnipa_batch_plan(ws=args.workspace, axis=args.axis)
++    except api.WorkspaceError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++
++    if not plan.get("ok"):
++        print(f"[FATAL] {plan.get('error')}", file=sys.stderr)
++        if plan.get("available"):
++            print(f"  Available axes: {', '.join(plan['available'])}", file=sys.stderr)
++        return 2
++
++    axis = plan["axis"]
++    try:
++        only = _parse_only(getattr(args, "only", None))
++    except ValueError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++    if only is not None:
++        bad = [n for n in only if not 1 <= n <= plan["count"]]
++        if bad:
++            print(
++                f"[FATAL] --only index out of range: {bad} ({axis} has {plan['count']} entries)",
++                file=sys.stderr,
++            )
++            return 2
++
++    delay = (
++        cnipa_mod.DEFAULT_BATCH_DELAY_SEC if args.delay_sec is None else args.delay_sec
++    )
++    print(f"Axis       : {axis}")
++    selected = f" (running only {only})" if only else ""
++    print(
++        f"Sub-queries: {len(only) if only else plan['count']}{selected}"
++        f" (from cnipa_batches in 01_search_plan/query_library.yml)"
++    )
++    print(f"Interval   : {delay:g}s each — measured consecutive requests trigger the CNIPA WAF")
++    n_run = len(only) if only else plan["count"]
++    print(f"Estimated time: about {delay * max(0, n_run - 1) / 60:.1f} minutes + fetch time")
++    print()
++
++    def progress(msg: str) -> None:
++        print(msg, flush=True)
++
++    try:
++        data = api.fetch_cnipa_batch(
++            ws=args.workspace,
++            axis=args.axis,
++            target=args.target,
++            delay_sec=delay,
++            max_pages=args.max_pages,
++            actor=args.actor,
++            write=not args.no_write,
++            only=only,
++        )
++    except api.WorkspaceError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++
++    if args.json:
++        print(json.dumps(data, ensure_ascii=False, indent=2))
++    else:
++        print()
++        print("─" * 62)
++        print(f"Planned {data['planned']} · succeeded {data['succeeded']} · failed {data['failed']}")
++        print(f"Captured {data['captured']} records, {data['unique_docs']} after deduplication")
++        if data.get("stopped_early"):
++            print(f"⛔ {data['stopped_early']}")
++        if data.get("unique_pub_numbers"):
++            print()
++            print("Publication numbers:")
++            for pub in data["unique_pub_numbers"]:
++                print(f"  {pub}")
++        if data.get("next"):
++            print()
++            print(f"Next: {data['next']}")
++
++    return 0 if data.get("succeeded") else 1
++
++
++def _cmd_status(data: dict, as_json: bool) -> None:
++    print(json.dumps(data, ensure_ascii=False, indent=2) if as_json else render_status(data))
++
++
++def _positional(argv: list[str]) -> str | None:
++    """Return the first non-option argument (and not the value of some option)."""
++    takes_value = {"--workspace", "--axis", "--db", "--root"}
++    skip_next = False
++    for item in argv:
++        if skip_next:
++            skip_next = False
++            continue
++        if item in takes_value:
++            skip_next = True
++            continue
++        if item.startswith("-"):
++            continue
++        return item
++    return None
++
++
++if __name__ == "__main__":  # pragma: no cover
++    raise SystemExit(main())
+diff --git a/patentkit/gates.py b/patentkit/gates.py
+--- a/patentkit/gates.py
++++ b/patentkit/gates.py
+@@ -35,6 +35,7 @@
+ from .paths import workspace_or_exit
+ from .registry import Terminology, TerminologyError, load_registry, qualify
+ from . import runs as runs_mod
++from .assessment import eligible_axis, confirmation_valid
+ 
+ LEVEL_KEYS = ("verified", "attested", "asserted")
+ LEVEL_LABELS = {
+@@ -195,7 +196,7 @@
+             # entries with role=excluded (mis-mapping / false positive / belongs to another target) do not count as a hit on any main axis
+             if c.effective_role(inferred) is Role.EXCLUDED:
+                 return False
+-            return qualified in c.tags and c.relevance >= 4
++            return qualified in c.tags and eligible_axis(c, root, qualified)
+ 
+         per_axis[short] = _count_by_level(cands, root, pred)
+ 
+@@ -217,7 +218,7 @@
+                 "asserted": f"min axis {asserted_min}",
+             },
+             status=_status_from_bool(ok, has_data),
+-            note=f"Criteria: the tag contains this target's qualified axis ID (e.g. {qualify('N1', target)}) and relevance≥4; role=excluded does not count",
++            note="Source level and supported assessment are separate: both relevance dimensions and per-axis original-text citations are required; AI assessments are allowed; excluded does not count",
+         ),
+         per_axis,
+     )
+@@ -230,7 +231,7 @@
+     cands: list[Candidate], root: Path, inferred: frozenset[str]
+ ) -> GateResult:
+     counts = _count_by_level(
+-        cands, root, lambda c: c.effective_role(inferred) is Role.NEAR_PRIOR_ART
++        cands, root, lambda c: c.effective_role(inferred) is Role.NEAR_PRIOR_ART and confirmation_valid(c, root)
+     )
+     ok = counts["verified"] >= GS03_MIN_NEAR_PRIOR
+     has_data = counts["verified"] > 0
+@@ -241,7 +242,7 @@
+         threshold=f"≥{GS03_MIN_NEAR_PRIOR} documents",
+         values=_fmt_counts(counts, " docs"),
+         status=_status_from_bool(ok, has_data),
+-        note="Criteria correction: counts role=near_prior_art, no longer counts novelty_check=blocking (see §5.3)",
++        note="Counts near_prior_art only with a current supported assessment and an explicit human confirmation bound to its fingerprint",
+     )
+ 
+ 
+diff --git a/patentkit/mcp_server.py b/patentkit/mcp_server.py
+--- a/patentkit/mcp_server.py
++++ b/patentkit/mcp_server.py
+@@ -55,7 +55,7 @@
+ 2. A gate PASS only trusts the verified column; asserted is historical record, not a basis for PASS.
+ 3. Hit count (hit_count) != number of core documents; never conflate the two.
+ 4. A query may use at most 3 AND sub-expressions; IPC is a post-filter and is not written into the main query.
+-5. Determinations the tool cannot compute (e.g. relevance, role) **must not be guessed on the user's behalf** — those are manual responsibilities.
++5. Supported AI scoring may count for G-S-02; use the review CLI/API with original-text basis. G-S-03 requires explicit human confirmation of current candidate fingerprints. Never impersonate a human reviewer or overwrite a human decision.
+ 
+ Methodology documents are under resources: patentkit://references lists them all.
+ """
+@@ -387,7 +387,7 @@
+    - for parts where tools cannot be run, mark "⚠️ Unverified by tool checks";
+    - never treat asserted numbers as existing evidence.
+ 
+-Do not determine relevance or role on the user's behalf — those are manual responsibilities.
++Report source provenance separately from judgment. Supported AI scoring is permitted for G-S-02; G-S-03 requires explicit current human confirmation. Use the review CLI/API and never impersonate a reviewer.
+ """
+ 
+ 
+diff --git a/patentkit/report.py b/patentkit/report.py
+--- a/patentkit/report.py
++++ b/patentkit/report.py
+@@ -17,6 +17,7 @@
+ from .paths import workspace_or_exit
+ from .registry import Terminology, TerminologyError, load_registry
+ from . import runs as runs_mod
++from .assessment import state as assessment_state
+ 
+ 
+ def near_prior_arts(
+@@ -61,20 +62,20 @@
+     lines.append("## 2. Near prior art (column D)")
+     lines.append("")
+     if d_cols:
+-        lines.append("| D | Candidate ID | Document number | Applicant / first author | Year | Level | novelty |")
+-        lines.append("|---|---|---|---|---|---|---|")
++        lines.append("| D | Candidate ID | Document number | Applicant / first author | Year | Source level | Judgment state | novelty |")
++        lines.append("|---|---|---|---|---|---|---|---|")
+         for i, c in enumerate(d_cols, start=1):
+             applicants = c.data.get("authors_or_applicants") or []
+             who = applicants[0] if isinstance(applicants, list) and applicants else "—"
+             lines.append(
+                 f"| **D{i}** | {c.id} | {c.doc_number} | {who} | "
+                 f"{c.data.get('year', '—')} | {c.effective_level(root).value} | "
+-                f"{c.novelty_check} |"
++                f"{assessment_state(c, root)} | {c.novelty_check} |"
+             )
+     else:
+         lines.append("_(No candidate with role=near_prior_art yet; run `tools.migrate --apply` first, or assign role manually)_")
+     lines.append("")
+-    lines.append("> Column D is generated automatically from `role=near_prior_art`. If it does not match reality, change the candidate list's `role` field.")
++    lines.append("> Column D includes role recommendations. Only rows with current human confirmation count toward G-S-03; source level and judgment state are independent.")
+     lines.append("")
+ 
+     # §3 Matrix
+diff --git a/patentkit/review.py b/patentkit/review.py
+--- a/patentkit/review.py
++++ b/patentkit/review.py
+@@ -39,6 +39,7 @@
+ from .paths import workspace_or_exit
+ from .registry import Terminology, TerminologyError, load_registry, split_axis_id
+ from . import topics
++from . import assessment
+ 
+ #: Worksheet columns. The first part is read-only; the rest (the judge fields) is filled in by humans.
+ READ_COLUMNS = [
+@@ -52,6 +53,7 @@
+     "current_relevance",
+     "current_role",
+     "current_novelty_check",
++    "expected_fingerprint",
+ ]
+ #: Columns filled in by humans.
+ #:
+@@ -153,9 +155,7 @@
+     For historical data without a backfilled reviewed_at, fall back to the old criterion, so that
+     everything does not suddenly become "unjudged".
+     """
+-    if (cand.data.get("reviewed_at") or "").strip():
+-        return True
+-    return cand.relevance != 3
++    return not assessment.assessment_errors(cand, cand.path.parent.parent)
+ 
+ 
+ # ── export ────────────────────────────────────────────────────────────
+@@ -247,6 +247,7 @@
+             "current_relevance": c.relevance,
+             "current_role": c.data.get("role", ""),
+             "current_novelty_check": c.data.get("novelty_check", ""),
++            "expected_fingerprint": assessment.fingerprint(c, c.path.parent.parent),
+             # Determination columns are left blank for humans to fill in
+             **{k: "" for k in JUDGE_COLUMNS},
+         }
+@@ -283,7 +284,7 @@
+                 row["judged"] += 1
+                 if c.relevance == 3:
+                     row["judged_as_3"] += 1
+-            if c.relevance >= 4:
++            if assessment.eligible_axis(c, root, tag):
+                 row["ge4"] += 1
+     return [{"axis": k, **v} for k, v in sorted(counts.items())]
+ 
+@@ -349,7 +350,7 @@
+ 
+ 
+ def apply_worksheet(
+-    root: Path, term: Terminology, path: Path, *, dry_run: bool = True
++    root: Path, term: Terminology, path: Path, *, dry_run: bool = True, by: str = "", target: str = ""
+ ) -> ApplyReport:
+     """Write the worksheet's determination columns back to the candidate JSON. Blank determination rows are skipped entirely.
+ 
+@@ -378,6 +379,7 @@
+ 
+     # ── First pass: validate and compute only; touch no files ──
+     pending: list[tuple[Candidate, dict[str, Any]]] = []
++    seen = set()
+ 
+     for i, row in enumerate(rows, start=2):  # the header is row 1
+         cid = (row.get("candidate_id") or "").strip()
+@@ -412,9 +414,21 @@
+         cand = by_id.get(cid)
+         if cand is None:
+             report.unknown.append(cid)
++            report.errors.append(f"unknown candidate ID: {cid}")
+             continue
+         if not cand.path.is_file():
+             report.errors.append(f"{cid}: candidate file does not exist")
++            continue
++        if cid in seen:
++            report.errors.append(f"duplicate candidate ID: {cid}")
++            continue
++        seen.add(cid)
++        if cand.target != (target or term.active_target):
++            report.errors.append(f"{cid}: candidate belongs to another target")
++            continue
++        expected = row.get("expected_fingerprint") or ""
++        if expected and expected != assessment.fingerprint(cand, root):
++            report.errors.append(f"{cid}: stale expected_fingerprint")
+             continue
+ 
+         new: dict[str, Any] = {}
+@@ -476,22 +490,31 @@
+         return report
+ 
+     report.changed = len(pending)
+-    if dry_run:
+-        return report
+-
+-    # ── Second pass: write to disk ──
++    # 先构建并校验所有完整记录，dry-run 也报告同样的结构错误。
++    updates = []
+     for cand, changed in pending:
+         data = dict(cand.data)
+         data.update(changed)
+-        # Keep key order stable: existing key order unchanged, new keys appended at the end
+-        ordered = {k: data[k] for k in cand.data}
+-        for k, v in data.items():
+-            if k not in ordered:
+-                ordered[k] = v
+-        cand.path.write_text(
+-            json.dumps(ordered, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+-        )
+-        report.written += 1
++        # 旧 CSV 不补造身份或确认；有署名时保留可复用依据，但仍需显式 confirm。
++        basis = (cand.data.get("assessment") or {}).get("basis") or {}
++        data["assessment"] = {"actor": "human" if by.strip() else "unknown", "by": by,
++                              "at": now_iso, "basis": basis, "fingerprint": None}
++        if by.strip():
++            data["assessment"]["fingerprint"] = assessment.fingerprint(Candidate(data, cand.path), root)
++        data = assessment.with_history(cand, data, "csv:human" if by.strip() else "csv:unknown")
++        try:
++            assessment.validate_data(data)
++        except ValueError as exc:
++            report.errors.append(f"{cand.id}: {exc}")
++        updates.append((cand.path, cand.data, data))
++    if report.errors:
++        report.aborted = True
++        report.changed = 0
++        return report
++    if dry_run:
++        return report
++    assessment.commit_batch(updates, True)
++    report.written = len(updates)
+ 
+     return report
+ 
+@@ -538,11 +561,23 @@
+     )
+     p_exp.add_argument("--limit", type=int, default=0)
+     p_exp.add_argument("--out", type=Path, required=True, help="output CSV path")
++    p_exp.add_argument("--format", choices=("csv", "json"), default="csv", help="JSON exports explicit candidate IDs, current fingerprints and basis placeholders")
+ 
+     p_app = sub.add_parser("apply", help="write determinations back to the candidate JSON")
+     _add_common(p_app)
+     p_app.add_argument("sheet", type=Path, help="CSV with the determinations filled in")
+     p_app.add_argument("--apply", action="store_true", help="actually write to disk (dry-run by default)")
++    p_app.add_argument("--by", default="", help="explicit human reviewer identity; no identity is inferred from legacy sheets")
++
++    for command in ("assess", "confirm", "migrate-assessments"):
++        parser = sub.add_parser(command, help="source-independent judgment protocol; dry-run by default")
++        _add_common(parser)
++        parser.add_argument("--apply", action="store_true")
++        if command != "migrate-assessments":
++            parser.add_argument("sheet", type=Path, help="UTF-8 JSON array with explicit candidate IDs and expected_fingerprint")
++            parser.add_argument("--by", required=True, help="recorded actor identity; confirm is human-only")
++        if command == "assess":
++            parser.add_argument("--actor", choices=("ai", "human"), required=True)
+ 
+     p_prog = sub.add_parser("progress", help="judged / unjudged statistics per axis")
+     _add_common(p_prog)
+@@ -556,6 +591,22 @@
+     except TerminologyError as exc:
+         print(f"[FATAL] {exc}", file=sys.stderr)
+         return 2
++
++    if args.cmd in {"assess", "confirm", "migrate-assessments"}:
++        try:
++            if args.cmd == "migrate-assessments":
++                result = assessment.migrate_workspace(root, apply=args.apply)
++            else:
++                path = args.sheet if args.sheet.is_absolute() else root / args.sheet
++                rows = json.loads(path.read_text(encoding="utf-8"))
++                func = assessment.assess_batch if args.cmd == "assess" else assessment.confirm_batch
++                extra = {"actor": args.actor} if args.cmd == "assess" else {}
++                result = func(root, rows, by=args.by, target=args.target, apply=args.apply, **extra)
++            print(json.dumps(result, ensure_ascii=False))
++            return 0
++        except (ValueError, OSError) as exc:
++            print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False))
++            return 1
+ 
+     if args.cmd == "export":
+         harvested = harvest_abstracts(root)
+@@ -589,6 +640,15 @@
+                 )
+             )
+         out = args.out if args.out.is_absolute() else (root / args.out)
++        if args.format == "json":
++            rows = [{"candidate_id": c.id, "expected_fingerprint": assessment.fingerprint(c, root),
++                     "relevance_problem": None, "relevance_means": None,
++                     "role": c.data.get("role", "pool"), "novelty_check": c.data.get("novelty_check", "untouched"),
++                     "review_note": "", "basis": {}} for c in cands]
++            out.parent.mkdir(parents=True, exist_ok=True)
++            out.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
++            print(f"JSON assessment worksheet written: {out}")
++            return 0
+         write_worksheet(
+             cands,
+             harvested,
+@@ -625,7 +685,7 @@
+ 
+     if args.cmd == "apply":
+         sheet = args.sheet if args.sheet.is_absolute() else (root / args.sheet)
+-        rep = apply_worksheet(root, term, sheet, dry_run=not args.apply)
++        rep = apply_worksheet(root, term, sheet, dry_run=not args.apply, by=args.by, target=args.target)
+         print(f"Worksheet: {args.sheet}")
+         if rep.encoding:
+             note = (
+@@ -674,8 +734,8 @@
+                 f"{r['total'] - r['judged']:>9}{r['ge4']:>6}"
+             )
+         print()
+-        print("\"Judged\" is determined by reviewed_at — so \"manually scored 3\" and \"not judged\" are no longer conflated.")
+-        print("For old data lacking reviewed_at, counting falls back to relevance!=3 (this shows up as gaps in the \"of 3\" column).")
++        print("Judged requires a current supported assessment with a known actor; legacy scores alone do not qualify.")
++        print("The ≥4 column uses the same eligibility rule as G-S-02; source evidence levels are shown by gates.")
+         print("Export the unjudged ones: python -m patentkit review export --unreviewed --with-abstract ...")
+         return 0
+ 
+diff --git a/patentkit/templates/workspace/00_methodology/glossary.yml b/patentkit/templates/workspace/00_methodology/glossary.yml
+--- a/patentkit/templates/workspace/00_methodology/glossary.yml
++++ b/patentkit/templates/workspace/00_methodology/glossary.yml
+@@ -84,10 +84,10 @@
+ relevance_rules:
+   - 'The two dimensions must be scored separately; a single composite score alone is not allowed'
+   - 'If the technical problem differs, similar means still do not constitute a comparison (min rule)'
+-  - 'Models may suggest a ranking, but a human must make the call'
++  - 'Supported AI assessments may count for G-S-02; G-S-03 requires current explicit human confirmation'
+   - 'Default relevance=3 on entry; once judged, reviewed_at must be written'
+-  - 'Never determine relevance on behalf of others'
+-  - 'A single-dimension determination (only one dimension filled) is handled as that dimension and noted in review_note'
++  - 'Record actor and per-axis problem/means original-text citations; AI proposals never overwrite human decisions'
++  - 'A single-dimension or unknown-origin judgment does not count toward G-S-02/G-S-03'
+ 
+ # ── Evidence levels ───────────────────────────────────────────────────
+ evidence_levels:
+@@ -101,7 +101,7 @@
+     counts_for_pass: false
+   asserted:
+     label: Self-asserted
+-    description: 'Pure self-assertion (human-written / model-written / memory); does not constitute a PASS basis'
++    description: 'Unverified source provenance; judgment actor is recorded separately and never changes the source grade'
+     counts_for_pass: false
+ 
+ # ── Database aliases (used by ingest) ─────────────────────────────────
+diff --git a/patentkit/templates/workspace/03_candidates/candidates_schema.json b/patentkit/templates/workspace/03_candidates/candidates_schema.json
+--- a/patentkit/templates/workspace/03_candidates/candidates_schema.json
++++ b/patentkit/templates/workspace/03_candidates/candidates_schema.json
+@@ -128,7 +128,7 @@
+         "attested",
+         "asserted"
+       ],
+-      "description": "Evidence level; definitions are in 00_methodology/glossary.yml"
++      "description": "Source provenance only; assessment and human confirmation are independent."
+     },
+     "evidence_ref": {
+       "type": [
+@@ -210,6 +210,87 @@
+       "minimum": 1,
+       "maximum": 5,
+       "description": "The **technical means dimension** of relevance (manually scored 1–5). Score the two dimensions separately and then take the min — a differing technical problem cannot be rescued by similar means."
++    },
++    "assessment": {
++      "type": "object",
++      "required": [
++        "actor",
++        "by",
++        "at",
++        "basis",
++        "fingerprint"
++      ],
++      "properties": {
++        "actor": {
++          "enum": [
++            "ai",
++            "human",
++            "unknown"
++          ]
++        },
++        "by": {
++          "type": "string"
++        },
++        "at": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "basis": {
++          "type": "object"
++        },
++        "materials": {
++          "type": "object"
++        },
++        "fingerprint": {
++          "type": [
++            "string",
++            "null"
++          ]
++        }
++      },
++      "additionalProperties": false
++    },
++    "human_confirmation": {
++      "type": [
++        "object",
++        "null"
++      ],
++      "required": [
++        "by",
++        "at",
++        "fingerprint"
++      ],
++      "properties": {
++        "by": {
++          "type": "string",
++          "minLength": 1
++        },
++        "at": {
++          "type": "string"
++        },
++        "fingerprint": {
++          "type": "string",
++          "pattern": "^[a-f0-9]{64}$"
++        }
++      },
++      "additionalProperties": false
++    },
++    "review_history": {
++      "type": "array",
++      "items": {
++        "type": "object"
++      }
++    },
++    "assessment_proposals": {
++      "type": "array",
++      "items": {
++        "type": "object"
++      }
++    },
++    "feature_mapping": {
++      "type": "object"
+     }
+   },
+   "additionalProperties": false
+diff --git a/patentkit/validate.py b/patentkit/validate.py
+--- a/patentkit/validate.py
++++ b/patentkit/validate.py
+@@ -51,6 +51,7 @@
+ from . import runs as runs_mod
+ from .model import Candidate, Finding, SearchLog, load_candidates, load_logs, read_json, resolve_ref
+ from .paths import workspace_or_exit
++from .assessment import assessment_errors, confirmation_valid
+ from .registry import (
+     BARE_AXIS_RE,
+     Terminology,
+@@ -790,6 +791,23 @@
+ # ── Entry points ─────────────────────────────────────────────────────
+ 
+ 
++def check_assessments(candidates: list[Candidate], root: Path) -> list[Finding]:
++    """V029：缺失/无效判断；V030：人工确认对应的实质内容已变化。"""
++    findings = []
++    for cand in candidates:
++        record = cand.data.get("assessment")
++        if record is not None and not isinstance(record, dict):
++            findings.append(Finding("error", "V029", cand.path, "assessment must be an object"))
++        elif isinstance(record, dict) and record.get("actor") in ("ai", "human"):
++            for error in assessment_errors(cand, root):
++                findings.append(Finding("error", "V029", cand.path, error))
++        elif cand.relevance >= 4 or cand.data.get("role") == "near_prior_art" or cand.data.get("reviewed_at"):
++            findings.append(Finding("warn", "V029", cand.path, "Judgment origin unknown; re-assess without changing source evidence_level"))
++        if cand.data.get("human_confirmation") and not confirmation_valid(cand, root):
++            findings.append(Finding("warn", "V030", cand.path, "Human confirmation is stale or unsupported; excluded from G-S-03 until reconfirmed"))
++    return findings
++
++
+ def validate_all(
+     root: Path,
+     term: Terminology | None = None,
+@@ -810,6 +828,7 @@
+     findings += check_schema(root)
+     findings += check_ids(candidates)
+     findings += check_evidence(candidates, root)
++    findings += check_assessments(candidates, root)
+     findings += check_source_logs(candidates)
+     findings += check_stray_logs(root)
+     findings += check_bibtex(root, candidates)
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -1,155 +1,164 @@
+-# Patent Research, Drafting & Editing
+-
+-> An integrated workspace + toolchain for patent **prior-art search / novelty self-check / search evidence chain / drafting assistance**.
+-> Three deliverables: the **skill package** (for AI clients), the **`patentkit` core** (pip package), and the **workspace data** (private, local).
+-
+-**Current versions**: skill package [`skill-v2.3.0`](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/skill-v2.3.0) ·
+-core [`patentkit-v0.1.1`](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/patentkit-v0.1.1)
+-(see [`CHANGELOG.md`](CHANGELOG.md) for changes)
+-
+-## Quick start (pick the row for your role)
+-
+-| I want to… | Start here |
+-|---|---|
+-| **Use the skill for patent research / self-checks** (Claude Code / Codex CLI / Codex desktop) | Download the [skill package release](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/skill-v2.3.0) → install per [`patent-research-skill/README.md`](patent-research-skill/README.md) |
+-| **Develop / extend the core** | `pip install -e ".[mcp,dev]"` → `python -m pytest` → [`patentkit/`](patentkit/) |
+-| **Work in this workspace** (search / comparison / gates / delivery) | `cd` to the repo root (where `workspace.yml` lives) → follow [`docs/operations_manual.md`](docs/operations_manual.md) |
+-| **Do client adaptation / cut releases** | [`release/README.md`](release/README.md), [`cross_client_tests/README.md`](cross_client_tests/README.md) |
+-
+-> The workspace is located by **walking up from the current directory** to find `workspace.yml`; run it elsewhere and it reports "workspace not found".
+-> To use it from any directory: `$env:PATENTKIT_WORKSPACE = "<repo-root>"` (or specify `--root` for a single run).
+-
+-## Repository layout
+-
+-```
+-├── README.md                 This file: entry point / quick start / layout
+-├── CHANGELOG.md              Version changes for both release artifacts (skill package / core)
+-├── workspace.yml             ★ Workspace marker (read by `patentkit` to locate the workspace)
+-├── INDEX.md                  Workspace content index (generated by patentkit index --write)
+-├── pyproject.toml            ★ pip package definition (patentkit)
+-├── patentkit/                ★ Core: validation / gates / ingest / reports / MCP adapter
+-├── patent-research-skill/    ★ Independently distributed skill package (SKILL.md + references + scripts + assets)
+-├── release/                  Release sources (install scripts + release notes under notes/) and release process
+-├── tools/                    Build / snapshot / release helper scripts
+-├── tests/                    Rule regression tests (pytest; all green is the bar)
+-├── docs/                     ★ Project documentation
+-│   ├── operations_manual.md           From zero to delivery (commands + checkpoints + troubleshooting)
+-│   ├── roadmap.md             Current roadmap: Skill-first P0–P4 (MCP frozen)
+-│   ├── delivery_summary.md           Evidence-chain snapshot (generated by tools/snapshot.py)
+-│   ├── release_gates_todo.md      Release gate tracking (✅ closed)
+-│   ├── upgrade_plan.md         Historical baseline: 2026-10-15 diagnosis and implementation record
+-│   ├── plugin_plan.md         Client-adaptation architecture analysis (roadmap section superseded)
+-│   ├── public_repo_assessment.md       Risks, options, and checklist for going public (read this first)
+-│   └── tool_benchmarks/             Research notes including security scanning (SkillSpector)
+-├── cross_client_tests/             P3 test assets (cases/runner/validator/evidence)
+-├── 00_methodology/ ~ 08_polishing/     Workspace data (search plan/logs/candidates/comparison/conclusions/drafting/polishing)
+-└── .github/                  CI (install this package + full pytest + validate)
+-```
+-
+-> `00–08` is **workspace data** (includes derived content from unpublished applications), kept separate from the code / skill package;
+-> the backend data boundary is described under "Confidentiality boundary review" below.
+-
+-## Common commands
+-
+-```powershell
+-pip install -e ".[mcp,dev]"        # editable install of the core + dev dependencies
+-python -m pytest                    # rule regression tests
+-python -m patentkit check           # CI entry point: validate + gates
+-python -m patentkit status          # everything at a glance: targets/gates/validation/candidates/next steps
+-python -m patentkit validate --strict
+-python -m patentkit gates
+-
+-python tools/snapshot.py --write    # refresh docs/delivery_summary.md
+-python tools/build_skill_release.py # build the skill package zip (dist/)
+-```
+-
+-For the full command set (search, ingest, review, citations, delivery) see [`docs/operations_manual.md`](docs/operations_manual.md).
+-
+-## Version and count conventions (authoritative sources)
+-
+-> A given number may have exactly one authoritative source; other documents **reference** it instead of restating it.
+-
+-| Convention | Authoritative source | How other documents cite it |
+-|---|---|---|
+-| Core version | `__version__` in `patentkit/__init__.py`; `pyproject.toml` reads it via `dynamic = ["version"]` | Don't restate the version number |
+-| Skill package version | `metadata.version` in `patent-research-skill/SKILL.md` | Reference it; don't define another |
+-| MCP tool list | Registry in `patentkit/mcp_server.py` (currently **12 tools**) | Count/names must match the code (locked by `tests/test_docs.py`) |
+-| Test count | `python -m pytest --collect-only -q` | **Don't hard-code a specific number** |
+-| Historical baseline | [`docs/upgrade_plan.md`](docs/upgrade_plan.md) | Read as history, not as current state |
+-| Current roadmap | [`docs/roadmap.md`](docs/roadmap.md) | — |
+-| Auto snapshot | [`docs/delivery_summary.md`](docs/delivery_summary.md), generated by `python tools/snapshot.py --write` | A snapshot, not authoritative output |
+-
+-## Optional MCP adapter (P4 future option, frozen)
+-
+-`patentkit` is also an MCP server (`patentkit mcp`, stdio), exposing
+-`patent_status` / `patent_doctor` / `patent_validate` / `patent_gates` /
+-`patent_search_plan` / `patent_candidates` / `patent_references` / `patent_ingest` /
+-`patent_bibsync` / `patent_attest` / `patent_fetch_cnipa` / `patent_fetch_cnipa_batch`
+-— **12 tools** in total — plus methodology-document resources and preset prompts.
+-
+-> **Frozen**: no new tools, no scheduling; bug fixes only. Unfreezing conditions: [`docs/roadmap.md`](docs/roadmap.md) §4.5.
+-> Chat-only clients (no tools) cannot use MCP; their conclusions can only reach `asserted` and must be labeled "⚠️ Unverified by tool checks".
+-> For the architecture analysis see [`docs/plugin_plan.md`](docs/plugin_plan.md); the current direction is **Skill-first**.
+-
+-## Skill package (primary usage path)
+-
+-[`patent-research-skill/`](patent-research-skill/) is an independently distributable Agent Skill:
+-`SKILL.md` (when to trigger / execution order / hard constraints / result format) + `references/` (6 methodology documents, loaded on demand)
+-+ `scripts/` (thin wrappers for status/validate/gates/report/check) + `assets/` + `agents/openai.yaml` (desktop metadata).
+-It **contains no real project data** and can be distributed externally.
+-
+-- **Public distribution repo (skill package source + Releases)**: <https://github.com/cyy1018abc-kyy/patent-research-skill>
+-
+-- Install/upgrade/compatibility matrix: [`patent-research-skill/README.md`](patent-research-skill/README.md)
+-- Release package build and GitHub Release process: [`release/README.md`](release/README.md)
+-- Cross-client testing (Claude Code 13/13, Codex CLI 13/13; desktop spot-checks usable):
+-  [`cross_client_tests/README.md`](cross_client_tests/README.md)
+-
+-## Confidentiality boundary review (2026-10-21)
+-
+-**Conclusion: the repository must stay private; external distribution covers only code and the skill package.**
+-**Review premise: GitHub repository visibility = Private (user-confirmed, 2026-10-21).**
+-
+-| Level | Scope | Notes |
+-|---|---|---|
+-| ✅ **Already public** | `07_granted_patents/` (public-status registry only) | Both patents have been granted and published; the full texts have been moved out of the repository, leaving only the registry table and sha256 |
+-| ⚠️ **Internal · includes derived content from unpublished applications** | `00_methodology/`, `01_search_plan/`, `04_comparative_analysis/`, `05_novelty_conclusions/`, `07_drafting/`, `08_polishing/`, `docs/delivery_summary.md`, `workspace.yml` | TGT-0001 is not yet published; its title, technical main axes, feature-level summaries, parameters and conclusions all live here. Full texts are outside this repo |
+-| ✅ **Directly distributable** | `patentkit/`, `patent-research-skill/`, `release/`, `tools/` | Code and skill package contain no project data |
+-
+-**Must comply**
+-
+-1. Do not make the repository public; do not package the whole repository for external distribution (archives / network drives / cloud-sync folders all count as external distribution).
+-2. Do not upload `00–08` or `docs/delivery_summary.md` to cloud AI clients; `patentkit/` and `patent-research-skill/` are fine.
+-3. Distribute only the skill package and `patentkit/` externally; keep workspace data on the local machine.
+-4. Before delivery / external distribution, tick off each item in the "Pre-delivery/public-disclosure · confidentiality checklist" in [`docs/operations_manual.md`](docs/operations_manual.md).
+-
+-## Language policy
+-
+-- The **documentation, code, tests, configuration and the skill package are written in English.**
+-- **Workspace data is archived in its original language (Chinese) and is intentionally not translated**:
+-  search-log evidence (`02_search_logs/`), candidate records (`03_candidates/`), review worksheets
+-  (`05_novelty_conclusions/review/`), citation data (`06_citation_management/`), raw cross-client evidence
+-  (`cross_client_tests/evidence/`), and the data values of `00_methodology/glossary.yml`,
+-  `01_search_plan/query_library.yml` and `07_drafting/manuscript_registry.yml`. These are primary records;
+-  translating them would destroy the audit trail.
+-- Docs that reference **real out-of-repo local paths, manuscript file names or person names** keep those
+-  strings verbatim for the same reason.
+-- Tests keep a few Chinese input fixtures where the code under test parses Chinese data (CNIPA pages,
+-  Chinese CSV headers, CJK title normalization).
+-- `01_search_plan/` keeps **bilingual reference tables**: the `Chinese name` columns (axis names from
+-  `00_methodology/glossary.yml`) and the `Chinese query` columns / code blocks (original CNIPA query strings
+-  from `01_search_plan/query_library.yml`) stay in Chinese, because the searches must be run with the
+-  original Chinese query strings. The surrounding prose is English.
+-- Git commit messages from before 2026-10-22 are historical and are not rewritten.
+-
+-## License
+-
+-Apache License 2.0 (consistent with the licenses of the 3 skills it depends on).
+-
+-> ⚠️ Do not put simulation models / actual patent manuscripts / experimental data into this repository — keep those outside the repo.
+-
+----
+-
+-**Documentation entry points**: [Operations Manual](docs/operations_manual.md) · [Roadmap](docs/roadmap.md) · [Delivery Summary](docs/delivery_summary.md) ·
+-[Release Gates](docs/release_gates_todo.md) · [Upgrade Plan](docs/upgrade_plan.md) · [Plugin Plan](docs/plugin_plan.md) ·
+-[CHANGELOG](CHANGELOG.md)
++# Patent Research, Drafting & Editing
++
++> An integrated workspace + toolchain for patent **prior-art search / novelty self-check / search evidence chain / drafting assistance**.
++> Three deliverables: the **skill package** (for AI clients), the **`patentkit` core** (pip package), and the **workspace data** (private, local).
++
++**Current versions**: skill package [`skill-v2.3.0`](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/skill-v2.3.0) ·
++core [`patentkit-v0.1.1`](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/patentkit-v0.1.1)
++(see [`CHANGELOG.md`](CHANGELOG.md) for changes)
++
++## Quick start (pick the row for your role)
++
++| I want to… | Start here |
++|---|---|
++| **Use the skill for patent research / self-checks** (Claude Code / Codex CLI / Codex desktop) | Download the [skill package release](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/skill-v2.3.0) → install per [`patent-research-skill/README.md`](patent-research-skill/README.md) |
++| **Develop / extend the core** | `pip install -e ".[mcp,dev]"` → `python -m pytest` → [`patentkit/`](patentkit/) |
++| **Work in this workspace** (search / comparison / gates / delivery) | `cd` to the repo root (where `workspace.yml` lives) → follow [`docs/operations_manual.md`](docs/operations_manual.md) |
++| **Do client adaptation / cut releases** | [`release/README.md`](release/README.md), [`cross_client_tests/README.md`](cross_client_tests/README.md) |
++
++> The workspace is located by **walking up from the current directory** to find `workspace.yml`; run it elsewhere and it reports "workspace not found".
++> To use it from any directory: `$env:PATENTKIT_WORKSPACE = "<repo-root>"` (or specify `--root` for a single run).
++
++## Repository layout
++
++```
++├── README.md                 This file: entry point / quick start / layout
++├── CHANGELOG.md              Version changes for both release artifacts (skill package / core)
++├── workspace.yml             ★ Workspace marker (read by `patentkit` to locate the workspace)
++├── INDEX.md                  Workspace content index (generated by patentkit index --write)
++├── pyproject.toml            ★ pip package definition (patentkit)
++├── patentkit/                ★ Core: validation / gates / ingest / reports / MCP adapter
++├── patent-research-skill/    ★ Independently distributed skill package (SKILL.md + references + scripts + assets)
++├── release/                  Release sources (install scripts + release notes under notes/) and release process
++├── tools/                    Build / snapshot / release helper scripts
++├── tests/                    Rule regression tests (pytest; all green is the bar)
++├── docs/                     ★ Project documentation
++│   ├── operations_manual.md           From zero to delivery (commands + checkpoints + troubleshooting)
++│   ├── roadmap.md             Current roadmap: Skill-first P0–P4 (MCP frozen)
++│   ├── delivery_summary.md           Evidence-chain snapshot (generated by tools/snapshot.py)
++│   ├── release_gates_todo.md      Release gate tracking (✅ closed)
++│   ├── upgrade_plan.md         Historical baseline: 2026-10-15 diagnosis and implementation record
++│   ├── plugin_plan.md         Client-adaptation architecture analysis (roadmap section superseded)
++│   ├── public_repo_assessment.md       Risks, options, and checklist for going public (read this first)
++│   └── tool_benchmarks/             Research notes including security scanning (SkillSpector)
++├── cross_client_tests/             P3 test assets (cases/runner/validator/evidence)
++├── 00_methodology/ ~ 08_polishing/     Workspace data (search plan/logs/candidates/comparison/conclusions/drafting/polishing)
++└── .github/                  CI (install this package + full pytest + validate)
++```
++
++> `00–08` is **workspace data** (includes derived content from unpublished applications), kept separate from the code / skill package;
++> the backend data boundary is described under "Confidentiality boundary review" below.
++
++## Common commands
++
++```powershell
++pip install -e ".[mcp,dev]"        # editable install of the core + dev dependencies
++python -m pytest                    # rule regression tests
++python -m patentkit check           # CI entry point: validate + gates
++python -m patentkit status          # everything at a glance: targets/gates/validation/candidates/next steps
++python -m patentkit validate --strict
++python -m patentkit gates
++
++python tools/snapshot.py --write    # refresh docs/delivery_summary.md
++python tools/build_skill_release.py # build the skill package zip (dist/)
++```
++
++For the full command set (search, ingest, review, citations, delivery) see [`docs/operations_manual.md`](docs/operations_manual.md).
++
++## Version and count conventions (authoritative sources)
++
++> A given number may have exactly one authoritative source; other documents **reference** it instead of restating it.
++
++| Convention | Authoritative source | How other documents cite it |
++|---|---|---|
++| Core version | `__version__` in `patentkit/__init__.py`; `pyproject.toml` reads it via `dynamic = ["version"]` | Don't restate the version number |
++| Skill package version | `metadata.version` in `patent-research-skill/SKILL.md` | Reference it; don't define another |
++| MCP tool list | Registry in `patentkit/mcp_server.py` (currently **12 tools**) | Count/names must match the code (locked by `tests/test_docs.py`) |
++| Test count | `python -m pytest --collect-only -q` | **Don't hard-code a specific number** |
++| Historical baseline | [`docs/upgrade_plan.md`](docs/upgrade_plan.md) | Read as history, not as current state |
++| Current roadmap | [`docs/roadmap.md`](docs/roadmap.md) | — |
++| Auto snapshot | [`docs/delivery_summary.md`](docs/delivery_summary.md), generated by `python tools/snapshot.py --write` | A snapshot, not authoritative output |
++
++## Optional MCP adapter (P4 future option, frozen)
++
++`patentkit` is also an MCP server (`patentkit mcp`, stdio), exposing
++`patent_status` / `patent_doctor` / `patent_validate` / `patent_gates` /
++`patent_search_plan` / `patent_candidates` / `patent_references` / `patent_ingest` /
++`patent_bibsync` / `patent_attest` / `patent_fetch_cnipa` / `patent_fetch_cnipa_batch`
++— **12 tools** in total — plus methodology-document resources and preset prompts.
++
++> **Frozen**: no new tools, no scheduling; bug fixes only. Unfreezing conditions: [`docs/roadmap.md`](docs/roadmap.md) §4.5.
++> Chat-only clients (no tools) cannot use MCP; their conclusions can only reach `asserted` and must be labeled "⚠️ Unverified by tool checks".
++> For the architecture analysis see [`docs/plugin_plan.md`](docs/plugin_plan.md); the current direction is **Skill-first**.
++
++## Skill package (primary usage path)
++
++[`patent-research-skill/`](patent-research-skill/) is an independently distributable Agent Skill:
++`SKILL.md` (when to trigger / execution order / hard constraints / result format) + `references/` (6 methodology documents, loaded on demand)
+++ `scripts/` (thin wrappers for status/validate/gates/report/check) + `assets/` + `agents/openai.yaml` (desktop metadata).
++It **contains no real project data** and can be distributed externally.
++
++- **Public distribution repo (skill package source + Releases)**: <https://github.com/cyy1018abc-kyy/patent-research-skill>
++
++- Install/upgrade/compatibility matrix: [`patent-research-skill/README.md`](patent-research-skill/README.md)
++- Release package build and GitHub Release process: [`release/README.md`](release/README.md)
++- Cross-client testing (Claude Code 13/13, Codex CLI 13/13; desktop spot-checks usable):
++  [`cross_client_tests/README.md`](cross_client_tests/README.md)
++
++## Confidentiality boundary review (2026-10-21)
++
++**Conclusion: the repository must stay private; external distribution covers only code and the skill package.**
++**Review premise: GitHub repository visibility = Private (user-confirmed, 2026-10-21).**
++
++| Level | Scope | Notes |
++|---|---|---|
++| ✅ **Already public** | `07_granted_patents/` (public-status registry only) | Both patents have been granted and published; the full texts have been moved out of the repository, leaving only the registry table and sha256 |
++| ⚠️ **Internal · includes derived content from unpublished applications** | `00_methodology/`, `01_search_plan/`, `04_comparative_analysis/`, `05_novelty_conclusions/`, `07_drafting/`, `08_polishing/`, `docs/delivery_summary.md`, `workspace.yml` | TGT-0001 is not yet published; its title, technical main axes, feature-level summaries, parameters and conclusions all live here. Full texts are outside this repo |
++| ✅ **Directly distributable** | `patentkit/`, `patent-research-skill/`, `release/`, `tools/` | Code and skill package contain no project data |
++
++**Must comply**
++
++1. Do not make the repository public; do not package the whole repository for external distribution (archives / network drives / cloud-sync folders all count as external distribution).
++2. Do not upload `00–08` or `docs/delivery_summary.md` to cloud AI clients; `patentkit/` and `patent-research-skill/` are fine.
++3. Distribute only the skill package and `patentkit/` externally; keep workspace data on the local machine.
++4. Before delivery / external distribution, tick off each item in the "Pre-delivery/public-disclosure · confidentiality checklist" in [`docs/operations_manual.md`](docs/operations_manual.md).
++
++## Language policy
++
++- The **documentation, code, tests, configuration and the skill package are written in English.**
++- **Workspace data is archived in its original language (Chinese) and is intentionally not translated**:
++  search-log evidence (`02_search_logs/`), candidate records (`03_candidates/`), review worksheets
++  (`05_novelty_conclusions/review/`), citation data (`06_citation_management/`), raw cross-client evidence
++  (`cross_client_tests/evidence/`), and the data values of `00_methodology/glossary.yml`,
++  `01_search_plan/query_library.yml` and `07_drafting/manuscript_registry.yml`. These are primary records;
++  translating them would destroy the audit trail.
++- Docs that reference **real out-of-repo local paths, manuscript file names or person names** keep those
++  strings verbatim for the same reason.
++- Tests keep a few Chinese input fixtures where the code under test parses Chinese data (CNIPA pages,
++  Chinese CSV headers, CJK title normalization).
++- `01_search_plan/` keeps **bilingual reference tables**: the `Chinese name` columns (axis names from
++  `00_methodology/glossary.yml`) and the `Chinese query` columns / code blocks (original CNIPA query strings
++  from `01_search_plan/query_library.yml`) stay in Chinese, because the searches must be run with the
++  original Chinese query strings. The surrounding prose is English.
++- Git commit messages from before 2026-10-22 are historical and are not rewritten.
++
++## License
++
++Apache License 2.0 (consistent with the licenses of the 3 skills it depends on).
++
++> ⚠️ Do not put simulation models / actual patent manuscripts / experimental data into this repository — keep those outside the repo.
++
++---
++
++**Documentation entry points**: [Operations Manual](docs/operations_manual.md) · [Roadmap](docs/roadmap.md) · [Delivery Summary](docs/delivery_summary.md) ·
++[Release Gates](docs/release_gates_todo.md) · [Upgrade Plan](docs/upgrade_plan.md) · [Plugin Plan](docs/plugin_plan.md) ·
++[CHANGELOG](CHANGELOG.md)
++
++
++## 0.2.0: source provenance and assessment protocol 1
++
++Source evidence_level is independent of judgment. Supported AI/human assessments may count for G-S-02; G-S-03 additionally requires explicit human confirmation of current candidate fingerprints. AI conflicts are retained as proposals and never overwrite human decisions. Substantive changes invalidate confirmation; unrelated metadata corrections do not.
++
++Use `patentkit review migrate-assessments [--apply]` to extend an existing schema without inventing human provenance or upgrading sources. Use `review export --format json --out assessment.json`, then `review assess assessment.json --actor ai --by model-name [--apply]`. After actual human review, submit an explicit JSON list of candidate_id/expected_fingerprint pairs with `review confirm confirm.json --by reviewer-name [--apply]`. All commands default to dry-run.
++
++Each assessed axis requires problem and means scores, original-text quotations, locations and rationales. JSON sources use JSON Pointer; UTF-8 text uses line ranges. Run `review assess --help` and see the companion skill references/07-assessment-protocol.md for the complete data contract. V029/V030 expose missing/stale judgments and confirmation. CLI identity is a recorded assertion, not authentication of a natural person.
+diff --git a/regression_tests/test_assessment.py b/regression_tests/test_assessment.py
+new file mode 100644
+--- /dev/null
++++ b/regression_tests/test_assessment.py
+@@ -0,0 +1,353 @@
++"""来源与判断分离的独立行为回归，不依赖发布包遗漏的上游 conftest。"""
++
++import copy
++import json
++from pathlib import Path
++
++import pytest
++
++from patentkit import api
++from patentkit.init import init_workspace
++from patentkit.model import load_candidates
++
++
++def write_json(path, value):
++    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
++
++
++@pytest.fixture
++def ws(tmp_path):
++    root = tmp_path / "workspace"
++    init_workspace(root, "TGT-0002", "合成燃料电池测试")
++    raw = root / "02_search_logs/raw/source.json"
++    abstract = "解决阴极供氧滞后问题。采用负载前馈与流量反馈控制。"
++    write_json(raw, {"author": "示例作者", "abstract": abstract,
++                     "hits": [{"pub_number": "SYNTHETIC-900", "title": "合成供氧控制文献", "abstract": abstract}]})
++    log = root / "02_search_logs/cnipa_2026-01-01_N1-1_1.log.json"
++    write_json(log, {
++        "target": "TGT-0002", "db": "cnipa", "actor": "synthetic-test",
++        "capture_mode": "live", "query": {"id": "N1@TGT-0002", "axis": "N1"},
++        "result": {"hit_count": 1, "raw_export": "raw/source.json", "complete": True},
++        "timestamp": "2026-01-01T00:00:00+08:00",
++    })
++    data = {
++        "id": "P-900", "kind": "patent", "title": "合成供氧控制文献",
++        "authors_or_applicants": ["示例作者"], "year": 2026, "source_db": "CNIPA",
++        "url_or_doc_number": "SYNTHETIC-900", "relevance": 4,
++        "relevance_problem": 4, "relevance_means": 4,
++        "novelty_check": "partial", "tags": ["N1@TGT-0002"],
++        "logged_at": "2026-01-01T00:00:00+08:00",
++        "source_log": "../02_search_logs/cnipa_2026-01-01_N1-1_1.log.json",
++        "evidence_level": "verified", "evidence_ref": "../02_search_logs/raw/source.json",
++        "role": "near_prior_art", "target": "TGT-0002", "review_note": "旧记录缺少判定身份",
++        "family": [], "cited_by": [], "bibtex_key": "synthetic900",
++    }
++    write_json(root / "03_candidates/P-900.json", data)
++    (root / "06_citation_management/synthetic.bib").write_text("@misc{synthetic900,\n title={Synthetic test only}\n}\n", encoding="utf-8")
++    return root
++
++
++def candidate(root):
++    return load_candidates(root)[0]
++
++
++def gates(root):
++    return {g["gate_id"]: g for g in api.gates(root)["gates"]}
++
++
++def row(root, **changes):
++    from patentkit import assessment as a
++    cite = {"ref": "02_search_logs/raw/source.json", "locator": "/abstract"}
++    value = {
++        "candidate_id": "P-900", "expected_fingerprint": a.fingerprint(candidate(root), root),
++        "relevance_problem": 4, "relevance_means": 4, "role": "near_prior_art",
++        "novelty_check": "partial", "review_note": "同为阴极供氧动态响应问题，主要手段为前馈反馈控制。",
++        "basis": {"N1@TGT-0002": {
++            "problem": {**cite, "quote": "解决阴极供氧滞后问题", "rationale": "技术问题相同"},
++            "means": {**cite, "quote": "采用负载前馈与流量反馈控制", "rationale": "主要控制手段相同"},
++        }},
++    }
++    value.update(changes)
++    return value
++
++
++def assess(root, actor="ai", **changes):
++    from patentkit import assessment as a
++    return a.assess_batch(root, [row(root, **changes)], actor=actor, by="测试判定者", apply=True)
++
++
++def confirm(root):
++    from patentkit import assessment as a
++    return a.confirm_batch(root, [{"candidate_id": "P-900", "expected_fingerprint": a.fingerprint(candidate(root), root)}], by="测试复核人", apply=True)
++
++
++def test_legacy_role_and_scores_do_not_imply_review(ws):
++    assert gates(ws)["G-S-01"]["values"]["verified"] == "1P / 0L"
++    assert gates(ws)["G-S-02"]["values"]["verified"] == "min axis 0"
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++
++
++def test_grounded_ai_counts_axis_but_not_near_prior_art(ws):
++    assess(ws)
++    report = api.gates(ws)
++    assert report["per_axis"]["N1"]["verified"] == 1
++    assert report["per_axis"]["N2"]["verified"] == 0
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert candidate(ws).data["evidence_level"] == "verified"
++
++
++def test_human_confirmation_enables_gs03(ws):
++    assess(ws)
++    confirm(ws)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++    assert candidate(ws).data["human_confirmation"]["by"] == "测试复核人"
++
++
++@pytest.mark.parametrize("field,value", [("relevance_means", 2), ("review_note", "新的判定理由"), ("role", "pool"), ("tags", ["N2@TGT-0002"])])
++def test_substantive_edit_invalidates_confirmation(ws, field, value):
++    assess(ws)
++    confirm(ws)
++    c = candidate(ws)
++    c.data[field] = value
++    write_json(c.path, c.data)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert candidate(ws).data["human_confirmation"]
++
++
++def test_supporting_passage_change_invalidates_confirmation(ws):
++    assess(ws)
++    confirm(ws)
++    p = ws / "02_search_logs/raw/source.json"
++    data = json.loads(p.read_text(encoding="utf-8"))
++    data["abstract"] += "具体适用条件发生变化。"
++    write_json(p, data)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++
++
++def test_unrelated_metadata_edit_keeps_confirmation(ws):
++    assess(ws)
++    confirm(ws)
++    c = candidate(ws)
++    c.data["authors_or_applicants"] = ["修正作者拼写"]
++    write_json(c.path, c.data)
++    p = ws / "02_search_logs/raw/source.json"
++    data = json.loads(p.read_text(encoding="utf-8"))
++    data["author"] = "修正作者拼写"
++    write_json(p, data)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++
++
++def test_ai_cannot_overwrite_human_exclusion(ws):
++    assess(ws, actor="human", relevance_problem=2, relevance_means=2, role="excluded")
++    assess(ws)
++    c = candidate(ws)
++    assert c.data["relevance"] == 2
++    assert c.data["role"] == "excluded"
++    assert len(c.data["assessment_proposals"]) == 1
++
++
++def test_ai_cannot_overwrite_confirmed_ai_decision(ws):
++    assess(ws)
++    confirm(ws)
++    assess(ws, relevance_problem=5, relevance_means=5)
++    assert candidate(ws).data["relevance"] == 4
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++
++
++@pytest.mark.parametrize("mutation", ["missing_means", "invented_quote", "outside_workspace", "unknown_axis", "missing_score"])
++def test_bad_assessment_does_not_write(ws, mutation):
++    from patentkit import assessment as a
++    r = row(ws)
++    if mutation == "missing_means":
++        del r["basis"]["N1@TGT-0002"]["means"]
++    elif mutation == "invented_quote":
++        r["basis"]["N1@TGT-0002"]["means"]["quote"] = "虚构的控制手段"
++    elif mutation == "outside_workspace":
++        r["basis"]["N1@TGT-0002"]["means"]["ref"] = "../secret.txt"
++    elif mutation == "unknown_axis":
++        r["basis"]["N9@TGT-0002"] = r["basis"].pop("N1@TGT-0002")
++    else:
++        del r["relevance_means"]
++    before = candidate(ws).path.read_bytes()
++    with pytest.raises(ValueError):
++        a.assess_batch(ws, [r], actor="ai", by="测试", apply=True)
++    assert candidate(ws).path.read_bytes() == before
++
++
++def test_confirm_batch_is_fail_closed_and_rejects_duplicates(ws):
++    from patentkit import assessment as a
++    assess(ws)
++    good = {"candidate_id": "P-900", "expected_fingerprint": a.fingerprint(candidate(ws), ws)}
++    before = candidate(ws).path.read_bytes()
++    for rows in ([good, {"candidate_id": "P-999", "expected_fingerprint": "x"}], [good, good], [{**good, "expected_fingerprint": "old"}]):
++        with pytest.raises(ValueError):
++            a.confirm_batch(ws, rows, by="复核人", apply=True)
++        assert candidate(ws).path.read_bytes() == before
++
++
++def test_migration_preserves_source_and_does_not_invent_confirmation(ws):
++    from patentkit import assessment as a
++    before = candidate(ws).path.read_bytes()
++    a.migrate_workspace(ws)
++    assert candidate(ws).path.read_bytes() == before
++    a.migrate_workspace(ws, apply=True)
++    c = candidate(ws)
++    assert c.data["evidence_level"] == "verified"
++    assert not c.data.get("human_confirmation")
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert a.migrate_workspace(ws, apply=True)["changed"] == 0
++
++
++def test_legacy_csv_cannot_implicitly_confirm_near_prior_art(ws, tmp_path):
++    import csv
++    from patentkit import review
++    from patentkit.registry import load_registry
++    path = tmp_path / "review.csv"
++    with path.open("w", encoding="utf-8", newline="") as stream:
++        writer = csv.DictWriter(stream, fieldnames=["candidate_id", "role", "review_note"])
++        writer.writeheader()
++        writer.writerow({"candidate_id": "P-900", "role": "near_prior_art", "review_note": "CSV 人工建议"})
++    review.apply_worksheet(ws, load_registry(ws), path, dry_run=False)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++
++
++def test_schema_accepts_new_records_and_validation_reports_stale(ws):
++    from patentkit import assessment as a
++    from patentkit.validate import check_schema, check_assessments
++    a.migrate_workspace(ws, apply=True)
++    assess(ws)
++    confirm(ws)
++    assert check_schema(ws) == []
++    assert check_assessments(load_candidates(ws), ws) == []
++    c = candidate(ws)
++    c.data["review_note"] = "判断发生变化"
++    write_json(c.path, c.data)
++    assert any(f.code == "V030" for f in check_assessments(load_candidates(ws), ws))
++
++
++def test_actual_batch_confirmation_and_history(ws):
++    from patentkit import assessment as a
++    data = copy.deepcopy(candidate(ws).data)
++    data.update(id="P-901", url_or_doc_number="SYNTHETIC-901")
++    write_json(ws / "03_candidates/P-901.json", data)
++    second = row(ws)
++    second["candidate_id"] = "P-901"
++    second["expected_fingerprint"] = a.fingerprint(load_candidates(ws)[1], ws)
++    a.assess_batch(ws, [row(ws), second], actor="ai", by="测试模型", apply=True)
++    rows = [{"candidate_id": c.id, "expected_fingerprint": a.fingerprint(c, ws)} for c in load_candidates(ws)]
++    a.confirm_batch(ws, rows, by="测试复核人", apply=True)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "2 docs"
++    assert all(len(c.data["review_history"]) == 2 for c in load_candidates(ws))
++
++
++def test_asserted_source_is_not_promoted_by_human_confirmation(ws):
++    c = candidate(ws)
++    c.data["evidence_level"] = "asserted"
++    write_json(c.path, c.data)
++    assess(ws)
++    confirm(ws)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert gates(ws)["G-S-03"]["values"]["asserted"] == "1 docs"
++    assert candidate(ws).data["evidence_level"] == "asserted"
++
++
++def test_failed_write_rolls_back_all_candidates(ws, monkeypatch):
++    from patentkit import assessment as a
++    first = candidate(ws)
++    second_path = ws / "03_candidates/P-901.json"
++    second = {**first.data, "id": "P-901"}
++    write_json(second_path, second)
++    before = {p: p.read_bytes() for p in (first.path, second_path)}
++    original_replace = a.os.replace
++    calls = 0
++    def fail_second(src, dst):
++        nonlocal calls
++        calls += 1
++        if calls == 2:
++            raise OSError("模拟第二个文件替换失败")
++        return original_replace(src, dst)
++    monkeypatch.setattr(a.os, "replace", fail_second)
++    with pytest.raises(OSError):
++        a.commit_batch([(first.path, first.data, {**first.data, "role": "pool"}),
++                        (second_path, second, {**second, "role": "pool"})], True)
++    assert all(p.read_bytes() == value for p, value in before.items())
++    assert not list(first.path.parent.glob(".assessment-*.tmp"))
++
++
++def test_cross_target_and_empty_batches_do_not_write(ws):
++    from patentkit import assessment as a
++    before = candidate(ws).path.read_bytes()
++    with pytest.raises(ValueError):
++        a.assess_batch(ws, [row(ws)], actor="ai", by="模型", target="TGT-9999", apply=True)
++    with pytest.raises(ValueError):
++        a.confirm_batch(ws, [], by="复核人", apply=True)
++    assert candidate(ws).path.read_bytes() == before
++
++
++def test_text_line_citation_and_invalid_pointer(ws):
++    from patentkit import assessment as a
++    p = ws / "02_search_logs/raw/body.txt"
++    p.write_text("合成正文\n负载前馈与流量反馈控制\n", encoding="utf-8")
++    cite = {"ref": "02_search_logs/raw/body.txt", "locator": "L2", "quote": "流量反馈", "rationale": "控制手段相同"}
++    assert a.passage(ws, cite) == "负载前馈与流量反馈控制"
++    for locator in ("L0", "L4", "L2-L1"):
++        with pytest.raises(ValueError):
++            a.passage(ws, {**cite, "locator": locator})
++    with pytest.raises(ValueError):
++        a.passage(ws, {**cite, "ref": "02_search_logs/raw/source.json", "locator": "/abstract/missing"})
++
++
++def test_cli_json_export_assess_confirm_and_scripts(ws, tmp_path):
++    import subprocess
++    import sys
++    from patentkit import assessment as a
++    env = {**__import__("os").environ, "PYTHONIOENCODING": "utf-8"}
++    def run(*args):
++        return subprocess.run([sys.executable, "-m", "patentkit", "review", *args, "--root", str(ws)], capture_output=True, text=True, encoding="utf-8", env=env, timeout=30)
++    export = run("export", "--format", "json", "--out", "assessment.json")
++    assert export.returncode == 0, export.stderr
++    rows = json.loads((ws / "assessment.json").read_text(encoding="utf-8"))
++    assert rows[0]["expected_fingerprint"] == a.fingerprint(candidate(ws), ws)
++    write_json(ws / "assessment.json", [row(ws)])
++    assert run("assess", "assessment.json", "--actor", "ai", "--by", "测试模型", "--apply").returncode == 0
++    write_json(ws / "confirm.json", [{"candidate_id": "P-900", "expected_fingerprint": a.fingerprint(candidate(ws), ws)}])
++    assert run("confirm", "confirm.json", "--by", "测试复核人", "--apply").returncode == 0
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++
++
++def test_legacy_csv_edit_preserves_history_and_cannot_reconfirm(ws, tmp_path):
++    import csv
++    from patentkit import review
++    from patentkit.registry import load_registry
++    assess(ws)
++    confirm(ws)
++    path = tmp_path / "edit.csv"
++    with path.open("w", encoding="utf-8", newline="") as stream:
++        writer = csv.DictWriter(stream, fieldnames=["candidate_id", "review_note"])
++        writer.writeheader()
++        writer.writerow({"candidate_id": "P-900", "review_note": "人工修改判断依据"})
++    result = review.apply_worksheet(ws, load_registry(ws), path, dry_run=False, by="新的人工审阅者")
++    assert result.written == 1
++    assert candidate(ws).data["assessment"]["actor"] == "human"
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert len(candidate(ws).data["review_history"]) == 3
++
++
++def test_repeating_same_assessment_and_confirmation_is_idempotent(ws):
++    assess(ws)
++    confirm(ws)
++    assert confirm(ws)["changed"] == 0
++    # 相同判断的时间戳变化不属于实质变更。
++    c = candidate(ws)
++    c.data["assessment"]["at"] = "2026-10-23T12:00:00+08:00"
++    write_json(c.path, c.data)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++
++
++@pytest.mark.parametrize("changes", [{"review_note": "超" * 301}, {"feature_mapping": "错误类型"}, {"role": []}])
++def test_schema_invalid_edit_fails_before_write(ws, changes):
++    from patentkit import assessment as a
++    before = candidate(ws).path.read_bytes()
++    with pytest.raises(ValueError):
++        a.assess_batch(ws, [row(ws, **changes)], actor="ai", by="模型", apply=True)
++    assert candidate(ws).path.read_bytes() == before

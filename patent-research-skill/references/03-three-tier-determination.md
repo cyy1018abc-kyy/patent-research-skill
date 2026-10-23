@@ -26,14 +26,13 @@ different technical problem cannot be saved even if its technical means are iden
 | 2 | Related field | Only the principle is shared |
 | 1 | Unrelated | Unrelated |
 
-> **`3` is the ingest default**, meaning "not yet judged". After judging, you must write `reviewed_at`;
-> otherwise the document will be treated as unjudged.
+> **`3` is the ingest default**. A supported assessment with known actor distinguishes an actual score of 3 from an unjudged record; reviewed_at alone is not proof of review. AI may score G-S-02 with per-axis problem/means original-text support. Human confirmation is required for G-S-03.
 
-## Three `role` values
+## Four `role` values
 
 | role | Meaning | Which gate it enters |
 |---|---|---|
-| `near_prior_art` | Closest prior art that enters the D column | `G-S-03`, `G-S-04` |
+| `near_prior_art` | Closest-prior-art recommendation; requires valid human confirmation for G-S-03 | `G-S-03`, `G-S-04` |
 | `pool` | Ordinary candidate in the pool | `G-S-02` |
 | `excluded` | Excluded (wrong mapping / false hit / duplicate / belongs to another target) | Counted in no gate |
 | `family` | Family member | `G-S-04` |
@@ -87,6 +86,8 @@ is reaching it **in principle impossible**?
 
 ## Workflow
 
+Use [07-assessment-protocol.md](07-assessment-protocol.md) for supported AI/human assessments and explicit batch confirmation. The legacy CSV workflow below may update judgments, but never creates G-S-03 confirmation and unsupported records do not count.
+
 ```powershell
 # 1. Check progress
 python -m patentkit review progress
@@ -99,7 +100,7 @@ python -m patentkit review export --unreviewed --with-abstract --axis N4 --out w
 
 # 4. Dry-run first to see the impact; write only after confirming
 python -m patentkit review apply worksheet.csv
-python -m patentkit review apply worksheet.csv --apply
+python -m patentkit review apply worksheet.csv --by reviewer-name --apply
 ```
 
 > `apply` is **fail-closed**: if any row contains an invalid value, **not a single character is written**.
