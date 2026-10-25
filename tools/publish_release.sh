@@ -2,8 +2,8 @@
 # 只上传本次工作流已验收的产物；两份草稿都就绪后才公开。
 set -euo pipefail
 
-kernel=patentkit-v0.4.0
-skill=skill-v3.2.0
+kernel=patentkit-v0.4.1
+skill=skill-v3.2.1
 published=0
 for tag in "$kernel" "$skill"; do
     if draft=$(gh release view "$tag" --json isDraft --jq '.isDraft'); then
@@ -20,10 +20,10 @@ done
 [ "$published" -eq 2 ] && exit 0
 
 if [ "$(gh release view "$kernel" --json isDraft --jq '.isDraft')" = true ]; then
-    gh release upload "$kernel" dist/patentkit-0.4.0-py3-none-any.whl dist/patentkit-0.4.0.tar.gz dist/SHA256SUMS-patentkit-v0.4.0.txt --clobber
+    gh release upload "$kernel" dist/patentkit-0.4.1-py3-none-any.whl dist/patentkit-0.4.1.tar.gz dist/SHA256SUMS-patentkit-v0.4.1.txt --clobber
 fi
 if [ "$(gh release view "$skill" --json isDraft --jq '.isDraft')" = true ]; then
-    gh release upload "$skill" dist/patent-research-skill-v3.2.0.zip dist/patent-drafting-skill-v3.2.0.zip dist/INSTALL-colleagues.md dist/install-oneclick.cmd dist/SHA256SUMS-skill-v3.2.0.txt --clobber
+    gh release upload "$skill" dist/patent-research-skill-v3.2.1.zip dist/patent-drafting-skill-v3.2.1.zip dist/INSTALL-colleagues.md dist/install-oneclick.cmd dist/SHA256SUMS-skill-v3.2.1.txt --clobber
 fi
 gh release edit "$kernel" --draft=false --latest=false
 gh release edit "$skill" --draft=false --latest=true

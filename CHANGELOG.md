@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-25 · Skill 3.2.1 / kernel 0.4.1
+
+Golden end-to-end regression release (no rule or CLI changes):
+
+- **`regression_tests/golden/`** — fixed synthetic workspace + per-stage expected snapshots:
+  the pipeline (ingest → AI assess → human confirm with post-assessment fingerprints →
+  validate → gates → ledger → queryplan → report → export-docx → map → chain → one revise
+  round) is asserted stage by stage; a determinism test runs it twice and requires identical
+  normalized output. Volatile values (generated timestamps, today's date, workspace path)
+  are redacted before comparison; fixture dates are asserted data. Snapshots regenerate via
+  `GOLDEN_UPDATE=1` and must be reviewed line by line.
+- Building the golden fixture surfaced and locked real semantics: the confirmation protocol
+  rejects pre-assessment fingerprints (stale by design), V033's heuristic warn, the
+  G-S-02 min-over-all-axes N/A semantics, and ingest's `<id>-<bibtex-key>.json` file naming.
+- Skill side: paired version bump only. Kernel patch `patentkit-0.1.2-to-0.4.1.patch`
+  rebuilt via the scripted tool (golden assets enter the auditable patch).
+
+
 ## 2026-10-25 · Skill 3.2.0 / kernel 0.4.0
 
 Planning-and-revision kernel release (paired skill bump; assessment protocol unchanged):
