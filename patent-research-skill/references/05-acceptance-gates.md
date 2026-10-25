@@ -1,58 +1,61 @@
-# 05 Acceptance-gate criteria
+# 05 验收门口径
 
-> **The criteria are codified in code**: `patentkit/gates.py`, computed with `python -m patentkit gates`.
-> Each gate is computed once per evidence level; **PASS is recognized only on the strictest `verified` column** (see `04-evidence-level-system.md`).
+> **口径已代码化**：`patentkit/gates.py`，用 `python -m patentkit gates` 计算。
+> 每门按证据等级各算一列；**PASS 只认最严的 `verified` 列**（见 [04](04-evidence-level-system.md)）。
 
-## Criteria of the five gates
+## 五门口径
 
-| Gate | Criterion | Threshold |
+| 门 | 判据 | 阈值 |
 |---|---|---|
-| **G-S-01** | Stage 1 candidate list | **≥200 patents + ≥200 literature** (counted by `kind`) |
-| **G-S-02** | Stage 2 main-axis coverage | **≥10 documents per axis** with a current supported AI/human assessment, both dimensions ≥4 and per-axis original-text citations; excluded does not count |
-| **G-S-03** | Stage 3 closest prior art | **≥5 documents** with `role=near_prior_art` and a valid explicit human confirmation bound to the current judgment fingerprint |
-| **G-S-04** | Families and citations complete | For `role ∈ {near_prior_art, family}`, both `family` and `cited_by` are **arrays and non-empty** |
-| **G-S-05** | Replayability | `capture_mode=live` and `raw/` artifact exists and is non-empty **100%** |
+| **G-S-01** | 阶段 1 候选清单 | **专利 ≥200 + 文献 ≥200**（按 `kind` 计） |
+| **G-S-02** | 阶段 2 主轴覆盖 | 每轴 **≥10 篇**带当前受支持 AI/人工评估的文献：两维度 ≥4 且有每轴原文引用；excluded 不计 |
+| **G-S-03** | 阶段 3 近端对比 | **≥5 篇** `role=near_prior_art` 且有绑定当前判断指纹的有效显式人工确认 |
+| **G-S-04** | 同族与被引完整 | `role ∈ {near_prior_art, family}` 的 `family` 与 `cited_by` 均为**非空数组** |
+| **G-S-05** | 可复现性 | `capture_mode=live` 且 `raw/` 工件存在非空 **100%** |
 
-## Two historical criteria corrections (the original criteria were wrong)
+## 两次历史口径修正（原口径是错的）
 
-1. **G-S-03** originally said "count of `novelty_check = blocking` ≥ 5" — **wrong**.
-   `blocking` (whether novelty is blocked) and "the number of closest prior-art documents" are two different
-   semantics. It now counts `role=near_prior_art`, decoupling the two.
+1. **G-S-03** 原来写「`novelty_check=blocking` 计数 ≥5」—— **错**。「是否阻挡新颖性」与
+   「近端对比文件有几篇」是两个语义。现改计 `role=near_prior_art`，两者解耦。
 
-2. **G-S-04** originally hard-coded "existing patent 1, patent 2" — **not generalizable**.
-   It now references the comparison-document set of the target patent itself.
+2. **G-S-04** 原来硬编码「存在专利 1、专利 2」—— **不可泛化**。
+   现改为引用目标专利自己的对比文献集。
 
-## Buffer discipline for G-S-02
+## G-S-02 的缓冲纪律
 
-`G-S-02` is the gate most likely to "just pass and then flip red".
+`G-S-02` 是最容易「刚过就翻红」的门。
 
-| State | Meaning | Action |
+| 状态 | 含义 | 动作 |
 |---|---|---|
-| documents with ≥4 on an axis = 10 | zero buffer; one re-judgment causes FAIL | **must run supplementary searches** |
-| an axis = 11–12 | buffer +1 to +2; still fragile | recommend topping up to +3 |
-| an axis ≥ 13 | buffer +3 or more | safe |
+| 某轴 ≥4 篇数 = 10 | 零缓冲；一次重判就 FAIL | **必须补检索** |
+| 某轴 = 11–12 | 缓冲 +1~+2；仍脆弱 | 建议补到 +3 |
+| 某轴 ≥ 13 | 缓冲 +3 及以上 | 安全 |
 
-**How to top it up**: first check whether that axis's pool is 100% judged — if it is, the problem is not
-"insufficient judging" but "insufficient searching", and only new sub-queries can help.
+**怎么补**：先看该轴池子是否 100% 已判——是，则问题不是「判得不够」而是「搜得不够」，
+只有新子查询能救。
 
-## Difference between validate and gates
+## validate 与 gates 的分工
 
-| | What it governs | Consequence of failure |
+| | 管什么 | 不过的后果 |
 |---|---|---|
-| `validate` | **Data-structure consistency** (V001–V028) | any `error` → exit 1 |
-| `gates` | **Acceptance gates** (5 gates × 3 columns) | any gate not PASS → exit 2 |
+| `validate` | **数据结构一致性**（V001–V034） | 任何 `error` → exit 1 |
+| `gates` | **验收门**（5 门 × 3 列） | 任一门不 PASS → exit 2 |
 
-V029 checks assessment provenance/support; V030 reports stale human confirmation. Source provenance and judgment eligibility are independent. See [07-assessment-protocol.md](07-assessment-protocol.md).
+V029 校验判断来源/支持；V030 报告失效的人工确认。V031/V032 管数值溯源，
+V033 管附图标记（仅 warn），V034 拦「结论引用了账本外的证据编号」。
+来源等级与判断合格性相互独立，详见 [07-评估协议](07-assessment-protocol.md)。
 
-Both must pass. The CI entry point is `python -m patentkit check` (= `validate --strict` + `gates --quiet`).
+两者都要过。CI 入口是 `python -m patentkit check`（= `validate --strict` + `gates --quiet`）。
 
-## Common FAIL causes and fixes
+## 常见 FAIL 与修法
 
-| Symptom | Cause | Fix |
+| 症状 | 原因 | 修法 |
 |---|---|---|
-| G-S-01 literature side 0 | Only patent searching was done | Use `fetch-crossref` to add literature |
-| G-S-02 one axis has 9 documents | The pool is fully judged | Add sub-queries; do not re-judge |
-| G-S-03 N/A | All `role` values are `pool` | Obtain supported recommendations, then human-confirm explicit candidate IDs and current fingerprints |
-| G-S-04 N/A | Same as above (no `near_prior_art`) | Same as above |
-| G-S-05 <100% | Some logs lack `raw/` | Re-run that search |
-| `validate` reports V018 | `near_prior_art` did not enter any run | Run `patentkit report <TGT-ID>` |
+| G-S-01 文献侧 0 | 只检了专利 | 用 `fetch-crossref` 补文献 |
+| G-S-02 某轴 9 篇 | 池子已全判 | 加子查询；不要重判 |
+| G-S-03 N/A | 全是 `pool` | 先做受支持的推荐，再由人工显式确认候选 ID 与当前指纹 |
+| G-S-04 N/A | 同上（无 near_prior_art） | 同上 |
+| G-S-05 <100% | 有日志缺 `raw/` | 重跑那次检索 |
+| `validate` 报 V018 | near_prior_art 未进任何 run | 跑 `patentkit report <TGT-ID>` |
+| V031/V032 报错 | 数值声明无来源/引用无效 | 补 `07_drafting/numerical_provenance.yml` 的 A/B/C 来源 |
+| V034 报错 | 结论引用了不存在的 P-xxx | 先 `patentkit ledger` 核对，改结论或先补文献 |

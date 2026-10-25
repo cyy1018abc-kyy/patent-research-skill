@@ -1,66 +1,65 @@
-# 02 Query templates
+# 02 检索式模板
 
-## Hard rules
+## 硬规则
 
-1. **A primary query has at most 3 AND sub-queries** — with more, the hit count collapses to single digits.
-2. **IPC is a post-filter**; do not write it into the query.
-3. **Every sub-query must be narrow.** Because CNIPA returns only 3 records at a time, a broad query wastes an opportunity.
-4. **Sub-queries must differ in angle**; do not pad the count with synonymous rewrites.
+1. **主检索式最多 3 个 AND 子句** —— 再多命中数会塌缩到个位数。
+2. **IPC 是后置过滤器**，不写进检索式。
+3. **每个子查询必须窄。** CNIPA 每次只回 3 条，宽检索等于浪费机会。
+4. **子查询之间角度必须不同**；不得用同义改写凑数。
 
-## What a valid sub-query looks like
+## 合法子查询的形状
 
 ```
-{ label: short-name, abstract: keywordA and keywordB and keywordC }
+{ label: 短名, abstract: 关键词A and 关键词B and 关键词C }
 ```
 
-The three-word combination principle: **domain term × object term × means term**
+三词组合原则：**领域词 × 对象词 × 手段词**
 
-| Position | Role | Example (fuel cell / gas-liquid separation) |
+| 位置 | 作用 | 示例（燃料电池 / 气液分离） |
 |---|---|---|
-| Domain term | Restricts the technical field | fuel cell |
-| Object term | Restricts the object acted on | gas-liquid separation / water removal / discharge |
-| Means term | Restricts the implementation | capillary / staged / dual-threshold |
+| 领域词 | 限定技术领域 | 燃料电池 |
+| 对象词 | 限定作用对象 | 气液分离 / 排水 / 排放 |
+| 手段词 | 限定实现方式 | 毛细 / 分级 / 双阈值 |
 
-## Bad vs. good examples
+## 坏例与好例
 
-| Bad example | Problem | Good example |
+| 坏例 | 问题 | 好例 |
 |---|---|---|
-| `fuel cell and control` | Too broad; all 3 records are irrelevant | `oxygen makeup and fuel cell and feedforward` |
-| `fuel cell` | No object term, no means term | `dead-end and anode and fuel cell` |
-| `fuel cell and fuel cell and fuel cell` | Repeated identical words | Meaningless; delete it |
-| `(A or B) and C and D and E` | More than 3 AND terms | Split into multiple sub-queries |
+| `燃料电池 and 控制` | 太宽；3 条全是无关 | `补氧 and 燃料电池 and 前馈` |
+| `燃料电池` | 无对象词、无手段词 | `dead-end and 阳极 and 燃料电池` |
+| `燃料电池 and 燃料电池 and 燃料电池` | 同词重复 | 无意义，删掉 |
+| `(A or B) and C and D and E` | AND 超过 3 个 | 拆成多个子查询 |
 
-## How to accumulate sub-queries
+## 子查询怎么累积
 
-An axis usually needs **10–28** sub-queries to grow the pool to a judgeable size. Accumulate them by:
+一个轴通常需要 **10–28** 条子查询才能把池子养到可判规模。来源：
 
-1. **Starting from each technical feature of the axis**, writing 1–2 sub-queries for each
-2. **Starting from synonym families**: Chinese / English / abbreviations / former names
-3. **Starting from application scenarios**: automotive / aviation / aerospace / marine / stationary
-4. **Filling gaps**: turn terms that keep appearing in judged candidates into new sub-queries
+1. **从轴的每个技术特征出发**，各写 1–2 条
+2. **从同义词族出发**：中文 / 英文 / 缩写 / 旧称
+3. **从应用场景出发**：车用 / 航空 / 航天 / 船舶 / 固定式
+4. **从已判文献回填**：反复出现的词变成新子查询
 
-## Judging "is the search sufficient?"
+## 「检索够不够」怎么判
 
-Don't go by gut feeling. Look at two numbers:
+不要凭感觉，看两个数：
 
-| Metric | Meaning | Target |
+| 指标 | 含义 | 目标 |
 |---|---|---|
-| **documents with relevance≥4 per axis** | Effective coverage of that axis | ≥10, and **buffer ≥+3** |
-| **whether the pool is 100% judged** | Is there anything left to judge? | Only when fully judged can you say "the problem is not insufficient judging but insufficient searching" |
+| **每轴 relevance≥4 的文献数** | 该轴的有效覆盖 | ≥10，且**缓冲 ≥+3** |
+| **池子是否 100% 已判** | 还有得判吗 | 全判完才能说「不是判得不够，是搜得不够」 |
 
-> **Why the buffer matters**: when the threshold sits exactly at 10, one re-judgment or one exclusion flips the
-> gate red. There was once a case of "built a buffer, then had it overturned by our own review" — because the
-> buffer had been built on misjudged items.
+> **为什么要有缓冲**：阈值正好压在 10 时，一次重判或一次排除就把门顶红。
+> 出现过「建了缓冲又被自己的复核掀翻」的事故——因为缓冲建在被误判的文献上。
 
-## Relation to the tools
+## 与工具的关系
 
 ```powershell
-# Show the sub-query plan for one axis
+# 看一个轴的子查询计划
 python -m patentkit search-plan --axis N1
 
-# Run only the newly added sub-queries (existing log names will not collide)
+# 只跑新增的子查询（历史日志名不冲突）
 python -m patentkit fetch-cnipa --axis N1 --from-library --only 18,19,20
 ```
 
-Sub-queries are registered under `cnipa_batches` in `01_search_plan/query_library.yml`;
-**append them at the end and never renumber the existing entries** — otherwise historical logs will not match.
+子查询注册在 `01_search_plan/query_library.yml` 的 `cnipa_batches` 下；
+**只在末尾追加，永不重排已有编号** —— 否则历史日志对不上号。

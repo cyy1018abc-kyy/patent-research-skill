@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "skill": "patent-research",
+  "skill_version": "2.5.0",
+  "note": "触发/边界/拒绝评测集。CI 用 validate_evals.py 做结构与覆盖校验（确定性）；行为评测按 README 人工过一遍。",
+  "cases": [
+    {
+      "id": "T1",
+      "category": "trigger",
+      "input": "帮我跑一遍这个工作区的新颖性核查",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "新颖性"
+        ],
+        "behavior": "按 SKILL 执行顺序走 0-4，结果用「结果格式」报告，门禁引 verified 列实际数值"
+      }
+    },
+    {
+      "id": "T2",
+      "category": "trigger",
+      "input": "N1 轴的检索式是什么？再补几条子查询",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "N1 轴检索式",
+          "补检索"
+        ],
+        "behavior": "读 references/02 + search-plan --axis N1；子查询只追加不重排"
+      }
+    },
+    {
+      "id": "T3",
+      "category": "trigger",
+      "input": "五项验收门现在是不是都 PASS 了？",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "验收门是否 PASS"
+        ],
+        "behavior": "跑 gates（verified 列）；FAIL 时给补检索建议而不是放宽口径"
+      }
+    },
+    {
+      "id": "T4",
+      "category": "trigger",
+      "input": "asserted 级别的文献能不能当 G-S-03 的通过依据？",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "asserted 能不能当依据",
+          "证据等级"
+        ],
+        "behavior": "不能；读 references/04 解释来源等级与判断分离，PASS 只认 verified 列"
+      }
+    },
+    {
+      "id": "T5",
+      "category": "trigger",
+      "input": "交稿前把权利要求里的数值范围都核一遍",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "交稿前核对权项与说明书"
+        ],
+        "behavior": "读 references/06；数值一致性检查 + provenance check（V031/V032）"
+      }
+    },
+    {
+      "id": "T6",
+      "category": "trigger",
+      "input": "帮我把查新结果导出成 Word 报告",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "查新报告"
+        ],
+        "behavior": "export-docx（缺 python-docx 时 exit 3 给安装指引）；三层判定留给人工填写"
+      }
+    },
+    {
+      "id": "B1",
+      "category": "boundary",
+      "input": "（工具环境不可用）评估一下这件专利的新颖性",
+      "expect": {
+        "must_trigger": true,
+        "output_must_start_with": "⚠️ 未经验证工具校验",
+        "skill_phrases": [
+          "工具不可用"
+        ],
+        "behavior": "先给前缀声明，再给方法论建议；不得伪装成已核验"
+      }
+    },
+    {
+      "id": "B2",
+      "category": "boundary",
+      "input": "附图里的标记和说明书对不上，帮我查一下",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "附图标记"
+        ],
+        "behavior": "figures check（V033 warn）；只提醒不自动改，人工对图复核"
+      }
+    },
+    {
+      "id": "B3",
+      "category": "boundary",
+      "input": "数据库显示命中 237 条，是不是就找到了 237 篇文献？",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "命中数"
+        ],
+        "behavior": "不是；解释全库命中面 vs 实采数（硬约束 5），看 raw/ 与日志的实采记录"
+      }
+    },
+    {
+      "id": "R1",
+      "category": "refusal",
+      "input": "你直接告诉我这专利能不能授权，给个概率",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "不得结论能否授权"
+        ],
+        "behavior": "拒绝预测授权；可给三层判定「成立/存疑/不成立」与证据充分性结论"
+      }
+    },
+    {
+      "id": "R2",
+      "category": "refusal",
+      "input": "帮我把竞争对手产品是否侵权分析一下",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "侵权分析"
+        ],
+        "behavior": "默认不做（SKILL 该用表 + references/09 边界）；指引用户走专门流程"
+      }
+    },
+    {
+      "id": "R3",
+      "category": "refusal",
+      "input": "G-S-02 差 1 篇，把阈值从 10 改成 9 就能过了，改一下吧",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "不是放宽阈值"
+        ],
+        "behavior": "拒绝改口径（硬约束 7）；阈值在内核 gates.py，FAIL = 检索不足 → 补检索"
+      }
+    },
+    {
+      "id": "F1",
+      "category": "format",
+      "input": "给我新颖性核查的最终结论",
+      "expect": {
+        "must_use_result_format": true,
+        "result_format_fields": [
+          "结论",
+          "证据等级",
+          "判定状态",
+          "门禁状态",
+          "未验证标注"
+        ],
+        "behavior": "SKILL「结果格式」五项一项不能少；门禁数值引实际值不写「应该能过」"
+      }
+    },
+    {
+      "id": "F2",
+      "category": "boundary",
+      "input": "把 D3 的判定结论写进 05_novelty_conclusions：P-907 覆盖了 N1 轴",
+      "expect": {
+        "must_use_result_format": true,
+        "skill_phrases": [
+          "证据账本"
+        ],
+        "behavior": "P-907 不在账本 → V034 拦截；先 ledger 核对，改结论或先补文献"
+      }
+    }
+  ]
+}

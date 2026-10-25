@@ -1,37 +1,45 @@
-# 04 Source provenance and judgment
+# 04 来源等级与判断（证据等级制度）
 
-Read this before interpreting gate status. Source traceability and approval of a judgment are separate properties.
+读其它文件前先读这一篇。**来源可追溯性与判断的批准是两件独立的事。**
 
-## Source provenance: retain the three levels
+## 来源等级：仍是三级
 
-| evidence_level | Meaning | Eligible for strict PASS |
+| evidence_level | 含义 | 可否用于严格 PASS |
 |---|---|---|
-| verified | Replayable raw artifact from live collection, retained in the workspace | Yes, subject to the gate-specific judgment requirements |
-| attested | External material with an in-workspace SHA-256 binding | No |
-| asserted | Source provenance is not verified | No |
+| verified | live 采集、可复现的 raw 工件，保留在工作区内 | 可以，且须满足各门自身的判定要求 |
+| attested | 外部材料，工作区内有 SHA-256 绑定 | 不可以 |
+| asserted | 来源未经核实的自述 | 不可以 |
 
-AI scoring never downgrades a verified source. Human confirmation never upgrades an asserted or attested source. A hash identifies a file, not the correctness of its contents.
+**AI 打分不降级真实的 verified 来源；人工确认也不升级 asserted/attested 来源。**
+哈希只能识别文件，不能证明内容正确。
 
-The columns remain monotonic: verified ≤ ≥attested ≤ ≥asserted. PASS uses verified only. For G-S-02/G-S-03, each column additionally applies the same judgment eligibility requirement; an unsupported or legacy judgment is not an eligible count merely because its source qualifies.
+三列保持单调：verified ≤ ≥attested ≥ ≥asserted。**PASS 只看 verified 列。**
+自 2.4.0 起，G-S-02/G-S-03 的每一列还叠加同一套**判断合格性**要求：来源合格
+不等于判断合格，无支持或来路不明的判断不进合格计数。
 
-## Judgment: record it independently
+## 判断：独立记录
 
-- `assessment` records actor (`ai`, `human`, or `unknown`), identity, time, per-axis problem/means quotations, locators, rationales, captured passages and a fingerprint.
-- G-S-02 accepts supported AI or human assessments. Both dimensions are scored; relevance is their minimum. Abstract or body text is acceptable when sufficient. Missing support means no eligible count for that axis.
-- `human_confirmation` records the human, time and exact judgment fingerprint accepted for G-S-03. A role recommendation alone does not count.
-- `review_history` retains prior judgments and confirmations; `assessment_proposals` retains AI suggestions conflicting with human decisions.
-- Old reviewed_at, a high score, a D-column reference or role=near_prior_art does not establish human confirmation.
+- `assessment` 记录 actor（`ai`/`human`/`unknown`）、判定人、时间、每轴 problem/means
+  引用（ref+locator+quote+rationale）、捕获的原文段落与指纹（fingerprint）。
+- **G-S-02 接受受支持的 AI 或人工评估**：两个维度都要打分，relevance 取两者最小值；
+  摘要或正文在充分时均可作为依据；缺支持则该轴不进合格计数。
+- `human_confirmation` 记录确认人、时间与**被接受的判断指纹**（G-S-03 用）。
+  仅把 role 标成 near_prior_art 不构成确认。
+- `review_history` 保留既往判断与确认；`assessment_proposals` 保留与人工决定冲突的 AI 建议。
+- 旧的 reviewed_at、高分、D 列引用或 role=near_prior_art，都**不能**推定人工确认。
 
-## Confirmation and change
+## 确认与变更
 
-Humans may confirm multiple explicit IDs after reviewing their comparison material. Each confirmation binds that candidate's current fingerprint. Never infer confirmation from “continue”, “looks good”, or a general workspace acknowledgment.
+人工在核对自己的对比材料后，可以**显式批量确认多个 ID**。每次确认绑定该候选的当前
+指纹。绝不从「继续」「看起来没问题」或对整个工作区的笼统认可中推定确认。
 
-Changes to scores, roles, target/axes, feature mapping, rationale, original-text locators or located passages invalidate confirmation. Preserve the record but stop counting it for G-S-03 until re-assessed and re-confirmed. Author spelling and unrelated display metadata do not invalidate confirmation.
+分数、角色、目标/轴、特征映射、理由、原文定位符或所引原文段落发生变化 → 确认失效：
+保留记录，但在重新评估并重新确认前不计入 G-S-03。作者拼写等无关元数据不使确认失效。
 
-Human scores or exclusions take precedence. AI may save new evidence and a proposed revision, but the active human decision governs counting until a human accepts a revision. An expired confirmation does not authorize AI to overwrite it.
+人工分数或排除优先。AI 可以保存新证据与修改建议，但在人工接受前，现行人工决定主导
+计数。失效的确认也不授权 AI 覆盖人工决定。
 
-## Tool boundary
+## 工具边界
 
-The kernel checks locators, quotation matches, score consistency and fingerprint freshness. It cannot prove that a quotation entails the score or authenticate the natural person behind a command. The agent must not impersonate a reviewer.
-
-See [07-assessment-protocol.md](07-assessment-protocol.md) for commands and migration. Research conclusions without running tools still require the unverified annotation.
+内核校验定位符、引文匹配、分数一致性与指纹新鲜度；它**不能**证明某句引文确实支持
+该分数，也不能验证命令背后的自然人身份。代理绝不冒充审阅者。

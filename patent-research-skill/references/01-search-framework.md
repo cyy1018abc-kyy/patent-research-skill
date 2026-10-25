@@ -1,53 +1,52 @@
-# 01 Search framework: a three-stage progression
+# 01 检索框架：三阶段递进
 
-## Stage 1: Broad search (domain building)
+## 阶段 1：广度检索（建域）
 
-- **Goal**: build a panoramic map of the target technical field
-- **Databases**
-  - Patents: CNIPA / Espacenet / WIPO PATENTSCOPE / Google Patents
-  - Literature: Crossref (covers Elsevier/Springer/Wiley/IEEE, free, no key) / arXiv / DOAJ
-  - Chinese: CNKI / Wanfang / VIP
-- **Queries**: Chinese A1–A3 + English B1–B3
-- **IPC scope**: determined by the target field (e.g. PEMFC: `H01M8`, `H02J3`, `B64G1`)
-- **Time window**: the last 10 years
-- **Deliverables**: candidate list (200–500 patents + 200–500 literature) + topic clustering + ranking of main applicants
+- **目标**：建立目标技术领域的全景图
+- **数据库**
+  - 专利：CNIPA / Espacenet / WIPO PATENTSCOPE / Google Patents
+  - 文献：Crossref（覆盖 Elsevier/Springer/Wiley/IEEE，免费无 key）/ arXiv / DOAJ
+  - 中文：CNKI / 万方 / 维普
+- **检索式**：中文 A1–A3 + 英文 B1–B3
+- **IPC 范围**：按目标领域确定（如 PEMFC：`H01M8`、`H02J3`、`B64G1`）
+- **时间窗**：近 10 年
+- **交付**：候选清单（专利 200–500 + 文献 200–500）+ 主题聚类 + 主要申请人排行
 
-## Stage 2: Deep search (axis-by-axis expansion)
+## 阶段 2：深度检索（轴向展开）
 
-- **Goal**: design a dedicated query for each independent technical feature of the main axes
-- **Axis names are defined authoritatively only by `00_methodology/glossary.yml`** — never introduce a separate abbreviation in another file
-- **Combination search**: pairwise combinations of key technical features (C1 = N1+N2, etc.)
-- **Citation-chain expansion**: forward + backward citations; family members and cited-by lists
-- **Deliverables**: 20–50 core documents per axis + Top 10 closest prior-art documents
+- **目标**：针对主轴的每一项独立技术特征设计专项检索式
+- **轴名以 `00_methodology/glossary.yml` 为唯一权威定义** —— 禁止在其它文件另起简称
+- **组合检索**：关键技术特征两两组合（C1 = N1+N2 等）
+- **引用链扩展**：前向 + 后向引用；同族与被引清单
+- **交付**：每轴核心文献 20–50 篇 + Top 10 近端对比文件
 
-## Stage 3: Comparative analysis (verifying novelty + inventive step)
+## 阶段 3：对比分析（验证新颖性 + 创造性）
 
-- **Goal**: compare item by item against candidate closest prior art to verify novelty and inventive step
-- **Matrix**: N axes × M comparison documents
-- **Three-tier determination**: see `03-three-tier-determination.md`
-- **Deliverables**: search report + comparison matrix + list of proposed amendments + risk level
+- **目标**：与候选近端对比文件逐项对比，验证新颖性与创造性
+- **矩阵**：N 轴 × M 个对比文件
+- **三层判定**：见 [03-三层判定](03-three-tier-determination.md)
+- **交付**：检索报告 + 对比矩阵 + 修改建议清单 + 风险等级
 
-## Measured reachability (measured 2026-10; for reference)
+## 实测可达性（2026-10 实测，供参考）
 
-| Source | Status | Notes |
+| 源 | 状态 | 备注 |
 |---|---|---|
-| CNIPA | ✅ | **Returns at most 3 records per query**; programmatic paging is blocked, so hits can only be accumulated through many sub-queries |
-| Crossref | ✅ | 150M+ DOIs, free, no key; `filter=type:journal-article` is mandatory |
-| arXiv / DOAJ | ✅ | Preprints / open-access journals |
-| Google Patents | ✅ | Can supplement abstracts; occasional rate limiting |
-| OpenAlex | ⚠️ | Per-DOI queries work; **the search endpoint returns 429** |
-| Semantic Scholar | ⚠️ | Per-DOI queries work but continuously return 429; the search endpoint is unusable |
+| CNIPA | ✅ | **每次查询最多返回 3 条**，程序化翻页被拦，只能靠多子查询累积 |
+| Crossref | ✅ | 1.5 亿+ DOI，免费无 key，`filter=type:journal-article` 必加 |
+| arXiv / DOAJ | ✅ | 预印本 / 开放获取期刊 |
+| Google Patents | ✅ | 可补摘要（`backfill` 按公开号增量回填）；偶有限流 |
+| OpenAlex | ⚠️ | 逐 DOI 查询可用；**search 端点 429** |
+| Semantic Scholar | ⚠️ | 逐 DOI 可用但持续 429；search 端点不可用 |
 
-> **CNIPA's 3-record cap** is the easiest trap to fall into: a query returning 3 records does not mean that
-> only 3 documents exist; it must be split into many narrow sub-queries that accumulate (this project used up
-> to 28 sub-queries on a single axis).
+> **CNIPA 的 3 条上限**是最容易踩的坑：一个检索式返回 3 条不代表只有 3 篇，
+> 必须拆成多个窄子查询累积（本项目单轴最多用了 28 条子查询）。
+> 数据源扩展（Google Patents 公共数据集 / Espacenet OPS / pqai）的评估见仓库
+> `docs/data-sources.md`；在接入并落 `raw/` 之前，任何新源都只能算 asserted。
 
-## Collection discipline
+## 采集纪律
 
-1. **Every search must persist two things**: the `raw/` raw response + `02_search_logs/*.log.json`.
-   If either is missing, `validate` blocks it (V009/V013).
-2. **Logs must truthfully declare whether collection was complete**: `result.complete = false` + explanation.
-   Declaring incomplete collection → `validate` downgrades it to info; **leaving it undeclared while collection
-   was actually incomplete → warn** (V026).
-3. **Long batch jobs must persist incrementally**. A job once ran over two hundred items before being killed,
-   and all 166 fetches were lost.
+1. **每次检索都要落两份东西**：`raw/` 原始响应 + `02_search_logs/*.log.json`。
+   少了任何一份，`validate` 都会拦（V009/V013）。
+2. **日志必须如实声明是否抓全**：`result.complete = false` + 说明。
+   声明了未抓全 → `validate` 降为 info；**不声明而实际没抓全 → warn**（V026）。
+3. **长批量任务必须增量落盘**。曾有任务跑了两百多条后被杀，166 次抓取全丢。

@@ -1,107 +1,107 @@
-# 03 Three-tier determination
+# 03 三层判定
 
-## relevance has **two dimensions**
+## relevance 有**两个维度**
 
-This is the single most important criterion in this project. `relevance` is not a single score but a combination of two dimensions:
+这是本项目最重要的判据。`relevance` 不是单一分数，而是两个维度的合成：
 
 ```
 relevance = min(relevance_problem, relevance_means)
 ```
 
-| Dimension | Question | Why it must be separate |
+| 维度 | 问的问题 | 为什么必须分开 |
 |---|---|---|
-| **Technical problem** (`relevance_problem`) | How much does the problem it solves overlap with this invention? | Different problem → no comparison even if the means look alike |
-| **Technical means** (`relevance_means`) | How much does its implementation overlap with this invention? | Different means → cannot defeat novelty even if the problem looks alike |
+| **技术问题**（`relevance_problem`） | 它解决的问题与本发明重叠多少？ | 问题不同 → 手段再像也没有可比性 |
+| **技术手段**（`relevance_means`） | 它的实现方式与本发明重叠多少？ | 手段不同 → 问题再像也打不掉新颖性 |
 
-**Take `min`, not the average**: only when both dimensions qualify does the document qualify. A document with a
-different technical problem cannot be saved even if its technical means are identical — and vice versa.
+**取 `min`，不取平均**：两个维度同时达标文献才达标。技术问题不同的文献，
+即使技术手段完全一致也救不回来——反之亦然。
 
-### 1–5 level definitions
+### 1–5 分档定义
 
-| Score | Technical problem | Technical means |
+| 分值 | 技术问题 | 技术手段 |
 |---|---|---|
-| 5 | Completely identical | Completely identical |
-| 4 | Same, only the application scenario differs | Main means the same, individual steps differ |
-| 3 | Same field, different sub-problem (**default**) | Same category, different implementation |
-| 2 | Related field | Only the principle is shared |
-| 1 | Unrelated | Unrelated |
+| 5 | 完全相同 | 完全相同 |
+| 4 | 相同，仅应用场景不同 | 主要手段相同，个别步骤不同 |
+| 3 | 同领域不同子问题（**默认值**） | 同类别不同实现 |
+| 2 | 相邻领域 | 仅原理相同 |
+| 1 | 无关 | 无关 |
 
-> **`3` is the ingest default**. A supported assessment with known actor distinguishes an actual score of 3 from an unjudged record; reviewed_at alone is not proof of review. AI may score G-S-02 with per-axis problem/means original-text support. Human confirmation is required for G-S-03.
+> **`3` 是 ingest 的默认值**。自 2.4.0 起，区分「真打了 3 分」与「未判定」靠的是**带支持的人工/AI 评估**
+> （actor 明确、依据完整），单独的 `reviewed_at` 不再算已判定。AI 可以为 G-S-02 打分，
+> 但必须带每轴 problem/means 原文支持；G-S-03 必须人工确认。
 
-## Four `role` values
+## role 的四个取值
 
-| role | Meaning | Which gate it enters |
+| role | 含义 | 进哪个门 |
 |---|---|---|
-| `near_prior_art` | Closest-prior-art recommendation; requires valid human confirmation for G-S-03 | `G-S-03`, `G-S-04` |
-| `pool` | Ordinary candidate in the pool | `G-S-02` |
-| `excluded` | Excluded (wrong mapping / false hit / duplicate / belongs to another target) | Counted in no gate |
-| `family` | Family member | `G-S-04` |
+| `near_prior_art` | 近端对比文件**推荐**；进 G-S-03 须有效人工确认 | `G-S-03`、`G-S-04` |
+| `pool` | 普通池内候选 | `G-S-02` |
+| `excluded` | 排除（错映射 / 误命中 / 重复 / 属于其它目标） | 不进任何门 |
+| `family` | 同族成员 | `G-S-04` |
 
-## Three-tier determination framework
+## 三层判定框架
 
-### Tier 1: Per-document novelty
+### 第一层：单篇新颖性
 
-Question: **Did any single document disclose all core technical features of this invention?**
+问题：**有没有任何一篇文献，单独披露了本发明的全部核心技术特征？**
 
-| `novelty_check` | Meaning |
+| `novelty_check` | 含义 |
 |---|---|
-| `blocking` | One document covers all core features → **novelty does not hold** |
-| `covered` | Covers all features of one claim but not the invention as a whole |
-| `partial` | Discloses only some features (most documents land here) |
-| `untouched` | Discloses no feature / unrelated to the technical subject |
+| `blocking` | 一篇覆盖全部核心特征 → **新颖性不成立** |
+| `covered` | 覆盖某一条权利要求的全部特征，但不覆盖整体方案 |
+| `partial` | 只披露部分特征（大多数文献在这里） |
+| `untouched` | 未披露任何特征 / 与技术主题无关 |
 
-**How to judge**: for each document ask "read on its own, does it reveal the N technical axes of this invention?"
-**Only a single document that discloses the core means of every axis at once qualifies as `blocking`** — this is
-extremely rare, and that is precisely where the value of the invention lies.
+**判法**：对每篇文献问「单独阅读它，能否揭示本发明的 N 个技术轴？」
+**只有单独一篇同时披露每个轴的核心手段才是 `blocking`** —— 这极少见，
+而这正是发明价值所在。
 
-### Tier 2: Combination inventive step
+### 第二层：组合创造性
 
-Question: **Would combining 2–3 documents make this invention obvious?**
+问题：**2–3 篇组合起来，会不会让本发明变得显而易见？**
 
-**This tier is more dangerous than the first**: examiners love "D1 + D2 in combination".
-The approach is not to find the weakest combination but to **actively find the strongest combination against
-your own solution**.
+**这一层比第一层危险**：审查员最爱「D1+D2 结合」。做法不是找最弱的组合，
+而是**主动找打自己最强的组合**。
 
-**The strongest argument structure**: identify **zero-disclosure atoms** — features that no combination of the
-comparison documents can assemble. A combination presupposes that each member contributes at least one feature;
-an atom that nothing contributes cannot be assembled by combination either.
+**最强论证结构**：找**零披露原子** —— 任何组合都拼不出的特征。组合的前提是每个成员
+至少贡献一个特征；没有任何文献贡献的原子，组合也拼不出来。
 
-**You must attack yourself**: list the examiner's most likely rebuttals and your responses.
-Omit this section and the conclusion is self-deception.
+**必须自我攻击**：把审查员最可能的最强反驳与你的回应写出来。不写这一节，
+结论就是自欺。
 
-### Tier 3: Technical effect
+### 第三层：技术效果
 
-Question: **Is there a non-obvious technical effect?**
+问题：**有没有非显而易见的技术效果？**
 
-Criterion: must the effect presuppose the distinguishing features of this invention? Without those features,
-is reaching it **in principle impossible**?
+判据：效果是否**必须以本发明的区别特征为前提**？没有这些特征，是否**原理上就达不到**？
 
-| Valid | Invalid |
+| 有效 | 无效 |
 |---|---|
-| "staged discharge cuts oxygen-discharge loss 1.86→0.44 mol/600s (-77%)" | "improves efficiency", "safer" |
-| "cathode pressure drop under μG reaches 5.2× that at 1g" | qualitative claims without data |
+| 「分级排放使氧排放损失 1.86→0.44 mol/600s（-77%）」 | 「提高了效率」「更安全」 |
+| 「μG 下阴极压降达 1g 的 5.2 倍」 | 没有数据的定性说法 |
 
-> ⚠️ If the data comes from simulation, the simulation conditions must be stated in the specification; otherwise
-> reproducibility will be questioned.
+> ⚠️ 数据来自仿真时，说明书必须写明仿真条件，否则再现性会被质疑。
+> 量化效果句还会进入数值溯源登记（A/B/C），见 [06](06-drafting-and-polishing-rules.md) 与 SKILL 硬约束 10。
 
-## Workflow
+## 工作流
 
-Use [07-assessment-protocol.md](07-assessment-protocol.md) for supported AI/human assessments and explicit batch confirmation. The legacy CSV workflow below may update judgments, but never creates G-S-03 confirmation and unsupported records do not count.
+受支持的 AI/人工评估与显式批量确认见 [07-评估协议](07-assessment-protocol.md)。
+下面的 CSV 传统流仍可更新判定，但**不会**产生 G-S-03 确认，无支持的记录不计数。
 
 ```powershell
-# 1. Check progress
+# 1. 看进度
 python -m patentkit review progress
 
-# 2. Export the unjudged entries (only those with abstracts can be judged)
+# 2. 导出未判条目（有摘要的才能判）
 python -m patentkit review export --unreviewed --with-abstract --axis N4 --out worksheet.csv
 
-# 3. A human fills in relevance_problem / relevance_means in Excel (leave the other columns empty)
-#    Note: Excel on Chinese Windows saves CSV as GBK and drops the BOM — the tool detects that automatically
+# 3. 人工在 Excel 里填 relevance_problem / relevance_means（其它列留空）
+#    注意：中文版 Windows 的 Excel 存 CSV 会用 GBK 且丢 BOM —— 工具会自动识别
 
-# 4. Dry-run first to see the impact; write only after confirming
+# 4. 先 dry-run 看影响，确认后再写
 python -m patentkit review apply worksheet.csv
-python -m patentkit review apply worksheet.csv --by reviewer-name --apply
+python -m patentkit review apply worksheet.csv --by 审阅人姓名 --apply
 ```
 
-> `apply` is **fail-closed**: if any row contains an invalid value, **not a single character is written**.
-> This is deliberate — a previous partial failure left a dirty, partially written state.
+> `apply` 是 **fail-closed** 的：任何一行有非法值，**一个字都不会写**。
+> 这是有意为之——历史上出过部分失败的脏写状态。

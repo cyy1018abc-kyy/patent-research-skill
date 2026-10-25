@@ -1,5 +1,46 @@
 # Changelog
 
+## 2026-10-25 · Skill 2.5.0 / kernel 0.3.0
+
+Consolidated release of the upgrade checklist (P0+P1+P2 of
+`docs/../升级迭代清单-2026-10-25.md`; the planned 2.5/2.6/2.7/2.8 pacing was merged into one
+paired release for a single verification pass).
+
+**Skill package (Chinese-primary runtime)**
+- SKILL.md / references / assets are now the authoritative Chinese edition; English mirrors
+  live in `references.en/` (01–07 maintained on both sides; 08–13 Chinese-first).
+- New references: 08 figures, 09 disclosure & application drafts, 10 claim drafting,
+  11 OA response skeleton, 12 policy radar, 13 revision loop; bilingual `glossary.md`.
+- Hard constraints extended: #9 conclusions may cite only ledger IDs (V034); #10 numerical
+  claims must carry A/B/C provenance (V031/V032).
+- `scripts/self_test.py` (six post-install checks incl. negative gate case) and
+  `scripts/export_docx.py` wrapper; bilingual `agents/openai.yaml`.
+
+**Kernel 0.3.0 (delivery-safety layer; patch `release/patches/patentkit-0.1.2-to-0.3.0.patch`)**
+- New commands: `export-docx` (optional `[docx]` extra), `map`, `layout`, `ledger`,
+  `provenance scan/check`, `figures check/draw`, `deadlines list/check/init`.
+- New validation rules: V031/V032 (numerical provenance, fail-closed), V033 (figure marks,
+  warn-only), V034 (conclusions citing evidence outside the ledger, error).
+- `tests/conftest.py` reconstructed so the full suite runs from the distributed tree;
+  stale tests synced to assessment-protocol semantics; layout-dependent private-repo tests
+  skip cleanly (503 passed / 9 skipped).
+- Version single source bumped to 0.3.0; `pyproject` gains `[docx]` extra.
+
+**Quality engineering (CI)**
+- `evals/`: 14 trigger/refusal/boundary/format cases; `validate_evals.py` anchors every
+  trigger phrase to the SKILL.md description and the result-format five fields.
+- `evals/check_terminology.py`: zh↔en pairing + glossary anchors.
+- `tools/check_no_workspace_data.py` secrecy guard + `.gitignore` red lines
+  (workspace dirs, 专利申请/, 交付文本/, *.docx).
+- CI: kernel full suite runs from the patched tree; wheel/ZIP names and version asserts
+  moved to 0.3.0; python-docx installed for export tests.
+
+**Docs**: data-source expansion memo (BigQuery/OPS/pqai; MCP stays frozen),
+skill-matrix split design (v3.0, decision points listed), scope decisions (no copyright/
+infringement modules by default), distribution checklist, policy log, synthetic-data
+example walkthrough.
+
+
 ## 2026-10-23 · Skill 2.4.0 / kernel 0.2.0
 
 - Separate source evidence_level from assessment actor, support and human confirmation.

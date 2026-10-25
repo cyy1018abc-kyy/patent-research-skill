@@ -24,8 +24,8 @@ def build(out: Path, built_at: str) -> dict:
     from patentkit.assessment import PROTOCOL_VERSION
     from patentkit.init import DIRS, init_workspace
 
-    if patentkit.__version__ != "0.2.0" or PROTOCOL_VERSION != 1:
-        raise ValueError("Build requires patentkit 0.2.0 with assessment protocol 1")
+    if patentkit.__version__ != "0.3.0" or PROTOCOL_VERSION != 1:
+        raise ValueError("Build requires patentkit 0.3.0 with assessment protocol 1")
     stamp = datetime.fromisoformat(built_at)
     if stamp.tzinfo is None:
         raise ValueError("--built-at must include a timezone")
@@ -62,7 +62,7 @@ def build(out: Path, built_at: str) -> dict:
     manifest = {
         "schema_version": 1, "package": "patent-research-skill", "built_at": built_at,
         "skill": {"name": name, "version": version, "install_dir": name},
-        "compat": {"python": ">=3.11", "patentkit": ">=0.2.0", "assessment_protocol": 1},
+        "compat": {"python": ">=3.11", "patentkit": ">=0.3.0", "assessment_protocol": 1},
         "source": {"commit": commit},
         "contents": {"references": len(list((source / "references").glob("*.md"))), "samples_included": True},
         "files": [{"path": p, "size": len(data), "sha256": hashlib.sha256(data).hexdigest()} for p, data in sorted(files.items())],

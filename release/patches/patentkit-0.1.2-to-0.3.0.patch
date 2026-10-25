@@ -1,0 +1,4168 @@
+diff --git a/MANIFEST.in b/MANIFEST.in
+index a8f7d8b..f83e745 100644
+--- a/MANIFEST.in
++++ b/MANIFEST.in
+@@ -1,3 +1,6 @@
+ # The sdist must also ship the workspace templates — otherwise wheels built from the sdist will likewise lack the templates for `patentkit init`.
+ # The wheel side is covered by [tool.setuptools.package-data] in pyproject.toml; both are indispensable.
+ recursive-include patentkit/templates *
++
++# 新协议的独立回归测试随源码包分发。
++recursive-include regression_tests *.py
+diff --git a/README.md b/README.md
+index c9ca2ac..b555e7f 100644
+--- a/README.md
++++ b/README.md
+@@ -3,9 +3,19 @@
+ > An integrated workspace + toolchain for patent **prior-art search / novelty self-check / search evidence chain / drafting assistance**.
+ > Three deliverables: the **skill package** (for AI clients), the **`patentkit` core** (pip package), and the **workspace data** (private, local).
+ 
+-**Current versions**: skill package [`skill-v2.3.0`](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/skill-v2.3.0) ·
+-core [`patentkit-v0.1.1`](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/patentkit-v0.1.1)
+-(see [`CHANGELOG.md`](CHANGELOG.md) for changes)
++**Current versions**: skill package `2.5.0` · core `patentkit 0.3.0`
++
++## What is new in 0.3.0 (delivery safety)
++
++| Command | What it adds |
++|---|---|
++| `patentkit export-docx <TGT>` | Renders the workspace state into an editable .docx search report — zero hand-typed numbers; optional extra `pip install "patentkit[docx]"` |
++| `patentkit map <TGT>` | Offline self-contained HTML overview (gates / per-axis coverage / D-list); no network, no scripts |
++| `patentkit layout` | Cross-target 1+N portfolio view with a primary-filing suggestion (read-only) |
++| `patentkit ledger [TGT]` | Evidence ledger — the citable-fact table behind every conclusion; V034 rejects conclusions citing IDs outside it |
++| `patentkit provenance scan/check` | Numerical-claim A/B/C source registry (V031/V032): every number in the manuscript must trace to in-house material, a retrieved document, or a declared example |
++| `patentkit figures check/draw` | Figure-mark bidirectional consistency (V033, warn-only) + deterministic SVG block diagrams |
++| `patentkit deadlines list/check/init` | Post-filing statutory-deadline ledger — refuses to compute without a base date; the official document always prevails |
+ 
+ ## Quick start (pick the row for your role)
+ 
+@@ -153,3 +163,12 @@ Apache License 2.0 (consistent with the licenses of the 3 skills it depends on).
+ **Documentation entry points**: [Operations Manual](docs/operations_manual.md) · [Roadmap](docs/roadmap.md) · [Delivery Summary](docs/delivery_summary.md) ·
+ [Release Gates](docs/release_gates_todo.md) · [Upgrade Plan](docs/upgrade_plan.md) · [Plugin Plan](docs/plugin_plan.md) ·
+ [CHANGELOG](CHANGELOG.md)
++
++
++## 0.2.0: source provenance and assessment protocol 1
++
++Source evidence_level is independent of judgment. Supported AI/human assessments may count for G-S-02; G-S-03 additionally requires explicit human confirmation of current candidate fingerprints. AI conflicts are retained as proposals and never overwrite human decisions. Substantive changes invalidate confirmation; unrelated metadata corrections do not.
++
++Use `patentkit review migrate-assessments [--apply]` to extend an existing schema without inventing human provenance or upgrading sources. Use `review export --format json --out assessment.json`, then `review assess assessment.json --actor ai --by model-name [--apply]`. After actual human review, submit an explicit JSON list of candidate_id/expected_fingerprint pairs with `review confirm confirm.json --by reviewer-name [--apply]`. All commands default to dry-run.
++
++Each assessed axis requires problem and means scores, original-text quotations, locations and rationales. JSON sources use JSON Pointer; UTF-8 text uses line ranges. Run `review assess --help` and see the companion skill references/07-assessment-protocol.md for the complete data contract. V029/V030 expose missing/stale judgments and confirmation. CLI identity is a recorded assertion, not authentication of a natural person.
+diff --git a/patentkit/__init__.py b/patentkit/__init__.py
+index 78808b5..9969ee4 100644
+--- a/patentkit/__init__.py
++++ b/patentkit/__init__.py
+@@ -28,6 +28,6 @@ Design principles
+ #:
+ #: The semantic version increments under the rules in [`plugin plan`](../docs/plugin_plan.md):
+ #: new tool/rule -> minor; bug fix / copy change -> patch; breaking interface -> major.
+-__version__ = "0.1.2"
++__version__ = "0.3.0"
+ 
+ __all__ = ["__version__"]
+diff --git a/patentkit/api.py b/patentkit/api.py
+index 2b08259..41894a0 100644
+--- a/patentkit/api.py
++++ b/patentkit/api.py
+@@ -43,6 +43,7 @@ from . import report as report_mod
+ from . import runs as runs_mod
+ from . import validate as validate_mod
+ from .model import load_candidates, load_logs
++from . import assessment as assessment_mod
+ from .paths import WorkspaceNotFound, find_workspace, is_workspace
+ from .registry import TerminologyError, load_registry
+ 
+@@ -71,6 +72,9 @@ REFERENCES: dict[str, str] = {
+ #: Hard constraints — handed to the caller together with the search results (especially pure chat clients).
+ #: The purpose is to prevent "self-assertion masquerading as evidence", the biggest disease this repo had.
+ HARD_CONSTRAINTS: list[str] = [
++    "evidence_level describes source provenance only; AI scoring never downgrades a verified source.",
++    "G-S-02 allows supported AI assessments; G-S-03 additionally requires a current explicit human confirmation.",
++    "AI proposals cannot overwrite an existing human judgment, including an exclusion.",
+     "Without a raw/ artifact, verified may not be claimed — V009/V013 will stop it.",
+     "A gate PASS only trusts the verified column; asserted is historical record, not a basis for PASS.",
+     "When tools cannot be run (pure chat clients), the conclusion must be marked \"⚠️ Unverified by tool checks\".",
+@@ -219,7 +223,9 @@ def status(ws: str | Path | None = None) -> dict[str, Any]:
+             "by_evidence_level": dict(sorted(by_level.items())),
+             "by_role": dict(sorted(by_role.items())),
+             "by_relevance": dict(sorted(by_relevance.items())),
+-            "with_relevance_ge4": sum(v for k, v in by_relevance.items() if k >= 4),
++            "with_relevance_ge4": sum(any(assessment_mod.eligible_axis(c, root, axis) for axis in c.tags) for c in tgt_cands),
++            "by_assessment_state": {state: sum(assessment_mod.state(c, root) == state for c in tgt_cands)
++                                    for state in ("unknown", "needs_review", "ai_assessed", "human_assessed", "human_confirmed")},
+         },
+         "logs": {
+             "total": len(tgt_logs),
+@@ -254,7 +260,7 @@ def _hints(
+     if cands and rel_ok == 0:
+         hints.append(
+             f"The relevance of all {len(cands)} candidates is the default value — G-S-02 counts only relevance≥4, "
+-            f"so this axis currently counts 0. Relevance needs manual review (the tool does not make that determination for you)"
++            f"so this axis currently counts 0. Add supported AI or human assessments with per-axis problem/means citations"
+         )
+ 
+     report = gates_mod.compute_all(root, term, target)
+@@ -428,6 +434,10 @@ def candidates(
+                 "role": c.data.get("role"),
+                 "novelty_check": c.data.get("novelty_check"),
+                 "evidence_level": c.effective_level(root).value,
++                "assessment_state": assessment_mod.state(c, root),
++                "assessment_fingerprint": assessment_mod.fingerprint(c, root),
++                "assessment": c.data.get("assessment"),
++                "human_confirmation": c.data.get("human_confirmation"),
+                 "path": c.path.relative_to(root).as_posix(),
+             }
+         )
+@@ -888,18 +898,40 @@ def review_export(
+ 
+ 
+ def review_apply(
+-    ws: str | Path | None = None, sheet: str = "", apply: bool = False
++    ws: str | Path | None = None, sheet: str = "", apply: bool = False, by: str = "", target: str = ""
+ ) -> dict[str, Any]:
+     """Write the determinations filled into the worksheet back to the candidate JSON (dry-run by default)."""
+     root = workspace(ws)
+     from . import review as review_mod
+ 
+     argv = ["apply", *_root_args(root), sheet]
++    if by:
++        argv += ["--by", by]
++    if target:
++        argv += ["--target", target]
+     if apply:
+         argv.append("--apply")
+     return _capture(review_mod.main, argv)
+ 
+ 
++def review_assess(ws=None, rows=None, *, actor, by, apply=False, target=""):
++    """导入具备双维原文依据的判断；AI 不覆盖人工判断。"""
++    from .assessment import assess_batch
++    return assess_batch(workspace(ws), rows, actor=actor, by=by, apply=apply, target=target)
++
++
++def review_confirm(ws=None, rows=None, *, by, apply=False, target=""):
++    """人工确认明确名单，逐篇绑定判断指纹。"""
++    from .assessment import confirm_batch
++    return confirm_batch(workspace(ws), rows, by=by, apply=apply, target=target)
++
++
++def review_migrate(ws=None, *, apply=False):
++    """迁移结构，不补造来源等级、人工身份或确认。"""
++    from .assessment import migrate_workspace
++    return migrate_workspace(workspace(ws), apply=apply)
++
++
+ def report(
+     ws: str | Path | None = None, target: str = "", argv_extra: list[str] | None = None
+ ) -> dict[str, Any]:
+diff --git a/b/patentkit/assessment.py b/patentkit/assessment.py
+new file mode 100644
+index 0000000..ce1d5a8
+--- /dev/null
++++ b/patentkit/assessment.py
+@@ -0,0 +1,349 @@
++"""独立于来源等级的判断协议：原文依据、人工确认、冲突建议和历史。"""
++
++from __future__ import annotations
++
++import copy
++import hashlib
++import json
++import os
++import re
++import tempfile
++from datetime import datetime
++from pathlib import Path
++
++from .model import Candidate, load_candidates
++from .registry import load_registry
++
++PROTOCOL_VERSION = 1
++DECISION_FIELDS = (
++    "id", "kind", "url_or_doc_number", "target", "tags", "relevance",
++    "relevance_problem", "relevance_means", "role", "novelty_check", "review_note",
++    "feature_mapping",
++)
++EDIT_FIELDS = ("relevance_problem", "relevance_means", "role", "novelty_check", "review_note", "feature_mapping")
++
++
++def _now():
++    return datetime.now().astimezone().isoformat(timespec="seconds")
++
++
++def _timestamp(value):
++    try:
++        return bool(datetime.fromisoformat(value).utcoffset() is not None)
++    except (TypeError, ValueError):
++        return False
++
++
++def _required_text(value, name):
++    if not isinstance(value, str) or not value.strip():
++        raise ValueError(f"{name}: non-empty text required")
++    return value
++
++
++def validate_data(data):
++    """写入前按发行模板校验完整记录，避免先写坏数据再等待 validate 报错。"""
++    from jsonschema import Draft7Validator
++    schema = json.loads((Path(__file__).parent / "templates/workspace/03_candidates/candidates_schema.json").read_text(encoding="utf-8"))
++    error = next(Draft7Validator(schema).iter_errors(data), None)
++    if error:
++        raise ValueError(f"candidate schema: {error.message}")
++
++
++def passage(root: Path, citation: dict) -> str:
++    """只读取工作区内明确定位的原文，引用和解释不可留空。"""
++    if not isinstance(citation, dict):
++        raise ValueError("citation must be an object")
++    ref = _required_text(citation.get("ref"), "ref")
++    location = _required_text(citation.get("locator"), "locator")
++    quote = _required_text(citation.get("quote"), "quote")
++    _required_text(citation.get("rationale"), "rationale")
++    path = (root / ref).resolve()
++    if not path.is_relative_to(root.resolve()):
++        raise ValueError("citation must stay within the workspace")
++    try:
++        text = path.read_text(encoding="utf-8")
++        if path.suffix.lower() == ".json":
++            if not location.startswith("/"):
++                raise ValueError("JSON locator must be a JSON Pointer")
++            value = json.loads(text)
++            for token in location[1:].split("/"):
++                if re.search(r"~(?![01])", token):
++                    raise ValueError("invalid JSON Pointer escape")
++                token = token.replace("~1", "/").replace("~0", "~")
++                if isinstance(value, list):
++                    if not re.fullmatch(r"0|[1-9]\d*", token):
++                        raise ValueError("invalid JSON Pointer array index")
++                    value = value[int(token)]
++                else:
++                    value = value[token]
++            if not isinstance(value, str):
++                raise ValueError("JSON Pointer must identify original text")
++            text = value
++        else:
++            match = re.fullmatch(r"L([1-9]\d*)(?:-L?([1-9]\d*))?", location)
++            if not match:
++                raise ValueError("text locator must be L1 or L1-L5")
++            first, last = int(match[1]), int(match[2] or match[1])
++            lines = text.splitlines()
++            if first > last or last > len(lines):
++                raise ValueError("text locator out of range")
++            text = "\n".join(lines[first - 1:last])
++    except (OSError, UnicodeError, KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
++        raise ValueError(f"cannot locate citation {ref}#{location}: {exc}") from exc
++    if quote not in text:
++        raise ValueError(f"quote not found at {ref}#{location}")
++    return text
++
++
++def _materials(cand: Candidate, root: Path):
++    basis = (cand.data.get("assessment") or {}).get("basis") or {}
++    if not isinstance(basis, dict):
++        raise ValueError("basis must be an axis-keyed object")
++    materials = {}
++    for axis, dimensions in basis.items():
++        if axis not in cand.tags or not axis.endswith("@" + cand.target):
++            raise ValueError(f"basis axis does not match candidate: {axis}")
++        if not isinstance(dimensions, dict) or set(dimensions) != {"problem", "means"}:
++            raise ValueError(f"both problem and means citations required: {axis}")
++        materials[axis] = {key: passage(root, dimensions[key]) for key in ("problem", "means")}
++    return materials
++
++
++def fingerprint(cand: Candidate, root: Path) -> str:
++    """仅绑定判断与引用段落，无关元数据变化不撤销确认。"""
++    record = cand.data.get("assessment") or {}
++    if not isinstance(record, dict):
++        record = {"invalid": record}
++    try:
++        materials = _materials(cand, root)
++    except (ValueError, AttributeError, TypeError) as exc:
++        materials = {"unavailable": str(exc)}
++    view = {key: cand.data.get(key) for key in DECISION_FIELDS}
++    view["assessment"] = {k: v for k, v in record.items() if k not in {"fingerprint", "at"}}
++    view["located_materials"] = materials
++    return hashlib.sha256(json.dumps(view, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
++
++
++def assessment_errors(cand: Candidate, root: Path) -> list[str]:
++    record = cand.data.get("assessment")
++    if not isinstance(record, dict) or not isinstance(record.get("actor"), str) or record.get("actor") not in {"ai", "human"}:
++        return ["assessment actor is unknown; re-assessment required"]
++    try:
++        _required_text(record.get("by"), "assessment.by")
++        if not _timestamp(record.get("at")):
++            raise ValueError("assessment.at must include timezone")
++        dims = [cand.data.get(key) for key in ("relevance_problem", "relevance_means")]
++        if any(type(v) is not int or not 1 <= v <= 5 for v in dims):
++            raise ValueError("both relevance dimensions must be integers 1..5")
++        if cand.relevance != min(dims):
++            raise ValueError("relevance must equal min(problem, means)")
++        _required_text(cand.data.get("review_note"), "review_note")
++        if not _materials(cand, root):
++            raise ValueError("at least one axis requires problem and means citations")
++        if record.get("fingerprint") != fingerprint(cand, root):
++            raise ValueError("assessment fingerprint is stale")
++    except (ValueError, TypeError, AttributeError) as exc:
++        return [str(exc)]
++    return []
++
++
++def eligible_axis(cand: Candidate, root: Path, axis: str) -> bool:
++    return (cand.relevance >= 4 and cand.data.get("role") != "excluded"
++            and not assessment_errors(cand, root)
++            and axis in cand.data["assessment"]["basis"])
++
++
++def confirmation_valid(cand: Candidate, root: Path) -> bool:
++    confirmation = cand.data.get("human_confirmation")
++    return bool(isinstance(confirmation, dict) and cand.data.get("role") == "near_prior_art"
++                and isinstance(confirmation.get("by"), str) and confirmation["by"].strip()
++                and _timestamp(confirmation.get("at")) and not assessment_errors(cand, root)
++                and confirmation.get("fingerprint") == fingerprint(cand, root))
++
++
++def human_priority(cand: Candidate) -> bool:
++    """失效的人工确认仍代表人工曾作出判断，AI 不得借失效覆盖。"""
++    record = cand.data.get("assessment") or {}
++    if not isinstance(record, dict):
++        return True
++    if record.get("actor") == "human" or cand.data.get("human_confirmation"):
++        return True
++    for event in cand.data.get("review_history") or []:
++        if not isinstance(event, dict):
++            return True
++        before = event.get("before") or {}
++        if not isinstance(before, dict):
++            return True
++        prior = before.get("assessment") or {}
++        if not isinstance(prior, dict):
++            return True
++        if prior.get("actor") == "human" or before.get("human_confirmation"):
++            return True
++    # 旧记录不推定为人工确认，但有审阅痕迹或排除标记时禁止静默覆盖。
++    return record.get("actor", "unknown") == "unknown" and bool(cand.data.get("reviewed_at") or cand.data.get("role") == "excluded")
++
++
++def state(cand: Candidate, root: Path) -> str:
++    record = cand.data.get("assessment")
++    if not isinstance(record, dict) or record.get("actor") not in ("ai", "human"):
++        return "unknown"
++    if assessment_errors(cand, root):
++        return "needs_review"
++    if confirmation_valid(cand, root):
++        return "human_confirmed"
++    return record["actor"] + "_assessed"
++
++
++def with_history(cand: Candidate, updated: dict, action: str) -> dict:
++    data = copy.deepcopy(updated)
++    before = {key: copy.deepcopy(cand.data.get(key)) for key in (*DECISION_FIELDS, "assessment", "human_confirmation", "reviewed_at")}
++    data["review_history"] = [*cand.data.get("review_history", []), {"at": _now(), "action": action, "before": before}]
++    return data
++
++
++def commit_batch(updates: list[tuple[Path, dict, dict]], apply: bool):
++    """先校验并准备所有文件；失败时回滚已替换文件，避免普通 IO 异常留下半批。"""
++    if not apply:
++        return
++    originals, staged, replaced = {}, {}, []
++    try:
++        for path, old, new in updates:
++            original = path.read_bytes()
++            if json.loads(original.decode("utf-8")) != old:
++                raise ValueError(f"concurrent change detected: {path.name}")
++            originals[path] = original
++            payload = (json.dumps(new, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
++            fd, name = tempfile.mkstemp(prefix=".assessment-", suffix=".tmp", dir=path.parent)
++            staged[path] = Path(name)
++            with os.fdopen(fd, "wb") as stream:
++                stream.write(payload)
++                stream.flush()
++                os.fsync(stream.fileno())
++        for path, tmp in staged.items():
++            os.replace(tmp, path)
++            replaced.append(path)
++    except BaseException:
++        for path in reversed(replaced):
++            path.write_bytes(originals[path])
++        raise
++    finally:
++        for tmp in staged.values():
++            tmp.unlink(missing_ok=True)
++
++
++def _batch(root, rows, target):
++    term = load_registry(root)
++    target = target or term.active_target
++    if target not in term.targets:
++        raise ValueError(f"unregistered target: {target}")
++    if not isinstance(rows, list) or not rows:
++        raise ValueError("a non-empty explicit candidate list is required")
++    candidates = load_candidates(root)
++    by_id = {c.id: c for c in candidates}
++    if len(by_id) != len(candidates):
++        raise ValueError("duplicate candidate IDs in workspace")
++    seen, selected = set(), []
++    for row in rows:
++        if not isinstance(row, dict):
++            raise ValueError("batch row must be an object")
++        cid = row.get("candidate_id")
++        if not isinstance(cid, str) or cid in seen or cid not in by_id:
++            raise ValueError(f"unknown or duplicate candidate ID: {cid}")
++        seen.add(cid)
++        cand = by_id[cid]
++        for field in ("review_history", "assessment_proposals"):
++            if field in cand.data and not isinstance(cand.data[field], list):
++                raise ValueError(f"invalid {field}: {cid}")
++        if cand.target != target:
++            raise ValueError(f"candidate belongs to another target: {cid}")
++        if row.get("expected_fingerprint") != fingerprint(cand, root):
++            raise ValueError(f"stale or missing expected_fingerprint: {cid}")
++        selected.append((cand, row))
++    return term, selected
++
++
++def assess_batch(root: Path, rows: list, *, actor: str, by: str, apply: bool = False, target: str = "") -> dict:
++    if actor not in {"ai", "human"}:
++        raise ValueError("actor must be ai or human")
++    _required_text(by, "by")
++    term, selected = _batch(root, rows, target)
++    updates, proposed = [], 0
++    for cand, row in selected:
++        allowed = {"candidate_id", "expected_fingerprint", "basis", *EDIT_FIELDS}
++        if set(row) - allowed:
++            raise ValueError(f"unknown assessment fields: {sorted(set(row) - allowed)}")
++        for key in ("relevance_problem", "relevance_means"):
++            if type(row.get(key)) is not int or not 1 <= row[key] <= 5:
++                raise ValueError(f"{key}: both dimensions required, 1..5")
++        data = copy.deepcopy(cand.data)
++        data.update({k: row[k] for k in EDIT_FIELDS if k in row})
++        if not isinstance(data.get("role"), str) or not isinstance(data.get("novelty_check"), str) or data["role"] not in term.roles or data["novelty_check"] not in term.novelty_states:
++            raise ValueError("unregistered role or novelty_check")
++        data["relevance"] = min(data["relevance_problem"], data["relevance_means"])
++        data["assessment"] = {"actor": actor, "by": by, "at": _now(), "basis": copy.deepcopy(row.get("basis"))}
++        new = Candidate(data, cand.path)
++        materials = _materials(new, root)
++        if not materials or any(axis not in term.axes_for(cand.target) for axis in materials):
++            raise ValueError("registered axis basis required")
++        data["assessment"]["materials"] = materials
++        data["assessment"]["fingerprint"] = fingerprint(new, root)
++        errors = assessment_errors(new, root)
++        if errors:
++            raise ValueError(f"{cand.id}: {'; '.join(errors)}")
++        if fingerprint(new, root) == fingerprint(cand, root):
++            continue
++        if actor == "ai" and human_priority(cand):
++            suggestion = {"at": _now(), "by": by, "changes": {k: data.get(k) for k in (*EDIT_FIELDS, "relevance")}, "assessment": data["assessment"]}
++            data = copy.deepcopy(cand.data)
++            data["assessment_proposals"] = [*data.get("assessment_proposals", []), suggestion]
++            proposed += 1
++        else:
++            data["reviewed_at"] = data["assessment"]["at"]
++            data = with_history(cand, data, "assess:" + actor)
++        validate_data(data)
++        updates.append((cand.path, cand.data, data))
++    commit_batch(updates, apply)
++    return {"ok": True, "changed": len(updates), "proposed": proposed, "written": len(updates) if apply else 0}
++
++
++def confirm_batch(root: Path, rows: list, *, by: str, apply: bool = False, target: str = "") -> dict:
++    _required_text(by, "by")
++    _, selected = _batch(root, rows, target)
++    updates = []
++    for cand, row in selected:
++        if set(row) != {"candidate_id", "expected_fingerprint"}:
++            raise ValueError("confirmation rows require only candidate_id and expected_fingerprint")
++        if cand.data.get("role") != "near_prior_art" or assessment_errors(cand, root):
++            raise ValueError(f"{cand.id}: current supported near_prior_art assessment required")
++        if confirmation_valid(cand, root) and cand.data["human_confirmation"]["by"] == by:
++            continue
++        data = copy.deepcopy(cand.data)
++        data["human_confirmation"] = {"by": by, "at": _now(), "fingerprint": fingerprint(cand, root)}
++        data = with_history(cand, data, "confirm:human")
++        validate_data(data)
++        updates.append((cand.path, cand.data, data))
++    commit_batch(updates, apply)
++    return {"ok": True, "changed": len(updates), "written": len(updates) if apply else 0}
++
++
++def schema_properties() -> dict:
++    """由内核模板提供同一份结构，迁移不复制另一套定义。"""
++    schema = json.loads((Path(__file__).parent / "templates/workspace/03_candidates/candidates_schema.json").read_text(encoding="utf-8"))
++    return {key: schema["properties"][key] for key in ("assessment", "human_confirmation", "review_history", "assessment_proposals", "feature_mapping")}
++
++
++def migrate_workspace(root: Path, *, apply: bool = False) -> dict:
++    updates = []
++    for cand in load_candidates(root):
++        if "assessment" not in cand.data:
++            data = copy.deepcopy(cand.data)
++            data["assessment"] = {"actor": "unknown", "by": "", "at": None, "basis": {}, "fingerprint": None}
++            updates.append((cand.path, cand.data, data))
++    path = root / "03_candidates/candidates_schema.json"
++    old = json.loads(path.read_text(encoding="utf-8"))
++    new = copy.deepcopy(old)
++    new.setdefault("properties", {}).update(schema_properties())
++    if new != old:
++        updates.append((path, old, new))
++    commit_batch(updates, apply)
++    return {"ok": True, "changed": len(updates), "written": len(updates) if apply else 0}
+diff --git a/patentkit/cli.py b/patentkit/cli.py
+index eb0b47f..9107cd5 100644
+--- a/patentkit/cli.py
++++ b/patentkit/cli.py
+@@ -15,6 +15,11 @@ import sys
+ 
+ from . import api
+ from . import attest as attest_mod
++from . import deadlines as deadlines_mod
++from . import export as export_mod
++from . import figures as figures_mod
++from . import ledger as ledger_mod
++from . import map as map_mod
+ from . import backfill as backfill_mod
+ from . import bibsync as bibsync_mod
+ from . import cnipa as cnipa_mod
+@@ -27,6 +32,8 @@ from . import ingest as ingest_mod
+ from . import migrate as migrate_mod
+ from . import report as report_mod
+ from . import review as review_mod
++from . import provenance as provenance_mod
++from . import layout as layout_mod
+ from . import validate as validate_mod
+ 
+ USAGE = """\
+@@ -47,12 +54,12 @@ Search
+   backfill-doi  Backfill literature abstracts from OpenAlex / Semantic Scholar by DOI
+ 
+ Validation and gates
+-  validate      Consistency validation (V001-V028); exits 1 on any error
++  validate      Consistency validation (V001-V034); exits 1 on any error
+   gates         G-S-01..05 three-column acceptance gates; exits 2 when not all gates PASS
+   check         = validate --strict + gates --quiet (CI entry point)
+ 
+ Data pipeline
+-  review        Manual relevance review (export worksheet / apply written-back determinations / progress view)
++  review        Assessment and human confirmation (export / assess / confirm / migrate-assessments / progress)
+   ingest        Raw response → candidate skeleton (dry-run by default; only --apply writes to disk)
+   bibsync       Generate missing BibTeX entries for candidates (dry-run by default)
+   attest        Manuscript sha256 binding (--check exits 1 on drift / --apply re-binds)
+@@ -60,6 +67,15 @@ Data pipeline
+   index         Generate INDEX.md (--write writes to disk)
+   migrate       Step-1a data migration (dry-run by default; only --apply writes to disk)
+ 
++Deliverables and portfolio (0.3.0)
++  export-docx   Render the workspace state into an editable .docx search report (optional [docx] extra)
++  map           Offline self-contained HTML overview of gates/axes/D-list (never leaves the machine)
++  layout        Cross-target 1+N portfolio overview with a primary-filing suggestion
++  ledger        Evidence ledger: the citable-fact table behind every conclusion (V034 enforces it)
++  provenance    Numerical-claim A/B/C source registry (scan skeleton / check)
++  figures       Figure-mark bidirectional check (V033) + SVG block-diagram rendering
++  deadlines     Post-filing statutory-deadline ledger (list / check / init)
++
+ AI adapter
+   mcp           Start the MCP service (stdio) for Cursor / Claude Code / Cline
+ 
+@@ -73,6 +89,8 @@ Examples
+   python -m patentkit review export --min-relevance 4 --with-topics --out worksheet.csv
+   python -m patentkit validate --strict
+   python -m patentkit check
++  python -m patentkit export-docx TGT-0001
++  python -m patentkit provenance scan --manuscript 07_drafting/claims.md
+   python -m patentkit mcp
+ """
+ 
+@@ -90,6 +108,13 @@ PASSTHROUGH = {
+     "backfill": backfill_mod.main,
+     "fetch-crossref": fetch_crossref_mod.main,
+     "backfill-doi": doi_abstract_mod.main,
++    "provenance": provenance_mod.main,
++    "figures": figures_mod.main,
++    "export-docx": export_mod.main,
++    "deadlines": deadlines_mod.main,
++    "map": map_mod.main,
++    "layout": layout_mod.main,
++    "ledger": ledger_mod.main,
+ }
+ 
+ #: Subcommands with dedicated handling (not pass-through).
+diff --git a/b/patentkit/deadlines.py b/patentkit/deadlines.py
+new file mode 100644
+index 0000000..d6950f3
+--- /dev/null
++++ b/patentkit/deadlines.py
+@@ -0,0 +1,181 @@
++"""Statutory-deadline ledger: a local tracker, never a legal adviser.
++
++Why this module exists
++----------------------
++After filing, three clocks start running (application fee, examination request, OA responses).
++Missing one kills the application regardless of its quality. The tool keeps a **local ledger**
++(``09_deadlines/deadlines.yml``) that lists entries, computes due dates from the statutory
++period presets and flags overdue / due-soon items.
++
++Hard boundary: the presets are the *commonly cited* statutory periods and the ledger is a
++reminder, not a source of law — the entry note always says the official document (通知书/受理通知)
++prevails. The module refuses to compute anything for an entry without a base_date.
++"""
++
++from __future__ import annotations
++
++import argparse
++import sys
++from datetime import date, datetime, timedelta
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .paths import workspace_or_exit
++
++LEDGER_REL = Path("09_deadlines") / "deadlines.yml"
++
++#: Statutory-period presets (months/days added to the base date of the triggering event).
++#: base_on names which event the clock starts from; note cites the common reference.
++PRESETS: dict[str, dict[str, Any]] = {
++    "application_fee": {
++        "label": "申请费缴纳", "base_on": "申请日", "months": 2,
++        "note": "申请日起 2 个月内缴纳申请费（含印刷费）；以受理通知书为准",
++    },
++    "exam_request": {
++        "label": "实质审查请求", "base_on": "申请日", "months": 36,
++        "note": "申请日起 3 年内提出实质审查请求并缴纳实审费；以受理通知书为准",
++    },
++    "oa_response": {
++        "label": "审查意见答复", "base_on": "发文日", "months": 4,
++        "note": "第一次审查意见通常 4 个月内答复，再次答复通常 2 个月；以通知书发文日为准（推定送达规则见政策雷达参考）",
++    },
++    "annuity": {
++        "label": "年费", "base_on": "申请日", "months": 12,
++        "note": "年费按申请日周年计算，滞纳金窗口以缴费通知为准",
++    },
++}
++
++#: Days ahead to flag as "due soon"
++DUE_SOON_DAYS = 14
++
++TEMPLATE = """\
++# 期限台账：以官方发文/通知书为准，本文件只是提醒清单，不构成法律意见。
++schema_version: 1
++entries: []
++# 条目结构（复制使用）：
++# - id: DL-001
++#   target: TGT-0002
++#   type: application_fee     # application_fee | exam_request | oa_response | annuity | custom
++#   base_date: 2026-10-01     # 触发事件日期（申请日/发文日）
++#   months: 2                 # custom 必填；预设类型可省略（自动取 PRESETS）
++#   note: 受理通知书发文日 2026-09-30
++#   done: false               # 已办理置 true，不再计入未完成
++"""
++
++
++def load_ledger(root: Path) -> dict[str, Any] | None:
++    path = root / LEDGER_REL
++    if not path.is_file():
++        return None
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    return data if isinstance(data, dict) else {}
++
++
++def add_months(base: date, months: int) -> date:
++    """Calendar-month addition clamped to the month end (2026-01-31 +1m → 2026-02-28)."""
++    month_index = base.month - 1 + months
++    year = base.year + month_index // 12
++    month = month_index % 12 + 1
++    day = min(base.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28,
++                         31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
++    return date(year, month, day)
++
++
++def due_date(entry: dict[str, Any], today: date) -> date | None:
++    etype = str(entry.get("type") or "custom")
++    preset = PRESETS.get(etype, {})
++    months = entry.get("months")
++    months = preset.get("months") if months is None else months
++    if months is None:
++        return None
++    raw = str(entry.get("base_date") or "")
++    try:
++        base = date.fromisoformat(raw)
++    except ValueError:
++        return None
++    return add_months(base, int(months))
++
++
++def evaluate(root: Path, today: date | None = None) -> list[dict[str, Any]]:
++    """Load the ledger and annotate each open entry with due/status."""
++    today = today or datetime.now().astimezone().date()
++    ledger = load_ledger(root) or {}
++    out: list[dict[str, Any]] = []
++    for entry in ledger.get("entries") or []:
++        if not isinstance(entry, dict) or entry.get("done"):
++            continue
++        due = due_date(entry, today)
++        item = dict(entry)
++        item["due"] = due.isoformat() if due else None
++        if due is None:
++            item["status"] = "incomplete" if not entry.get("base_date") else "unknown-period"
++        elif due < today:
++            item["status"] = "overdue"
++        elif due <= today + timedelta(days=DUE_SOON_DAYS):
++            item["status"] = "due-soon"
++        else:
++            item["status"] = "ok"
++        item["label"] = PRESETS.get(str(entry.get("type")), {}).get("label", str(entry.get("type") or "custom"))
++        out.append(item)
++    return sorted(out, key=lambda e: (e.get("due") or "9999-12-31", str(e.get("id"))))
++
++
++def render(entries: list[dict[str, Any]]) -> str:
++    if not entries:
++        return "期限台账为空（09_deadlines/deadlines.yml 不存在或没有未完成条目）"
++    lines = ["期限台账（以官方发文为准；本清单不构成法律意见）", ""]
++    for e in entries:
++        lines.append(
++            f"[{e['status']:>10}] {e.get('id', '?')} · {e.get('target', '-')} · {e.get('label')} · "
++            f"base {e.get('base_date', '?')} → due {e.get('due') or '（缺 base_date/period，无法计算）'}"
++        )
++        if e.get("note"):
++            lines.append(f"             {e['note']}")
++    problems = [e for e in entries if e["status"] in ("overdue", "incomplete", "unknown-period")]
++    if problems:
++        lines.append("")
++        lines.append(f"⚠️ {len(problems)} 条需要立即处理（逾期或缺基础信息）")
++    return "\n".join(lines)
++
++
++def build_parser() -> argparse.ArgumentParser:
++    ap = argparse.ArgumentParser(
++        prog="python -m patentkit deadlines",
++        description="Post-filing statutory-deadline ledger (list / check / init template)",
++    )
++    sub = ap.add_subparsers(dest="cmd")
++    sub.add_parser("list", help="list open entries with computed due dates (default)")
++    check = sub.add_parser("check", help="exit 1 when anything is overdue/incomplete")
++    check.add_argument("--root", type=Path, default=None)
++    init = sub.add_parser("init", help="write the empty ledger template if absent")
++    init.add_argument("--root", type=Path, default=None)
++    ap.add_argument("--root", type=Path, default=None)
++    return ap
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = build_parser().parse_args(argv)
++    root = (args.root or workspace_or_exit()).resolve()
++
++    if args.cmd == "init":
++        path = root / LEDGER_REL
++        if path.is_file():
++            print(f"already exists: {path}")
++            return 0
++        path.parent.mkdir(parents=True, exist_ok=True)
++        path.write_text(TEMPLATE, encoding="utf-8")
++        print(f"[WRITE] {path} — 填写 entries 后运行 patentkit deadlines")
++        return 0
++
++    entries = evaluate(root)
++    print(render(entries))
++    if args.cmd == "check":
++        bad = [e for e in entries if e["status"] in ("overdue", "incomplete", "unknown-period")]
++        return 1 if bad else 0
++    return 0
++
++
++if __name__ == "__main__":  # pragma: no cover
++    raise SystemExit(main())
+diff --git a/b/patentkit/export.py b/patentkit/export.py
+new file mode 100644
+index 0000000..f737e03
+--- /dev/null
++++ b/patentkit/export.py
+@@ -0,0 +1,217 @@
++"""Export the novelty-search report as a .docx deliverable (kernel 0.3.0).
++
++Why this module exists
++----------------------
++The comparison run, the gates and the candidate list already live in the workspace as data; the
++delivered report was retyped by hand from them, and every retyping is a chance to diverge from
++the evidence chain (a number that no longer matches the gates, a D-document listed without its
++evidence level). This module renders the **workspace state** into an editable Word document:
++zero hand-typed numbers, and the "⚠️ Unverified by tool checks" discipline travels with the file.
++
++python-docx is an **optional** dependency (``pip install patentkit[docx]``): the kernel stays
++light for clients that never export. Missing dependency → exit code 3 with the install hint,
++matching the skill scripts' convention.
++
++Everything the document states comes from the workspace: gates read from ``gates.compute_all``,
++column D from the candidates with their effective evidence level and assessment state. Where a
++section needs human judgment (three-tier conclusion), the document carries an explicit
++_(待人工填写)_ placeholder — it never invents a conclusion.
++"""
++
++from __future__ import annotations
++
++import argparse
++import sys
++from datetime import datetime
++from pathlib import Path
++
++from . import gates as gates_mod
++from . import provenance as provenance_mod
++from . import runs as runs_mod
++from .assessment import state as assessment_state
++from .model import Role, load_candidates, load_logs
++from .paths import workspace_or_exit
++from .registry import TerminologyError, load_registry
++
++#: Optional-dependency exit code (same convention as the skill scripts)
++EXIT_MISSING_DEP = 3
++
++
++def _require_docx():
++    try:
++        import docx  # noqa: F401
++    except ImportError as exc:  # pragma: no cover - exercised via CLI in CI with the extra
++        print(
++            "[FATAL] python-docx is not installed — export-docx is an optional feature.\n"
++            "  fix: pip install \"patentkit[docx]\"  (or pip install python-docx)",
++            file=sys.stderr,
++        )
++        raise SystemExit(EXIT_MISSING_DEP) from exc
++    from docx import Document
++    from docx.shared import Pt
++    return Document, Pt
++
++
++def build_document(root: Path, target_id: str, term) -> "object":
++    """Build the report Document. Pure read of workspace state; no CLI coupling."""
++    Document, Pt = _require_docx()
++
++    report = gates_mod.compute_all(root, term, target_id)
++    cands = [c for c in load_candidates(root) if c.target == target_id]
++    logs = [log for log in load_logs(root) if log.target == target_id]
++    runs = runs_mod.load_runs(root)
++    inferred = runs_mod.infer_near_prior_ids(cands, runs)
++    d_list = sorted(
++        (c for c in cands if c.effective_role(inferred) is Role.NEAR_PRIOR_ART),
++        key=lambda c: c.id,
++    )
++
++    doc = Document()
++    style = doc.styles["Normal"]
++    style.font.name = "DengXian"
++    style.font.size = Pt(10.5)
++
++    # ── 封面 ──
++    title = term.targets.get(target_id)
++    doc.add_heading(f"专利查新检索报告（底稿）— {target_id}", level=0)
++    doc.add_paragraph(
++        f"目标：{target_id} — {title.title if title else '（标题见 workspace.yml）'}\n"
++        f"生成时间：{datetime.now().astimezone().isoformat(timespec='seconds')}\n"
++        f"生成工具：patentkit export-docx（数据全部读取自工作区，未经手工转写）"
++    )
++    note = doc.add_paragraph()
++    run = note.add_run(
++        "声明：本报告是检索与自检底稿，不构成法律意见，也不预测授权前景；"
++        "三层级判定与新颖性/创造性结论须由人工填写并复核。"
++    )
++    run.italic = True
++
++    # ── 1 检索概况 ──
++    doc.add_heading("一、检索概况", level=1)
++    by_level: dict[str, int] = {}
++    for c in cands:
++        lv = c.effective_level(root).value
++        by_level[lv] = by_level.get(lv, 0) + 1
++    doc.add_paragraph(
++        f"检索日志：{len(logs)} 条（live {sum(1 for l in logs if l.capture_mode.value == 'live')} / "
++        f"retrospective {sum(1 for l in logs if l.capture_mode.value != 'live')}）。\n"
++        f"候选文献：{len(cands)} 篇 — 证据分级 {by_level or '无'}。"
++        "hit 数是数据库全库命中面，不等于已采集文献数（见 SKILL 硬约束）。"
++    )
++
++    # ── 2 验收门 ──
++    doc.add_heading("二、验收门状态（G-S，以 verified 列为准）", level=1)
++    table = doc.add_table(rows=1, cols=4)
++    table.style = "Table Grid"
++    hdr = table.rows[0].cells
++    for i, h in enumerate(("门", "判据", "verified 列", "状态")):
++        hdr[i].text = h
++    for g in report.results:
++        row = table.add_row().cells
++        row[0].text = g.gate_id
++        row[1].text = g.threshold
++        row[2].text = str(g.values.get("verified", "-"))
++        row[3].text = g.status
++    doc.add_paragraph(
++        "门 FAIL 的含义是「检索尚不充分」，应补检索/补判定，而不是放宽阈值（硬约束 7）。"
++    )
++
++    # ── 3 D 列对比文献 ──
++    doc.add_heading("三、近似在先技术（D 列）", level=1)
++    if d_list:
++        t2 = doc.add_table(rows=1, cols=6)
++        t2.style = "Table Grid"
++        hdr = t2.rows[0].cells
++        for i, h in enumerate(("D", "文献号", "候选 ID", "证据分级", "判定状态", "novelty_check")):
++            hdr[i].text = h
++        for i, c in enumerate(d_list, start=1):
++            row = t2.add_row().cells
++            row[0].text = f"D{i}"
++            row[1].text = c.doc_number
++            row[2].text = c.id
++            row[3].text = c.effective_level(root).value
++            row[4].text = assessment_state(c, root)
++            row[5].text = c.novelty_check
++    else:
++        doc.add_paragraph("（暂无 role=near_prior_art 的候选）")
++    doc.add_paragraph(
++        "来源分级与判定相互独立：verified 只说明原文工件在工作区内，不保证判断正确；"
++        "G-S-03 只认可绑定当前指纹的人工确认。"
++    )
++
++    # ── 4 三层级判定（人工填写） ──
++    doc.add_heading("四、三层级判定（人工填写）", level=1)
++    for tier, prompt in (
++        ("4.1 单篇新颖性", "是否存在单篇 D 文献覆盖全部 N 轴特征？（成立/存疑/不成立 + 逐条理由）"),
++        ("4.2 结合创造性", "结合组、结合动机是否明确、有无反向教导？（成立/存疑/不成立 + 逐条理由）"),
++        ("4.3 技术效果", "有益效果、量化指标、是否由 D 列显而易见？（反驳成立/未成立）"),
++    ):
++        doc.add_heading(tier, level=2)
++        doc.add_paragraph(f"_{prompt}_")
++
++    # ── 5 数值溯源（若启用） ──
++    registry = provenance_mod.load_registry(root)
++    if registry and registry.get("entries"):
++        doc.add_heading("五、数值声明溯源（A/B/C）", level=1)
++        t3 = doc.add_table(rows=1, cols=3)
++        t3.style = "Table Grid"
++        hdr = t3.rows[0].cells
++        for i, h in enumerate(("编号", "数值声明", "来源分级")):
++            hdr[i].text = h
++        for entry in registry["entries"]:
++            row = t3.add_row().cells
++            grades = ", ".join(str(s.get("grade")) for s in entry.get("sources") or []) or "⚠️ 未溯源"
++            row[0].text = str(entry.get("id") or "")
++            row[1].text = str(entry.get("statement") or "")
++            row[2].text = grades
++
++    doc.add_heading("附：证据分级口径", level=1)
++    doc.add_paragraph(
++        "verified=raw 工件已归档于工作区；attested=外部哈希绑定材料；asserted=自述，无工件。"
++        "工具不可用时结论必须以「⚠️ 未经工具核验」开头。"
++    )
++    return doc
++
++
++def build_parser() -> argparse.ArgumentParser:
++    ap = argparse.ArgumentParser(
++        prog="python -m patentkit export-docx",
++        description="Render the workspace state into an editable .docx novelty-search report",
++    )
++    ap.add_argument("target_id", nargs="?", default=None, help="target ID, e.g. TGT-0001 (default: active)")
++    ap.add_argument("--root", type=Path, default=None)
++    ap.add_argument("--out", type=Path, default=None,
++                    help="output .docx (default: 04_comparative_analysis/<date>_<target>_report.docx)")
++    return ap
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = build_parser().parse_args(argv)
++    root = (args.root or workspace_or_exit()).resolve()
++
++    try:
++        term = load_registry(root)
++    except TerminologyError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++
++    target = args.target_id or term.active_target
++    if target not in term.targets:
++        print(f"[FATAL] target not registered in the glossary: {target}", file=sys.stderr)
++        return 2
++
++    doc = build_document(root, target, term)
++
++    out = args.out or (
++        root / "04_comparative_analysis"
++        / f"{datetime.now().astimezone().date().isoformat()}_{target}_report.docx"
++    )
++    out.parent.mkdir(parents=True, exist_ok=True)
++    doc.save(str(out))
++    print(f"[WRITE] {out}")
++    print("内容全部来自工作区数据；三层级判定与结论段落需人工填写后再交付")
++    return 0
++
++
++if __name__ == "__main__":  # pragma: no cover
++    raise SystemExit(main())
+diff --git a/b/patentkit/figures.py b/patentkit/figures.py
+new file mode 100644
+index 0000000..c5bce94
+--- /dev/null
++++ b/patentkit/figures.py
+@@ -0,0 +1,257 @@
++"""Figure marks: bidirectional consistency between figure specs and the manuscript.
++
++Why this module exists
++----------------------
++Chinese patent figures are black-white line drawings whose parts carry numeric reference signs
++(10, 20, 31…). Two failure modes recur in practice:
++
++1. the specification mentions mark **32** but the figure only has 30 and 31 — the examiner
++   objects under 细则 (clarity); and
++2. a part drawn in the figure is never described — the reader cannot map drawing to text.
++
++Both are mechanical bookkeeping, exactly what a tool should pin down. The **verifiable** direction
++is: every mark in a figure spec must appear in the manuscript, and every reference-sign-like
++number attached to a component name in the manuscript must exist in the spec of the figure the
++manuscript cites. Text heuristics are honest about being heuristics: mismatches surface as
++**warnings (V033)**, never errors, because only a human knows whether "步骤3" is a step number
++or a part mark.
++
++Drawing: ``figures draw`` renders a spec to a standalone **SVG** block diagram (boxes, arrows,
++reference signs). SVG is vector, dependency-free, and convertible to the 300-DPI black-white
++raster that cponline upload requires; regenerating a JPEG here would pull matplotlib into the
++kernel for no added fidelity.
++"""
++
++from __future__ import annotations
++
++import argparse
++import re
++import sys
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .paths import workspace_or_exit
++
++#: Figure specs live here: 07_drafting/figures/*.figure.yml
++FIGURES_DIR = Path("07_drafting") / "figures"
++
++#: Manuscript files scanned for marks (order-independent)
++MANUSCRIPT_GLOBS = ("07_drafting/*.md", "07_drafting/*.txt")
++
++#: A reference sign in text: a component name (CJK run) immediately followed by its number,
++#: e.g. "电解槽10"、"分离器20". Plain bare numbers ("步骤3", "图1") are deliberately NOT matched.
++_TEXT_MARK = re.compile(r"[\u4e00-\u9fff]{1,12}(\d{1,3})(?![0-9A-Za-z%.])")
++
++#: Figure self-reference like "图1" is not a part mark
++_NOISE = re.compile(r"^图\d+$")
++
++
++def load_specs(root: Path) -> dict[str, dict[str, Any]]:
++    """Load every *.figure.yml under 07_drafting/figures/, keyed by figure id."""
++    out: dict[str, dict[str, Any]] = {}
++    d = root / FIGURES_DIR
++    if not d.is_dir():
++        return out
++    for p in sorted(d.glob("*.figure.yml")):
++        try:
++            data = yaml.safe_load(p.read_text(encoding="utf-8"))
++        except yaml.YAMLError:
++            continue
++        if isinstance(data, dict) and data.get("figure"):
++            out[str(data["figure"])] = data
++    return out
++
++
++def manuscript_text(root: Path) -> str:
++    chunks: list[str] = []
++    for pattern in MANUSCRIPT_GLOBS:
++        for p in sorted((root / pattern.split("/")[0]).glob(pattern.split("/", 1)[1])):
++            if p.is_file():
++                try:
++                    chunks.append(p.read_text(encoding="utf-8"))
++                except OSError:
++                    continue
++    return "\n".join(chunks)
++
++
++def spec_marks(spec: dict[str, Any]) -> set[str]:
++    """Reference signs declared by the spec (parts[].id)."""
++    marks: set[str] = set()
++    for part in spec.get("parts") or []:
++        if isinstance(part, dict) and part.get("id") is not None:
++            marks.add(str(part["id"]))
++    return marks
++
++
++def text_marks(text: str) -> set[str]:
++    """Reference-sign-like numbers found in the manuscript (heuristic; CJK-anchored)."""
++    out: set[str] = set()
++    for m in _TEXT_MARK.finditer(text):
++        token = m.group(1)
++        if not _NOISE.match(token):
++            out.add(token)
++    return out
++
++
++def check_marks(root: Path) -> list[dict[str, Any]]:
++    """Bidirectional mark check. Each finding is a dict (warn-level by contract)."""
++    specs = load_specs(root)
++    text = manuscript_text(root)
++    found: list[dict[str, Any]] = []
++
++    if not specs:
++        return found
++
++    declared_all: set[str] = set()
++    for fig, spec in sorted(specs.items()):
++        marks = spec_marks(spec)
++        declared_all |= marks
++        missing_in_text = sorted(m for m in marks if not re.search(rf"(?<![0-9]){re.escape(m)}(?![0-9])", text))
++        if missing_in_text:
++            found.append({
++                "code": "V033",
++                "figure": fig,
++                "problem": "marks declared in the figure but never appearing in the manuscript",
++                "marks": missing_in_text,
++            })
++
++    in_text_only = sorted(text_marks(text) - declared_all)
++    if in_text_only:
++        found.append({
++            "code": "V033",
++            "figure": "*",
++            "problem": "component-like marks in the manuscript not declared by any figure spec",
++            "marks": in_text_only,
++        })
++    return found
++
++
++# ── SVG block diagram ────────────────────────────────────────────────
++
++_BOX_W, _BOX_H, _GAP_X, _GAP_Y = 180, 56, 60, 70
++
++
++def _esc(s: str) -> str:
++    return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
++
++
++def render_svg(spec: dict[str, Any]) -> str:
++    """Render a spec to a black-white SVG block diagram.
++
++    Layout: parts flow left→right in rows of three; connections draw straight arrows between
++    part centers with their labels. Deterministic — same spec, same bytes.
++    """
++    parts = [p for p in (spec.get("parts") or []) if isinstance(p, dict)]
++    per_row = 3
++    rows = (len(parts) + per_row - 1) // per_row if parts else 1
++    width = per_row * (_BOX_W + _GAP_X) + _GAP_X
++    height = rows * (_BOX_H + _GAP_Y) + _GAP_Y + 40
++
++    centers: dict[str, tuple[float, float]] = {}
++    body: list[str] = []
++    for i, part in enumerate(parts):
++        r, c = divmod(i, per_row)
++        x = _GAP_X + c * (_BOX_W + _GAP_X)
++        y = _GAP_Y + r * (_BOX_H + _GAP_Y)
++        cx, cy = x + _BOX_W / 2, y + _BOX_H / 2
++        pid = str(part.get("id") or "")
++        centers[pid] = (cx, cy)
++        body.append(
++            f'<rect x="{x}" y="{y}" width="{_BOX_W}" height="{_BOX_H}" fill="white" stroke="black" stroke-width="2"/>'
++        )
++        label = _esc(str(part.get("name") or pid))
++        body.append(
++            f'<text x="{cx}" y="{cy - 4}" text-anchor="middle" font-family="sans-serif" font-size="14" fill="black">{label}</text>'
++        )
++        if pid:
++            body.append(
++                f'<text x="{cx}" y="{cy + 16}" text-anchor="middle" font-family="sans-serif" font-size="13" fill="black">{_esc(pid)}</text>'
++            )
++
++    for conn in spec.get("connections") or []:
++        if not isinstance(conn, dict):
++            continue
++        a, b = str(conn.get("from") or ""), str(conn.get("to") or "")
++        if a not in centers or b not in centers:
++            continue
++        x1, y1 = centers[a]
++        x2, y2 = centers[b]
++        body.append(
++            f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="black" stroke-width="2"/>'
++        )
++        body.append(
++            f'<polygon points="{x2},{y2} {x2 - 8},{y2 - 5} {x2 - 8},{y2 + 5}" fill="black" transform="rotate({0} {x2} {y2})"/>'
++        )
++        if conn.get("label"):
++            mx, my = (x1 + x2) / 2, (y1 + y2) / 2 - 6
++            body.append(
++                f'<text x="{mx}" y="{my}" text-anchor="middle" font-family="sans-serif" font-size="12" fill="black">{_esc(str(conn["label"]))}</text>'
++            )
++
++    title = _esc(str(spec.get("title") or spec.get("figure") or ""))
++    head = (
++        f'<text x="{width / 2}" y="28" text-anchor="middle" font-family="sans-serif" '
++        f'font-size="16" font-weight="bold" fill="black">{title}</text>'
++    )
++    return (
++        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
++        f'viewBox="0 0 {width} {height}">\n'
++        '<rect width="100%" height="100%" fill="white"/>\n' + head + "\n" + "\n".join(body) + "\n</svg>\n"
++    )
++
++
++def build_parser() -> argparse.ArgumentParser:
++    ap = argparse.ArgumentParser(
++        prog="python -m patentkit.figures",
++        description="Figure mark consistency (V033) and SVG block-diagram rendering",
++    )
++    sub = ap.add_subparsers(dest="cmd", required=True)
++
++    check = sub.add_parser("check", help="bidirectional mark check across figure specs and manuscripts")
++    check.add_argument("--root", type=Path, default=None)
++
++    draw = sub.add_parser("draw", help="render one figure spec to a standalone SVG")
++    draw.add_argument("figure", help="figure id, e.g. FIG-1 (must exist in 07_drafting/figures/)")
++    draw.add_argument("--root", type=Path, default=None)
++    draw.add_argument("--out", type=Path, default=None, help="output .svg (default: beside the spec)")
++
++    return ap
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = build_parser().parse_args(argv)
++
++    if args.cmd == "check":
++        root = (args.root or workspace_or_exit()).resolve()
++        findings = check_marks(root)
++        if not findings:
++            print("✅ no figure specs, or every declared mark appears in the manuscript")
++            return 0
++        for f in findings:
++            marks = ", ".join(f["marks"])
++            print(f"[{f['code']}] {f['figure']}: {f['problem']}: {marks}")
++        print("\nmark mismatches are warnings — confirm with the figure before editing; "
++              "the rule never auto-deletes a mark")
++        return 1
++
++    root = (args.root or workspace_or_exit()).resolve()
++    specs = load_specs(root)
++    spec = specs.get(args.figure)
++    if spec is None:
++        print(f"[FATAL] figure spec not found: {args.figure} (available: {sorted(specs) or 'none'})",
++              file=sys.stderr)
++        return 2
++    svg = render_svg(spec)
++    out = args.out or (root / FIGURES_DIR / f"{args.figure}.svg")
++    out.parent.mkdir(parents=True, exist_ok=True)
++    out.write_text(svg, encoding="utf-8")
++    print(f"[WRITE] {out}")
++    print("SVG is vector and offline; convert to the 300-DPI black-white raster required by "
++          "cponline at submission time (e.g. any local converter) — the kernel stays dependency-free")
++    return 0
++
++
++if __name__ == "__main__":  # pragma: no cover
++    raise SystemExit(main())
+diff --git a/patentkit/gates.py b/patentkit/gates.py
+index 6803642..c7d0742 100644
+--- a/patentkit/gates.py
++++ b/patentkit/gates.py
+@@ -35,6 +35,7 @@ from .model import (
+ from .paths import workspace_or_exit
+ from .registry import Terminology, TerminologyError, load_registry, qualify
+ from . import runs as runs_mod
++from .assessment import eligible_axis, confirmation_valid
+ 
+ LEVEL_KEYS = ("verified", "attested", "asserted")
+ LEVEL_LABELS = {
+@@ -195,7 +196,7 @@ def gate_gs02(
+             # entries with role=excluded (mis-mapping / false positive / belongs to another target) do not count as a hit on any main axis
+             if c.effective_role(inferred) is Role.EXCLUDED:
+                 return False
+-            return qualified in c.tags and c.relevance >= 4
++            return qualified in c.tags and eligible_axis(c, root, qualified)
+ 
+         per_axis[short] = _count_by_level(cands, root, pred)
+ 
+@@ -217,7 +218,7 @@ def gate_gs02(
+                 "asserted": f"min axis {asserted_min}",
+             },
+             status=_status_from_bool(ok, has_data),
+-            note=f"Criteria: the tag contains this target's qualified axis ID (e.g. {qualify('N1', target)}) and relevance≥4; role=excluded does not count",
++            note="Source level and supported assessment are separate: both relevance dimensions and per-axis original-text citations are required; AI assessments are allowed; excluded does not count",
+         ),
+         per_axis,
+     )
+@@ -230,7 +231,7 @@ def gate_gs03(
+     cands: list[Candidate], root: Path, inferred: frozenset[str]
+ ) -> GateResult:
+     counts = _count_by_level(
+-        cands, root, lambda c: c.effective_role(inferred) is Role.NEAR_PRIOR_ART
++        cands, root, lambda c: c.effective_role(inferred) is Role.NEAR_PRIOR_ART and confirmation_valid(c, root)
+     )
+     ok = counts["verified"] >= GS03_MIN_NEAR_PRIOR
+     has_data = counts["verified"] > 0
+@@ -241,7 +242,7 @@ def gate_gs03(
+         threshold=f"≥{GS03_MIN_NEAR_PRIOR} documents",
+         values=_fmt_counts(counts, " docs"),
+         status=_status_from_bool(ok, has_data),
+-        note="Criteria correction: counts role=near_prior_art, no longer counts novelty_check=blocking (see §5.3)",
++        note="Counts near_prior_art only with a current supported assessment and an explicit human confirmation bound to its fingerprint",
+     )
+ 
+ 
+diff --git a/b/patentkit/layout.py b/patentkit/layout.py
+new file mode 100644
+index 0000000..4af4a91
+--- /dev/null
++++ b/patentkit/layout.py
+@@ -0,0 +1,126 @@
++"""Cross-target layout view: the "1+N" portfolio at a glance.
++
++Why this module exists
++----------------------
++The workspace already supports multiple targets, but every command silos into one target. When
++planning a 1+N layout (one primary filing plus N defensive filings around it) the questions are
++cross-target: which target has the deepest verified evidence, which axes of which target are
++still hollow, which targets are ripe to draft and which are still searching.
++
++This module answers exactly those questions **from existing data** (targets, candidates, gates)
++and suggests which target looks like the "1". A suggestion is a suggestion: it never writes,
++never re-tags, and says plainly when the data is too thin to rank.
++"""
++
++from __future__ import annotations
++
++import argparse
++import json
++from pathlib import Path
++
++from . import gates as gates_mod
++from .model import load_candidates
++from .paths import workspace_or_exit
++from .registry import TerminologyError, load_registry
++
++
++def collect(root: Path, term) -> list[dict]:
++    """One summary row per registered target (active or archived — archived rows are marked)."""
++    all_cands = load_candidates(root)
++    rows: list[dict] = []
++    for tid, target in term.targets.items():
++        cands = [c for c in all_cands if c.target == tid]
++        by_level = {"verified": 0, "attested": 0, "asserted": 0}
++        by_role: dict[str, int] = {}
++        for c in cands:
++            lv = c.effective_level(root).value
++            by_level[lv] = by_level.get(lv, 0) + 1
++            by_role[c.data.get("role") or "?"] = by_role.get(c.data.get("role") or "?", 0) + 1
++        report = gates_mod.compute_all(root, term, tid)
++        passed = sum(1 for g in report.results if g.status == "PASS")
++        axes = term.axes_for(tid)
++        hollow = sorted(a for a, v in (report.per_axis or {}).items() if v.get("verified", 0) == 0)
++        rows.append({
++            "target": tid,
++            "title": target.title,
++            "status": target.status,
++            "candidates": len(cands),
++            "by_level": by_level,
++            "by_role": by_role,
++            "axes": len(axes),
++            "hollow_axes": hollow,
++            "gates_passed": f"{passed}/5",
++            "gs02_verified_min": report.per_axis and min(
++                (v.get("verified", 0) for v in report.per_axis.values()), default=0
++            ) or 0,
++        })
++    return rows
++
++
++def suggest_primary(rows: list[dict]) -> str:
++    """Rank by (verified count, G-S-02 verified min); refuse to crown a thin field."""
++    ranked = sorted(
++        rows, key=lambda r: (r["by_level"].get("verified", 0), r["gs02_verified_min"] or 0), reverse=True
++    )
++    if not ranked:
++        return "没有已注册目标"
++    top = ranked[0]
++    if top["by_level"].get("verified", 0) == 0:
++        return "verified 证据都为 0 — 数据不足，暂不建议指定主件（继续补检索）"
++    others = ", ".join(r["target"] for r in ranked[1:]) or "无"
++    return (
++        f"主件候选：{top['target']}（verified {top['by_level']['verified']} 篇，"
++        f"G-S-02 verified 最小轴 {top['gs02_verified_min']}）；其余目标可作为 N 件：{others}。"
++        "建议仅为排序提示，定稿前须人工确认技术布局价值"
++    )
++
++
++def render(rows: list[dict]) -> str:
++    if not rows:
++        return "没有已注册目标（glossary targets 为空）"
++    lines = ["1+N 布局总览（跨目标只读视图）", ""]
++    for r in rows:
++        lines.append(
++            f"{r['target']} — {r['title'] or '(无标题)'} [{r['status']}]"
++        )
++        lines.append(
++            f"    候选 {r['candidates']}（{r['by_level']}）· 角色 {r['by_role'] or '无'} · "
++            f"轴 {r['axes']}（空轴 {len(r['hollow_axes'])}{':' + ','.join(r['hollow_axes']) if r['hollow_axes'] else ''}）· "
++            f"通过门 {r['gates_passed']}"
++        )
++    lines.append("")
++    lines.append("→ " + suggest_primary(rows))
++    lines.append("")
++    lines.append("空轴 = 该轴 verified 计数为 0；先补检索再谈布局")
++    return "\n".join(lines)
++
++
++def build_parser() -> argparse.ArgumentParser:
++    ap = argparse.ArgumentParser(
++        prog="python -m patentkit layout",
++        description="Cross-target 1+N portfolio overview (read-only)",
++    )
++    ap.add_argument("--root", type=Path, default=None)
++    ap.add_argument("--json", action="store_true")
++    return ap
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = build_parser().parse_args(argv)
++    root = (args.root or workspace_or_exit()).resolve()
++    try:
++        term = load_registry(root)
++    except TerminologyError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++    rows = collect(root, term)
++    if args.json:
++        payload = {"rows": rows, "suggestion": suggest_primary(rows)}
++        print(json.dumps(payload, ensure_ascii=False, indent=2))
++    else:
++        print(render(rows))
++    return 0
++
++
++if __name__ == "__main__":  # pragma: no cover
++    raise SystemExit(main())
+diff --git a/b/patentkit/ledger.py b/patentkit/ledger.py
+new file mode 100644
+index 0000000..8ec27a4
+--- /dev/null
++++ b/patentkit/ledger.py
+@@ -0,0 +1,103 @@
++"""The evidence ledger: every judgment-citable fact in one auditable table.
++
++Why this module exists
++----------------------
++A conclusion like "D3 discloses the 50-90% range" is only as good as the chain
++**conclusion → cited evidence → archived artifact → assessment/confirmation**. That chain exists
++in the workspace but is scattered across candidates JSON, run files and confirmation records.
++The ledger renders it in one place: for each citable candidate — id, document number, effective
++evidence level, the artifact it points at (evidence_ref), the assessment state, and the current
++human-confirmation fingerprint.
++
++``validate`` enforces the other half (V034): a conclusion file citing a candidate ID that is not
++in the ledger is an error — an invented citation must fail the build, not survive to delivery.
++"""
++
++from __future__ import annotations
++
++import argparse
++import json
++from pathlib import Path
++
++from . import runs as runs_mod
++from .assessment import state as assessment_state, confirmation_valid
++from .model import Role, load_candidates
++from .paths import workspace_or_exit
++from .registry import TerminologyError, load_registry
++
++
++def build_entries(root: Path, term, target_id: str) -> list[dict]:
++    """Ledger rows for one target, sorted by role weight then id."""
++    cands = [c for c in load_candidates(root) if c.target == target_id]
++    runs = runs_mod.load_runs(root)
++    inferred = runs_mod.infer_near_prior_ids(cands, runs)
++    weight = {Role.NEAR_PRIOR_ART: 0, Role.FAMILY: 1, Role.POOL: 2, Role.EXCLUDED: 3}
++    rows = []
++    for c in sorted(cands, key=lambda c: (weight.get(c.effective_role(inferred), 9), c.id)):
++        role = c.effective_role(inferred)
++        rows.append({
++            "id": c.id,
++            "doc_number": c.doc_number,
++            "role": role.value,
++            "evidence_level": c.effective_level(root).value,
++            "evidence_ref": c.data.get("evidence_ref"),
++            "assessment_state": assessment_state(c, root),
++            "human_confirmed": confirmation_valid(c, root),
++        })
++    return rows
++
++
++def render(rows: list[dict], target_id: str) -> str:
++    lines = [f"证据账本 — {target_id}（结论可引用的证据清单；引用不在账本中的编号会被 V034 拦截）", ""]
++    if not rows:
++        lines.append("（该目标暂无候选）")
++        return "\n".join(lines)
++    lines.append(f"{'ID':<8}{'文献号':<18}{'角色':<16}{'分级':<10}{'判定状态':<18}{'人工确认'}")
++    lines.append("-" * 84)
++    for r in rows:
++        mark = "✅" if r["human_confirmed"] else "—"
++        lines.append(
++            f"{r['id']:<8}{r['doc_number']:<18}{r['role']:<16}{r['evidence_level']:<10}"
++            f"{r['assessment_state']:<18}{mark}"
++        )
++        if r["evidence_ref"]:
++            lines.append(f"{'':<8}└─ artifact: {r['evidence_ref']}")
++    lines.append("")
++    lines.append("判定状态 unknown/needs_review 的条目不得作为 G-S-02/G-S-03 的依据；"
++                 "分级为来源属性，与判断质量无关")
++    return "\n".join(lines)
++
++
++def build_parser() -> argparse.ArgumentParser:
++    ap = argparse.ArgumentParser(
++        prog="python -m patentkit ledger",
++        description="Evidence ledger: the citable-fact table behind every conclusion",
++    )
++    ap.add_argument("target_id", nargs="?", default=None, help="target ID (default: active)")
++    ap.add_argument("--root", type=Path, default=None)
++    ap.add_argument("--json", action="store_true")
++    return ap
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = build_parser().parse_args(argv)
++    root = (args.root or workspace_or_exit()).resolve()
++    try:
++        term = load_registry(root)
++    except TerminologyError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++    target = args.target_id or term.active_target
++    if target not in term.targets:
++        print(f"[FATAL] target not registered: {target}", file=sys.stderr)
++        return 2
++    rows = build_entries(root, term, target)
++    if args.json:
++        print(json.dumps({"target": target, "entries": rows}, ensure_ascii=False, indent=2))
++    else:
++        print(render(rows, target))
++    return 0
++
++
++if __name__ == "__main__":  # pragma: no cover
++    raise SystemExit(main())
+diff --git a/b/patentkit/map.py b/patentkit/map.py
+new file mode 100644
+index 0000000..8cca4ec
+--- /dev/null
++++ b/patentkit/map.py
+@@ -0,0 +1,156 @@
++"""Static local HTML overview of the comparison state ("patent map", baseline).
++
++Why this module exists
++----------------------
++The blank comparison matrix is a markdown table; humans read coverage far better as a chart.
++This module renders the **workspace state only** into one self-contained HTML file: per-axis
++coverage bars (three evidence columns), the D-listing with assessment states, and the gate
++summary. No network, no CDN, no JavaScript dependencies — the file must open offline inside an
++air-gapped environment and must never leak data to a third-party CDN.
++
++Boundary (kept from the run skeleton): this is a summary view. The form an examiner can verify
++item by item remains the claim chart; the HTML says so at the top.
++"""
++
++from __future__ import annotations
++
++import argparse
++import html
++from datetime import datetime
++from pathlib import Path
++
++from . import gates as gates_mod
++from . import runs as runs_mod
++from .assessment import state as assessment_state
++from .model import Role, load_candidates
++from .paths import workspace_or_exit
++from .registry import TerminologyError, load_registry
++
++_CSS = """\
++body{font-family:"Microsoft YaHei",sans-serif;margin:2rem auto;max-width:60rem;color:#111}
++h1{font-size:1.4rem} h2{font-size:1.1rem;margin-top:2rem}
++table{border-collapse:collapse;width:100%} th,td{border:1px solid #999;padding:4px 8px;font-size:.9rem;text-align:left}
++.bar{background:#eee;position:relative;height:1.2rem}
++.bar>span{position:absolute;top:0;bottom:0;left:0;background:#333;color:#fff;font-size:.75rem;
++padding:.15rem .4rem;white-space:nowrap}
++.warn{color:#a00} .note{color:#555;font-size:.85rem}
++.pass{font-weight:700} .fail{font-weight:700;color:#a00} .na{color:#777}
++"""
++
++
++def _esc(s: object) -> str:
++    return html.escape(str(s), quote=True)
++
++
++def build_html(root: Path, target_id: str, term) -> str:
++    report = gates_mod.compute_all(root, term, target_id)
++    cands = [c for c in load_candidates(root) if c.target == target_id]
++    runs = runs_mod.load_runs(root)
++    inferred = runs_mod.infer_near_prior_ids(cands, runs)
++    d_list = sorted(
++        (c for c in cands if c.effective_role(inferred) is Role.NEAR_PRIOR_ART),
++        key=lambda c: c.id,
++    )
++    axes = sorted(term.axes_for(target_id))
++    per_axis = report.per_axis
++
++    parts: list[str] = []
++    parts.append("<html lang='zh-CN'><head><meta charset='utf-8'>")
++    parts.append(f"<title>对比地图 — {target_id}</title><style>{_CSS}</style></head><body>")
++    t = term.targets.get(target_id)
++    parts.append(f"<h1>对比地图（汇总视图）— {target_id} {_esc(t.title if t else '')}</h1>")
++    parts.append(
++        "<p class='note'>生成时间 " + datetime.now().astimezone().isoformat(timespec="seconds")
++        + " · 数据全部来自工作区 · 这是汇总视图，可逐项核验的形态是 claim chart；"
++          "本页面不构成法律意见。</p>"
++    )
++
++    # ── gates ──
++    parts.append("<h2>验收门（verified 列）</h2><table><tr><th>门</th><th>判据</th><th>verified</th><th>状态</th></tr>")
++    for g in report.results:
++        cls = "pass" if g.status == "PASS" else ("fail" if g.status == "FAIL" else "na")
++        parts.append(
++            f"<tr><td>{_esc(g.gate_id)}</td><td>{_esc(g.threshold)}</td>"
++            f"<td>{_esc(g.values.get('verified', '-'))}</td><td class='{cls}'>{_esc(g.status)}</td></tr>"
++        )
++    parts.append("</table>")
++
++    # ── per-axis coverage bars ──
++    parts.append("<h2>N 轴覆盖（三列证据计数）</h2>")
++    if per_axis:
++        max_n = max((max(v.values()) for v in per_axis.values() if v), default=1) or 1
++        parts.append("<table><tr><th>轴</th><th style='width:70%'>覆盖（verified/attested/asserted）</th></tr>")
++        for axis in axes:
++            v = per_axis.get(axis.split("@")[0], {})
++            label = term.axis_label(axis)
++            cells = []
++            for key, color in (("verified", "#333"), ("attested", "#777"), ("asserted", "#aaa")):
++                n = v.get(key, 0)
++                w = int(100 * n / max_n)
++                cells.append(
++                    f"<div class='bar' title='{key}={n}'><span style='width:{w}%;background:{color}'>{key} {n}</span></div>"
++                )
++            parts.append(f"<tr><td>{_esc(label)}</td><td>{''.join(cells)}</td></tr>")
++        parts.append("</table>")
++    else:
++        parts.append("<p class='note'>（该目标暂无轴计数）</p>")
++
++    # ── D listing ──
++    parts.append("<h2>D 列（近似在先技术）</h2>")
++    if d_list:
++        parts.append("<table><tr><th>D</th><th>文献号</th><th>ID</th><th>证据分级</th><th>判定状态</th><th>novelty</th></tr>")
++        for i, c in enumerate(d_list, start=1):
++            state = assessment_state(c, root)
++            cls = " class='warn'" if state in ("unknown", "needs_review") else ""
++            parts.append(
++                f"<tr><td>D{i}</td><td>{_esc(c.doc_number)}</td><td>{_esc(c.id)}</td>"
++                f"<td>{_esc(c.effective_level(root).value)}</td><td{cls}>{_esc(state)}</td>"
++                f"<td>{_esc(c.novelty_check)}</td></tr>"
++            )
++        parts.append("</table>")
++    else:
++        parts.append("<p class='note'>（暂无 near_prior_art）</p>")
++
++    parts.append("</body></html>")
++    return "\n".join(parts)
++
++
++def build_parser() -> argparse.ArgumentParser:
++    ap = argparse.ArgumentParser(
++        prog="python -m patentkit map",
++        description="Render a self-contained offline HTML overview of the comparison state",
++    )
++    ap.add_argument("target_id", nargs="?", default=None, help="target ID (default: active)")
++    ap.add_argument("--root", type=Path, default=None)
++    ap.add_argument("--out", type=Path, default=None,
++                    help="output .html (default: 04_comparative_analysis/<date>_<target>_map.html)")
++    return ap
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = build_parser().parse_args(argv)
++    root = (args.root or workspace_or_exit()).resolve()
++    try:
++        term = load_registry(root)
++    except TerminologyError as exc:
++        print(f"[FATAL] {exc}", file=sys.stderr)
++        return 2
++    target = args.target_id or term.active_target
++    if target not in term.targets:
++        print(f"[FATAL] target not registered: {target}", file=sys.stderr)
++        return 2
++
++    payload = build_html(root, target, term)
++    out = args.out or (
++        root / "04_comparative_analysis"
++        / f"{datetime.now().astimezone().date().isoformat()}_{target}_map.html"
++    )
++    out.parent.mkdir(parents=True, exist_ok=True)
++    out.write_text(payload, encoding="utf-8")
++    print(f"[WRITE] {out}")
++    print("离线静态页面：无外链、无脚本依赖；含真实检索数据，请勿外发")
++    return 0
++
++
++if __name__ == "__main__":  # pragma: no cover
++    raise SystemExit(main())
+diff --git a/patentkit/mcp_server.py b/patentkit/mcp_server.py
+index 07d1ed1..419e82b 100644
+--- a/patentkit/mcp_server.py
++++ b/patentkit/mcp_server.py
+@@ -55,7 +55,7 @@ Hard constraints (must be followed):
+ 2. A gate PASS only trusts the verified column; asserted is historical record, not a basis for PASS.
+ 3. Hit count (hit_count) != number of core documents; never conflate the two.
+ 4. A query may use at most 3 AND sub-expressions; IPC is a post-filter and is not written into the main query.
+-5. Determinations the tool cannot compute (e.g. relevance, role) **must not be guessed on the user's behalf** — those are manual responsibilities.
++5. Supported AI scoring may count for G-S-02; use the review CLI/API with original-text basis. G-S-03 requires explicit human confirmation of current candidate fingerprints. Never impersonate a human reviewer or overwrite a human decision.
+ 
+ Methodology documents are under resources: patentkit://references lists them all.
+ """
+@@ -387,7 +387,7 @@ For target {tgt}, run a novelty self-check in the following order:
+    - for parts where tools cannot be run, mark "⚠️ Unverified by tool checks";
+    - never treat asserted numbers as existing evidence.
+ 
+-Do not determine relevance or role on the user's behalf — those are manual responsibilities.
++Report source provenance separately from judgment. Supported AI scoring is permitted for G-S-02; G-S-03 requires explicit current human confirmation. Use the review CLI/API and never impersonate a reviewer.
+ """
+ 
+ 
+diff --git a/b/patentkit/provenance.py b/patentkit/provenance.py
+new file mode 100644
+index 0000000..22ae4fe
+--- /dev/null
++++ b/patentkit/provenance.py
+@@ -0,0 +1,261 @@
++"""Numerical-claim provenance: every number in a manuscript must trace to a source.
++
++Why this module exists
++----------------------
++A numerical range in a claim ("50-90%") is a legal limitation. If it cannot be traced back to
++either the inventors' own material, a retrieved document, or an explicitly marked example, the
++claim is built on air: at best the examination answer loses an argument, at worst the claim is
++invalidated by an undisclosed feature. Humans review numbers one by one and miss them; a
++deterministic scanner does not.
++
++The A/B/C grades (single source of truth — this module; references explain them):
++
++* **A — 自产材料** (in-house material): experiment records, design docs, embodiment data that
++  live inside the workspace. Requires an existing ``ref`` file + ``locator``.
++* **B — 文献/对比文件** (retrieved document): a candidate in ``03_candidates``. Requires the
++  candidate ID to exist; the locator should quote where the number appears.
++* **C — 实施例示例** (illustrative example): a number invented for the embodiment narrative.
++  Legal but must be *declared* — an undeclared C is exactly how fabricated data sneaks in.
++
++Workflow
++--------
++1. ``patentkit provenance scan --manuscript <file.md>`` → skeleton registry (dry-run to stdout,
++   ``--out`` writes ``07_drafting/numerical_provenance.yml``).
++2. Humans fill in ``sources`` for every entry (or mark the statement for deletion).
++3. ``patentkit provenance check`` → errors; ``validate`` integrates the same rules as
++   V031/V032 so CI and the acceptance gates see them too.
++"""
++
++from __future__ import annotations
++
++import argparse
++import re
++import sys
++from datetime import datetime
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .model import load_candidates
++from .paths import workspace_or_exit
++
++#: Where the registry lives inside a workspace
++REGISTRY_REL = Path("07_drafting") / "numerical_provenance.yml"
++
++#: Sentence splitters: CJK stops first, Latin stops second (a decimal point is not a stop)
++_SENT_SPLIT = re.compile(r"[。；;！？!?\n]+")
++
++#: A "numerical statement" sentence: a number that carries technical meaning.
++#: Requires a unit/range/percentage to avoid flagging bare list indices ("步骤3"),
++#: while still catching "3 mm", "50-90%", "≥1.5 MPa", "至少两台", "10°".
++_NUM_UNIT = re.compile(
++    r"\d+(?:\.\d+)?\s*(?:%"
++    r"|[-–~～]\s*\d+(?:\.\d+)?"
++    r"|(?:mm|cm|m|μm|nm|km|kg|g|mg|N|kN|MPa|kPa|Pa|kW|W|MW|V|mV|kV|A|mA|Ah|mAh|Hz|kHz|MHz|GHz|s|ms|μs|min|h|L|mL|°C|K|mol|ppm|V·|r/min|rpm|bar|torr|atm)\b"
++    r"|℃|°|度以上|度以下|以上|以下|个|台|层|次|倍|重量份|体积份|vol|wt"
++    r")",
++    re.IGNORECASE,
++)
++
++#: Number-of-items CJK pattern: "至少两台/三个/5层" — counted as numerical statements too
++_CJK_COUNT = re.compile(r"[一二三四五六七八九十两\d]+\s*(?:个|台|层|次|倍|组|套|路|通道)")
++
++GRADES = ("A", "B", "C")
++
++GRADE_LABELS = {
++    "A": "自产材料（实验记录/设计文档/自测数据，需 ref+locator 指向工作区内文件）",
++    "B": "文献/对比文件（03_candidates 中的候选，需 candidate id + locator）",
++    "C": "实施例示例（仅用于说明性实施例，必须显式声明，不得伪装成实测数据）",
++}
++
++
++def scan_text(text: str) -> list[str]:
++    """Extract numerical statements (deduplicated, order preserved) from manuscript text."""
++    seen: set[str] = set()
++    out: list[str] = []
++    for raw in _SENT_SPLIT.split(text):
++        sent = raw.strip().strip("，,、 \t")
++        if not sent or len(sent) < 4:
++            continue
++        if _NUM_UNIT.search(sent) or _CJK_COUNT.search(sent):
++            key = sent
++            if key not in seen:
++                seen.add(key)
++                out.append(sent)
++    return out
++
++
++def build_skeleton(statements: list[str], manuscript: str) -> dict[str, Any]:
++    """Skeleton registry: every statement pre-listed with empty sources (fail-closed)."""
++    return {
++        "schema_version": 1,
++        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
++        "generated_from": manuscript,
++        "entries": [
++            {
++                "id": f"NUM-{i:03d}",
++                "statement": s,
++                "claim_ref": "",  # 权利要求编号/说明书段落号，人工填写
++                "sources": [],  # 人工填写：{grade: A|B|C, ref: ..., locator: ..., note: ...}
++            }
++            for i, s in enumerate(statements, start=1)
++        ],
++    }
++
++
++def load_registry(root: Path) -> dict[str, Any] | None:
++    """Load the registry; None when absent (provenance is opt-in per manuscript stage)."""
++    path = root / REGISTRY_REL
++    if not path.is_file():
++        return None
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    return data if isinstance(data, dict) else {}
++
++
++def check_registry(root: Path, registry: dict[str, Any] | None) -> list[tuple[str, str]]:
++    """Validate the registry. Returns (code, message) pairs; codes V031/V032.
++
++    Deterministic only: file existence, candidate existence, grade validity. Whether the quote
++    actually supports the number stays a human judgment — the tool refuses to fake it.
++    """
++    out: list[tuple[str, str]] = []
++    if registry is None:
++        return out
++
++    entries = registry.get("entries")
++    if not isinstance(entries, list):
++        return [("V031", "numerical_provenance.yml: entries must be a list")]
++
++    candidates = {c.id: c for c in load_candidates(root)}
++    seen_ids: set[str] = set()
++
++    for i, entry in enumerate(entries, start=1):
++        if not isinstance(entry, dict):
++            out.append(("V031", f"numerical_provenance.yml entry #{i}: must be a mapping"))
++            continue
++        eid = str(entry.get("id") or f"#{i}")
++        if eid in seen_ids:
++            out.append(("V031", f"{eid}: duplicate provenance id"))
++        seen_ids.add(eid)
++
++        statement = str(entry.get("statement") or "").strip()
++        if not statement:
++            out.append(("V031", f"{eid}: statement is empty"))
++
++        sources = entry.get("sources")
++        if not isinstance(sources, list) or not sources:
++            out.append(("V031", f"{eid}: no source — a numerical claim without provenance is built on air"))
++            continue
++
++        for src in sources:
++            if not isinstance(src, dict):
++                out.append(("V032", f"{eid}: source must be a mapping"))
++                continue
++            grade = src.get("grade")
++            if grade not in GRADES:
++                out.append(("V032", f"{eid}: grade must be one of A/B/C, got {grade!r}"))
++                continue
++            ref = str(src.get("ref") or "").strip()
++            locator = str(src.get("locator") or "").strip()
++            if not ref or not locator:
++                out.append(("V032", f"{eid}: grade {grade} requires ref + locator"))
++                continue
++            if grade == "A":
++                p = (root / ref).resolve()
++                if not p.is_relative_to(root.resolve()) or not p.is_file():
++                    out.append(("V032", f"{eid}: grade A ref does not exist in the workspace: {ref}"))
++            elif grade == "B":
++                cand = candidates.get(ref)
++                if cand is None:
++                    out.append(("V032", f"{eid}: grade B ref is not a known candidate ID: {ref}"))
++            else:  # C
++                note = str(src.get("note") or "").strip()
++                if not note:
++                    out.append(("V032", f"{eid}: grade C must declare itself an example via note"))
++
++    return out
++
++
++def render_report(registry: dict[str, Any], problems: list[tuple[str, str]]) -> str:
++    lines = ["数值声明溯源核对表 (numerical provenance)", ""]
++    by_grade: dict[str, int] = {}
++    for entry in registry.get("entries") or []:
++        for src in entry.get("sources") or []:
++            g = str(src.get("grade") or "?")
++            by_grade[g] = by_grade.get(g, 0) + 1
++    lines.append(f"条目: {len(registry.get('entries') or [])}  来源分布: {by_grade or '无'}")
++    lines.append("")
++    for entry in registry.get("entries") or []:
++        eid = entry.get("id", "?")
++        stmt = str(entry.get("statement") or "")
++        lines.append(f"[{eid}] {stmt}")
++        claim = str(entry.get("claim_ref") or "").strip()
++        lines.append(f"    claim_ref: {claim or '_(未填)_'}")
++        for src in entry.get("sources") or []:
++            lines.append(f"    [{src.get('grade')}] {src.get('ref')} @ {src.get('locator')}"
++                         f"{' — ' + str(src.get('note')) if src.get('note') else ''}")
++        if not entry.get("sources"):
++            lines.append("    ⚠️ 无来源 — 待补")
++        lines.append("")
++    if problems:
++        lines.append("问题:")
++        for code, msg in problems:
++            lines.append(f"  [{code}] {msg}")
++    return "\n".join(lines)
++
++
++def build_parser() -> argparse.ArgumentParser:
++    ap = argparse.ArgumentParser(
++        prog="python -m patentkit.provenance",
++        description="Numerical-claim provenance: scan manuscripts, validate the A/B/C source registry",
++    )
++    sub = ap.add_subparsers(dest="cmd", required=True)
++
++    scan = sub.add_parser("scan", help="scan a manuscript and emit the skeleton registry")
++    scan.add_argument("--manuscript", type=Path, required=True, help="manuscript file (.md/.txt)")
++    scan.add_argument("--out", type=Path, default=None,
++                      help="write the skeleton to this YAML (default: stdout only)")
++
++    check = sub.add_parser("check", help="validate 07_drafting/numerical_provenance.yml")
++    check.add_argument("--root", type=Path, default=None)
++
++    return ap
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = build_parser().parse_args(argv)
++
++    if args.cmd == "scan":
++        if not args.manuscript.is_file():
++            print(f"[FATAL] manuscript not found: {args.manuscript}", file=sys.stderr)
++            return 2
++        text = args.manuscript.read_text(encoding="utf-8")
++        skeleton = build_skeleton(scan_text(text), args.manuscript.name)
++        payload = yaml.safe_dump(skeleton, allow_unicode=True, sort_keys=False)
++        if args.out:
++            args.out.parent.mkdir(parents=True, exist_ok=True)
++            args.out.write_text(payload, encoding="utf-8")
++            print(f"[WRITE] {args.out} ({len(skeleton['entries'])} statements) — fill sources, then run provenance check")
++        else:
++            print(payload)
++            print(f"# {len(skeleton['entries'])} numerical statements; "
++                  f"pass --out 07_drafting/numerical_provenance.yml to persist the skeleton")
++        return 0
++
++    root = (args.root or workspace_or_exit()).resolve()
++    registry = load_registry(root)
++    if registry is None:
++        print(f"no registry at {REGISTRY_REL.as_posix()} — run `provenance scan` first (provenance is opt-in)")
++        return 0
++    problems = check_registry(root, registry)
++    print(render_report(registry, problems))
++    if problems:
++        print(f"\n{len(problems)} problem(s) — fix the registry, not the rule")
++        return 1
++    print("\n✅ every numerical statement traces to a declared source")
++    return 0
++
++
++if __name__ == "__main__":  # pragma: no cover
++    raise SystemExit(main())
+diff --git a/patentkit/report.py b/patentkit/report.py
+index a55ef69..6815cae 100644
+--- a/patentkit/report.py
++++ b/patentkit/report.py
+@@ -17,6 +17,7 @@ from .model import Candidate, Role, load_candidates
+ from .paths import workspace_or_exit
+ from .registry import Terminology, TerminologyError, load_registry
+ from . import runs as runs_mod
++from .assessment import state as assessment_state
+ 
+ 
+ def near_prior_arts(
+@@ -61,20 +62,20 @@ def build_skeleton(
+     lines.append("## 2. Near prior art (column D)")
+     lines.append("")
+     if d_cols:
+-        lines.append("| D | Candidate ID | Document number | Applicant / first author | Year | Level | novelty |")
+-        lines.append("|---|---|---|---|---|---|---|")
++        lines.append("| D | Candidate ID | Document number | Applicant / first author | Year | Source level | Judgment state | novelty |")
++        lines.append("|---|---|---|---|---|---|---|---|")
+         for i, c in enumerate(d_cols, start=1):
+             applicants = c.data.get("authors_or_applicants") or []
+             who = applicants[0] if isinstance(applicants, list) and applicants else "—"
+             lines.append(
+                 f"| **D{i}** | {c.id} | {c.doc_number} | {who} | "
+                 f"{c.data.get('year', '—')} | {c.effective_level(root).value} | "
+-                f"{c.novelty_check} |"
++                f"{assessment_state(c, root)} | {c.novelty_check} |"
+             )
+     else:
+         lines.append("_(No candidate with role=near_prior_art yet; run `tools.migrate --apply` first, or assign role manually)_")
+     lines.append("")
+-    lines.append("> Column D is generated automatically from `role=near_prior_art`. If it does not match reality, change the candidate list's `role` field.")
++    lines.append("> Column D includes role recommendations. Only rows with current human confirmation count toward G-S-03; source level and judgment state are independent.")
+     lines.append("")
+ 
+     # §3 Matrix
+diff --git a/patentkit/review.py b/patentkit/review.py
+index 2cd6016..a8cebe2 100644
+--- a/patentkit/review.py
++++ b/patentkit/review.py
+@@ -39,6 +39,7 @@ from .model import Candidate, load_candidates, read_json, resolve_ref
+ from .paths import workspace_or_exit
+ from .registry import Terminology, TerminologyError, load_registry, split_axis_id
+ from . import topics
++from . import assessment
+ 
+ #: Worksheet columns. The first part is read-only; the rest (the judge fields) is filled in by humans.
+ READ_COLUMNS = [
+@@ -52,6 +53,7 @@ READ_COLUMNS = [
+     "current_relevance",
+     "current_role",
+     "current_novelty_check",
++    "expected_fingerprint",
+ ]
+ #: Columns filled in by humans.
+ #:
+@@ -153,9 +155,7 @@ def is_reviewed(cand: Candidate) -> bool:
+     For historical data without a backfilled reviewed_at, fall back to the old criterion, so that
+     everything does not suddenly become "unjudged".
+     """
+-    if (cand.data.get("reviewed_at") or "").strip():
+-        return True
+-    return cand.relevance != 3
++    return not assessment.assessment_errors(cand, cand.path.parent.parent)
+ 
+ 
+ # ── export ────────────────────────────────────────────────────────────
+@@ -247,6 +247,7 @@ def write_worksheet(
+             "current_relevance": c.relevance,
+             "current_role": c.data.get("role", ""),
+             "current_novelty_check": c.data.get("novelty_check", ""),
++            "expected_fingerprint": assessment.fingerprint(c, c.path.parent.parent),
+             # Determination columns are left blank for humans to fill in
+             **{k: "" for k in JUDGE_COLUMNS},
+         }
+@@ -283,7 +284,7 @@ def review_progress(root: Path, term: Terminology, target: str) -> list[dict[str
+                 row["judged"] += 1
+                 if c.relevance == 3:
+                     row["judged_as_3"] += 1
+-            if c.relevance >= 4:
++            if assessment.eligible_axis(c, root, tag):
+                 row["ge4"] += 1
+     return [{"axis": k, **v} for k, v in sorted(counts.items())]
+ 
+@@ -349,7 +350,7 @@ def read_sheet_text(path: Path) -> tuple[str, str]:
+ 
+ 
+ def apply_worksheet(
+-    root: Path, term: Terminology, path: Path, *, dry_run: bool = True
++    root: Path, term: Terminology, path: Path, *, dry_run: bool = True, by: str = "", target: str = ""
+ ) -> ApplyReport:
+     """Write the worksheet's determination columns back to the candidate JSON. Blank determination rows are skipped entirely.
+ 
+@@ -378,6 +379,7 @@ def apply_worksheet(
+ 
+     # ── First pass: validate and compute only; touch no files ──
+     pending: list[tuple[Candidate, dict[str, Any]]] = []
++    seen = set()
+ 
+     for i, row in enumerate(rows, start=2):  # the header is row 1
+         cid = (row.get("candidate_id") or "").strip()
+@@ -412,10 +414,22 @@ def apply_worksheet(
+         cand = by_id.get(cid)
+         if cand is None:
+             report.unknown.append(cid)
++            report.errors.append(f"unknown candidate ID: {cid}")
+             continue
+         if not cand.path.is_file():
+             report.errors.append(f"{cid}: candidate file does not exist")
+             continue
++        if cid in seen:
++            report.errors.append(f"duplicate candidate ID: {cid}")
++            continue
++        seen.add(cid)
++        if cand.target != (target or term.active_target):
++            report.errors.append(f"{cid}: candidate belongs to another target")
++            continue
++        expected = row.get("expected_fingerprint") or ""
++        if expected and expected != assessment.fingerprint(cand, root):
++            report.errors.append(f"{cid}: stale expected_fingerprint")
++            continue
+ 
+         new: dict[str, Any] = {}
+ 
+@@ -476,22 +490,31 @@ def apply_worksheet(
+         return report
+ 
+     report.changed = len(pending)
+-    if dry_run:
+-        return report
+-
+-    # ── Second pass: write to disk ──
++    # 先构建并校验所有完整记录，dry-run 也报告同样的结构错误。
++    updates = []
+     for cand, changed in pending:
+         data = dict(cand.data)
+         data.update(changed)
+-        # Keep key order stable: existing key order unchanged, new keys appended at the end
+-        ordered = {k: data[k] for k in cand.data}
+-        for k, v in data.items():
+-            if k not in ordered:
+-                ordered[k] = v
+-        cand.path.write_text(
+-            json.dumps(ordered, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+-        )
+-        report.written += 1
++        # 旧 CSV 不补造身份或确认；有署名时保留可复用依据，但仍需显式 confirm。
++        basis = (cand.data.get("assessment") or {}).get("basis") or {}
++        data["assessment"] = {"actor": "human" if by.strip() else "unknown", "by": by,
++                              "at": now_iso, "basis": basis, "fingerprint": None}
++        if by.strip():
++            data["assessment"]["fingerprint"] = assessment.fingerprint(Candidate(data, cand.path), root)
++        data = assessment.with_history(cand, data, "csv:human" if by.strip() else "csv:unknown")
++        try:
++            assessment.validate_data(data)
++        except ValueError as exc:
++            report.errors.append(f"{cand.id}: {exc}")
++        updates.append((cand.path, cand.data, data))
++    if report.errors:
++        report.aborted = True
++        report.changed = 0
++        return report
++    if dry_run:
++        return report
++    assessment.commit_batch(updates, True)
++    report.written = len(updates)
+ 
+     return report
+ 
+@@ -538,11 +561,23 @@ def build_parser() -> argparse.ArgumentParser:
+     )
+     p_exp.add_argument("--limit", type=int, default=0)
+     p_exp.add_argument("--out", type=Path, required=True, help="output CSV path")
++    p_exp.add_argument("--format", choices=("csv", "json"), default="csv", help="JSON exports explicit candidate IDs, current fingerprints and basis placeholders")
+ 
+     p_app = sub.add_parser("apply", help="write determinations back to the candidate JSON")
+     _add_common(p_app)
+     p_app.add_argument("sheet", type=Path, help="CSV with the determinations filled in")
+     p_app.add_argument("--apply", action="store_true", help="actually write to disk (dry-run by default)")
++    p_app.add_argument("--by", default="", help="explicit human reviewer identity; no identity is inferred from legacy sheets")
++
++    for command in ("assess", "confirm", "migrate-assessments"):
++        parser = sub.add_parser(command, help="source-independent judgment protocol; dry-run by default")
++        _add_common(parser)
++        parser.add_argument("--apply", action="store_true")
++        if command != "migrate-assessments":
++            parser.add_argument("sheet", type=Path, help="UTF-8 JSON array with explicit candidate IDs and expected_fingerprint")
++            parser.add_argument("--by", required=True, help="recorded actor identity; confirm is human-only")
++        if command == "assess":
++            parser.add_argument("--actor", choices=("ai", "human"), required=True)
+ 
+     p_prog = sub.add_parser("progress", help="judged / unjudged statistics per axis")
+     _add_common(p_prog)
+@@ -557,6 +592,22 @@ def run(args: argparse.Namespace) -> int:
+         print(f"[FATAL] {exc}", file=sys.stderr)
+         return 2
+ 
++    if args.cmd in {"assess", "confirm", "migrate-assessments"}:
++        try:
++            if args.cmd == "migrate-assessments":
++                result = assessment.migrate_workspace(root, apply=args.apply)
++            else:
++                path = args.sheet if args.sheet.is_absolute() else root / args.sheet
++                rows = json.loads(path.read_text(encoding="utf-8"))
++                func = assessment.assess_batch if args.cmd == "assess" else assessment.confirm_batch
++                extra = {"actor": args.actor} if args.cmd == "assess" else {}
++                result = func(root, rows, by=args.by, target=args.target, apply=args.apply, **extra)
++            print(json.dumps(result, ensure_ascii=False))
++            return 0
++        except (ValueError, OSError) as exc:
++            print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False))
++            return 1
++
+     if args.cmd == "export":
+         harvested = harvest_abstracts(root)
+         cands = select_candidates(
+@@ -589,6 +640,15 @@ def run(args: argparse.Namespace) -> int:
+                 )
+             )
+         out = args.out if args.out.is_absolute() else (root / args.out)
++        if args.format == "json":
++            rows = [{"candidate_id": c.id, "expected_fingerprint": assessment.fingerprint(c, root),
++                     "relevance_problem": None, "relevance_means": None,
++                     "role": c.data.get("role", "pool"), "novelty_check": c.data.get("novelty_check", "untouched"),
++                     "review_note": "", "basis": {}} for c in cands]
++            out.parent.mkdir(parents=True, exist_ok=True)
++            out.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
++            print(f"JSON assessment worksheet written: {out}")
++            return 0
+         write_worksheet(
+             cands,
+             harvested,
+@@ -625,7 +685,7 @@ def run(args: argparse.Namespace) -> int:
+ 
+     if args.cmd == "apply":
+         sheet = args.sheet if args.sheet.is_absolute() else (root / args.sheet)
+-        rep = apply_worksheet(root, term, sheet, dry_run=not args.apply)
++        rep = apply_worksheet(root, term, sheet, dry_run=not args.apply, by=args.by, target=args.target)
+         print(f"Worksheet: {args.sheet}")
+         if rep.encoding:
+             note = (
+@@ -674,8 +734,8 @@ def run(args: argparse.Namespace) -> int:
+                 f"{r['total'] - r['judged']:>9}{r['ge4']:>6}"
+             )
+         print()
+-        print("\"Judged\" is determined by reviewed_at — so \"manually scored 3\" and \"not judged\" are no longer conflated.")
+-        print("For old data lacking reviewed_at, counting falls back to relevance!=3 (this shows up as gaps in the \"of 3\" column).")
++        print("Judged requires a current supported assessment with a known actor; legacy scores alone do not qualify.")
++        print("The ≥4 column uses the same eligibility rule as G-S-02; source evidence levels are shown by gates.")
+         print("Export the unjudged ones: python -m patentkit review export --unreviewed --with-abstract ...")
+         return 0
+ 
+diff --git a/patentkit/templates/workspace/00_methodology/glossary.yml b/patentkit/templates/workspace/00_methodology/glossary.yml
+index 08fe393..21892e8 100644
+--- a/patentkit/templates/workspace/00_methodology/glossary.yml
++++ b/patentkit/templates/workspace/00_methodology/glossary.yml
+@@ -84,10 +84,10 @@ relevance_dimensions:
+ relevance_rules:
+   - 'The two dimensions must be scored separately; a single composite score alone is not allowed'
+   - 'If the technical problem differs, similar means still do not constitute a comparison (min rule)'
+-  - 'Models may suggest a ranking, but a human must make the call'
++  - 'Supported AI assessments may count for G-S-02; G-S-03 requires current explicit human confirmation'
+   - 'Default relevance=3 on entry; once judged, reviewed_at must be written'
+-  - 'Never determine relevance on behalf of others'
+-  - 'A single-dimension determination (only one dimension filled) is handled as that dimension and noted in review_note'
++  - 'Record actor and per-axis problem/means original-text citations; AI proposals never overwrite human decisions'
++  - 'A single-dimension or unknown-origin judgment does not count toward G-S-02/G-S-03'
+ 
+ # ── Evidence levels ───────────────────────────────────────────────────
+ evidence_levels:
+@@ -101,7 +101,7 @@ evidence_levels:
+     counts_for_pass: false
+   asserted:
+     label: Self-asserted
+-    description: 'Pure self-assertion (human-written / model-written / memory); does not constitute a PASS basis'
++    description: 'Unverified source provenance; judgment actor is recorded separately and never changes the source grade'
+     counts_for_pass: false
+ 
+ # ── Database aliases (used by ingest) ─────────────────────────────────
+diff --git a/patentkit/templates/workspace/03_candidates/candidates_schema.json b/patentkit/templates/workspace/03_candidates/candidates_schema.json
+index 69278af..67509ed 100644
+--- a/patentkit/templates/workspace/03_candidates/candidates_schema.json
++++ b/patentkit/templates/workspace/03_candidates/candidates_schema.json
+@@ -128,7 +128,7 @@
+         "attested",
+         "asserted"
+       ],
+-      "description": "Evidence level; definitions are in 00_methodology/glossary.yml"
++      "description": "Source provenance only; assessment and human confirmation are independent."
+     },
+     "evidence_ref": {
+       "type": [
+@@ -210,6 +210,87 @@
+       "minimum": 1,
+       "maximum": 5,
+       "description": "The **technical means dimension** of relevance (manually scored 1–5). Score the two dimensions separately and then take the min — a differing technical problem cannot be rescued by similar means."
++    },
++    "assessment": {
++      "type": "object",
++      "required": [
++        "actor",
++        "by",
++        "at",
++        "basis",
++        "fingerprint"
++      ],
++      "properties": {
++        "actor": {
++          "enum": [
++            "ai",
++            "human",
++            "unknown"
++          ]
++        },
++        "by": {
++          "type": "string"
++        },
++        "at": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "basis": {
++          "type": "object"
++        },
++        "materials": {
++          "type": "object"
++        },
++        "fingerprint": {
++          "type": [
++            "string",
++            "null"
++          ]
++        }
++      },
++      "additionalProperties": false
++    },
++    "human_confirmation": {
++      "type": [
++        "object",
++        "null"
++      ],
++      "required": [
++        "by",
++        "at",
++        "fingerprint"
++      ],
++      "properties": {
++        "by": {
++          "type": "string",
++          "minLength": 1
++        },
++        "at": {
++          "type": "string"
++        },
++        "fingerprint": {
++          "type": "string",
++          "pattern": "^[a-f0-9]{64}$"
++        }
++      },
++      "additionalProperties": false
++    },
++    "review_history": {
++      "type": "array",
++      "items": {
++        "type": "object"
++      }
++    },
++    "assessment_proposals": {
++      "type": "array",
++      "items": {
++        "type": "object"
++      }
++    },
++    "feature_mapping": {
++      "type": "object"
+     }
+   },
+   "additionalProperties": false
+diff --git a/patentkit/validate.py b/patentkit/validate.py
+index dc30ad3..9b7f0d5 100644
+--- a/patentkit/validate.py
++++ b/patentkit/validate.py
+@@ -30,6 +30,10 @@ V024 warn   pending migration: missing target field (filter key of the v2 multi-
+ V025 error  qualified target of a tag disagrees with the candidate target field
+ V026 warn   raw artifact record count < declared hit count (the export may contain only some pages)
+ V027 error  draft registry structure is invalid
++V031 error  numerical provenance: statement without any A/B/C source
++V032 error  numerical provenance: invalid grade / missing ref+locator / ref points nowhere
++V033 warn   figure marks: spec and manuscript disagree (heuristic — confirm before editing)
++V034 error  a conclusion cites a candidate ID that is not in the evidence ledger
+ 
+ Design notes
+ ------------
+@@ -51,6 +55,7 @@ from typing import Any, Iterable
+ from . import runs as runs_mod
+ from .model import Candidate, Finding, SearchLog, load_candidates, load_logs, read_json, resolve_ref
+ from .paths import workspace_or_exit
++from .assessment import assessment_errors, confirmation_valid
+ from .registry import (
+     BARE_AXIS_RE,
+     Terminology,
+@@ -790,6 +795,23 @@ def check_duplicates(candidates: list[Candidate]) -> list[Finding]:
+ # ── Entry points ─────────────────────────────────────────────────────
+ 
+ 
++def check_assessments(candidates: list[Candidate], root: Path) -> list[Finding]:
++    """V029：缺失/无效判断；V030：人工确认对应的实质内容已变化。"""
++    findings = []
++    for cand in candidates:
++        record = cand.data.get("assessment")
++        if record is not None and not isinstance(record, dict):
++            findings.append(Finding("error", "V029", cand.path, "assessment must be an object"))
++        elif isinstance(record, dict) and record.get("actor") in ("ai", "human"):
++            for error in assessment_errors(cand, root):
++                findings.append(Finding("error", "V029", cand.path, error))
++        elif cand.relevance >= 4 or cand.data.get("role") == "near_prior_art" or cand.data.get("reviewed_at"):
++            findings.append(Finding("warn", "V029", cand.path, "Judgment origin unknown; re-assess without changing source evidence_level"))
++        if cand.data.get("human_confirmation") and not confirmation_valid(cand, root):
++            findings.append(Finding("warn", "V030", cand.path, "Human confirmation is stale or unsupported; excluded from G-S-03 until reconfirmed"))
++    return findings
++
++
+ def validate_all(
+     root: Path,
+     term: Terminology | None = None,
+@@ -810,6 +832,7 @@ def validate_all(
+     findings += check_schema(root)
+     findings += check_ids(candidates)
+     findings += check_evidence(candidates, root)
++    findings += check_assessments(candidates, root)
+     findings += check_source_logs(candidates)
+     findings += check_stray_logs(root)
+     findings += check_bibtex(root, candidates)
+@@ -821,9 +844,77 @@ def validate_all(
+     findings += check_dates(candidates)
+     findings += check_runs(run_index, candidates, inferred)
+     findings += check_duplicates(candidates)
++    findings += check_provenance(root)
++    findings += check_figures(root)
++    findings += check_conclusion_citations(root, candidates)
+     return findings
+ 
+ 
++def check_provenance(root: Path) -> list[Finding]:
++    """V031/V032: the numerical-claim provenance registry (opt-in via 07_drafting/numerical_provenance.yml).
++
++    The registry is optional (provenance applies once drafting starts); once it exists, every
++    statement must trace to a declared source — the rules live in patentkit.provenance, this
++    wrapper only adapts them to Finding (no second rule set)."""
++    from . import provenance as provenance_mod
++
++    if provenance_mod.load_registry(root) is None:
++        return []
++    path = root / provenance_mod.REGISTRY_REL
++    return [
++        Finding("error", code, path, msg)
++        for code, msg in provenance_mod.check_registry(root, provenance_mod.load_registry(root))
++    ]
++
++
++def check_figures(root: Path) -> list[Finding]:
++    """V033 (warn): figure-spec marks vs manuscript marks.
++
++    Text extraction is heuristic, so mismatches warn — the rule never auto-deletes a mark;
++    a human confirms against the actual drawing before anything is edited."""
++    from . import figures as figures_mod
++
++    figures_dir = root / figures_mod.FIGURES_DIR
++    return [
++        Finding(
++            "warn",
++            "V033",
++            figures_dir / f"{f['figure']}.figure.yml" if f["figure"] != "*" else figures_dir,
++            f"{f['problem']}: {', '.join(f['marks'])}",
++        )
++        for f in figures_mod.check_marks(root)
++    ]
++
++
++def check_conclusion_citations(root: Path, candidates: list[Candidate]) -> list[Finding]:
++    """V034: conclusions may only cite evidence that exists in the ledger.
++
++    An invented citation ("P-907 discloses...") is the most dangerous fabrication: it survives
++    copy-paste into deliverables. Deterministic token match over 05_novelty_conclusions/*.md."""
++    known = {c.id for c in candidates}
++    out: list[Finding] = []
++    d = root / "05_novelty_conclusions"
++    if not d.is_dir():
++        return out
++    for p in sorted(d.glob("*.md")):
++        try:
++            text = p.read_text(encoding="utf-8", errors="replace")
++        except OSError:
++            continue
++        for cid in sorted(set(runs_mod.ID_RE.findall(text))):
++            if cid not in known:
++                out.append(
++                    Finding(
++                        "error",
++                        "V034",
++                        p,
++                        f"cites candidate ID '{cid}' that is not in the evidence ledger — "
++                        f"verify the number or add the document first (patentkit ledger)",
++                    )
++                )
++    return out
++
++
+ def summarize(findings: Iterable[Finding]) -> dict[str, Any]:
+     findings = list(findings)
+     errors = [f for f in findings if f.level == "error"]
+diff --git a/patentkit.egg-info/PKG-INFO b/a/patentkit.egg-info/PKG-INFO
+deleted file mode 100644
+index 8cc0f35..0000000
+--- a/patentkit.egg-info/PKG-INFO
++++ /dev/null
+@@ -1,179 +0,0 @@
+-Metadata-Version: 2.4
+-Name: patentkit
+-Version: 0.1.2
+-Summary: Patent prior-art search and novelty self-check toolchain: three-tier evidence grading, acceptance gate computation, search evidence chain validation
+-Author: LOVEkyy
+-License: Apache-2.0
+-Project-URL: Documentation, https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-
+-Keywords: patent,prior-art,novelty,search,knowledge-management
+-Classifier: Development Status :: 3 - Alpha
+-Classifier: Intended Audience :: Legal Industry
+-Classifier: License :: OSI Approved :: Apache Software License
+-Classifier: Programming Language :: Python :: 3
+-Classifier: Topic :: Scientific/Engineering :: Information Analysis
+-Requires-Python: >=3.11
+-Description-Content-Type: text/markdown
+-License-File: LICENSE
+-Requires-Dist: jsonschema>=4.18
+-Requires-Dist: PyYAML>=6.0
+-Provides-Extra: mcp
+-Requires-Dist: mcp<2,>=1.0; extra == "mcp"
+-Provides-Extra: dev
+-Requires-Dist: pytest>=7.4; extra == "dev"
+-Dynamic: license-file
+-
+-# Patent Research, Drafting & Editing
+-
+-> An integrated workspace + toolchain for patent **prior-art search / novelty self-check / search evidence chain / drafting assistance**.
+-> Three deliverables: the **skill package** (for AI clients), the **`patentkit` core** (pip package), and the **workspace data** (private, local).
+-
+-**Current versions**: skill package [`skill-v2.3.0`](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/skill-v2.3.0) ·
+-core [`patentkit-v0.1.1`](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/patentkit-v0.1.1)
+-(see [`CHANGELOG.md`](CHANGELOG.md) for changes)
+-
+-## Quick start (pick the row for your role)
+-
+-| I want to… | Start here |
+-|---|---|
+-| **Use the skill for patent research / self-checks** (Claude Code / Codex CLI / Codex desktop) | Download the [skill package release](https://github.com/cyy1018abc-kyy/Patent-Research-and-Drafting-and-Editing-/releases/tag/skill-v2.3.0) → install per [`patent-research-skill/README.md`](patent-research-skill/README.md) |
+-| **Develop / extend the core** | `pip install -e ".[mcp,dev]"` → `python -m pytest` → [`patentkit/`](patentkit/) |
+-| **Work in this workspace** (search / comparison / gates / delivery) | `cd` to the repo root (where `workspace.yml` lives) → follow [`docs/operations_manual.md`](docs/operations_manual.md) |
+-| **Do client adaptation / cut releases** | [`release/README.md`](release/README.md), [`cross_client_tests/README.md`](cross_client_tests/README.md) |
+-
+-> The workspace is located by **walking up from the current directory** to find `workspace.yml`; run it elsewhere and it reports "workspace not found".
+-> To use it from any directory: `$env:PATENTKIT_WORKSPACE = "<repo-root>"` (or specify `--root` for a single run).
+-
+-## Repository layout
+-
+-```
+-├── README.md                 This file: entry point / quick start / layout
+-├── CHANGELOG.md              Version changes for both release artifacts (skill package / core)
+-├── workspace.yml             ★ Workspace marker (read by `patentkit` to locate the workspace)
+-├── INDEX.md                  Workspace content index (generated by patentkit index --write)
+-├── pyproject.toml            ★ pip package definition (patentkit)
+-├── patentkit/                ★ Core: validation / gates / ingest / reports / MCP adapter
+-├── patent-research-skill/    ★ Independently distributed skill package (SKILL.md + references + scripts + assets)
+-├── release/                  Release sources (install scripts + release notes under notes/) and release process
+-├── tools/                    Build / snapshot / release helper scripts
+-├── tests/                    Rule regression tests (pytest; all green is the bar)
+-├── docs/                     ★ Project documentation
+-│   ├── operations_manual.md           From zero to delivery (commands + checkpoints + troubleshooting)
+-│   ├── roadmap.md             Current roadmap: Skill-first P0–P4 (MCP frozen)
+-│   ├── delivery_summary.md           Evidence-chain snapshot (generated by tools/snapshot.py)
+-│   ├── release_gates_todo.md      Release gate tracking (✅ closed)
+-│   ├── upgrade_plan.md         Historical baseline: 2026-10-15 diagnosis and implementation record
+-│   ├── plugin_plan.md         Client-adaptation architecture analysis (roadmap section superseded)
+-│   ├── public_repo_assessment.md       Risks, options, and checklist for going public (read this first)
+-│   └── tool_benchmarks/             Research notes including security scanning (SkillSpector)
+-├── cross_client_tests/             P3 test assets (cases/runner/validator/evidence)
+-├── 00_methodology/ ~ 08_polishing/     Workspace data (search plan/logs/candidates/comparison/conclusions/drafting/polishing)
+-└── .github/                  CI (install this package + full pytest + validate)
+-```
+-
+-> `00–08` is **workspace data** (includes derived content from unpublished applications), kept separate from the code / skill package;
+-> the backend data boundary is described under "Confidentiality boundary review" below.
+-
+-## Common commands
+-
+-```powershell
+-pip install -e ".[mcp,dev]"        # editable install of the core + dev dependencies
+-python -m pytest                    # rule regression tests
+-python -m patentkit check           # CI entry point: validate + gates
+-python -m patentkit status          # everything at a glance: targets/gates/validation/candidates/next steps
+-python -m patentkit validate --strict
+-python -m patentkit gates
+-
+-python tools/snapshot.py --write    # refresh docs/delivery_summary.md
+-python tools/build_skill_release.py # build the skill package zip (dist/)
+-```
+-
+-For the full command set (search, ingest, review, citations, delivery) see [`docs/operations_manual.md`](docs/operations_manual.md).
+-
+-## Version and count conventions (authoritative sources)
+-
+-> A given number may have exactly one authoritative source; other documents **reference** it instead of restating it.
+-
+-| Convention | Authoritative source | How other documents cite it |
+-|---|---|---|
+-| Core version | `__version__` in `patentkit/__init__.py`; `pyproject.toml` reads it via `dynamic = ["version"]` | Don't restate the version number |
+-| Skill package version | `metadata.version` in `patent-research-skill/SKILL.md` | Reference it; don't define another |
+-| MCP tool list | Registry in `patentkit/mcp_server.py` (currently **12 tools**) | Count/names must match the code (locked by `tests/test_docs.py`) |
+-| Test count | `python -m pytest --collect-only -q` | **Don't hard-code a specific number** |
+-| Historical baseline | [`docs/upgrade_plan.md`](docs/upgrade_plan.md) | Read as history, not as current state |
+-| Current roadmap | [`docs/roadmap.md`](docs/roadmap.md) | — |
+-| Auto snapshot | [`docs/delivery_summary.md`](docs/delivery_summary.md), generated by `python tools/snapshot.py --write` | A snapshot, not authoritative output |
+-
+-## Optional MCP adapter (P4 future option, frozen)
+-
+-`patentkit` is also an MCP server (`patentkit mcp`, stdio), exposing
+-`patent_status` / `patent_doctor` / `patent_validate` / `patent_gates` /
+-`patent_search_plan` / `patent_candidates` / `patent_references` / `patent_ingest` /
+-`patent_bibsync` / `patent_attest` / `patent_fetch_cnipa` / `patent_fetch_cnipa_batch`
+-— **12 tools** in total — plus methodology-document resources and preset prompts.
+-
+-> **Frozen**: no new tools, no scheduling; bug fixes only. Unfreezing conditions: [`docs/roadmap.md`](docs/roadmap.md) §4.5.
+-> Chat-only clients (no tools) cannot use MCP; their conclusions can only reach `asserted` and must be labeled "⚠️ Unverified by tool checks".
+-> For the architecture analysis see [`docs/plugin_plan.md`](docs/plugin_plan.md); the current direction is **Skill-first**.
+-
+-## Skill package (primary usage path)
+-
+-[`patent-research-skill/`](patent-research-skill/) is an independently distributable Agent Skill:
+-`SKILL.md` (when to trigger / execution order / hard constraints / result format) + `references/` (6 methodology documents, loaded on demand)
+-+ `scripts/` (thin wrappers for status/validate/gates/report/check) + `assets/` + `agents/openai.yaml` (desktop metadata).
+-It **contains no real project data** and can be distributed externally.
+-
+-- **Public distribution repo (skill package source + Releases)**: <https://github.com/cyy1018abc-kyy/patent-research-skill>
+-
+-- Install/upgrade/compatibility matrix: [`patent-research-skill/README.md`](patent-research-skill/README.md)
+-- Release package build and GitHub Release process: [`release/README.md`](release/README.md)
+-- Cross-client testing (Claude Code 13/13, Codex CLI 13/13; desktop spot-checks usable):
+-  [`cross_client_tests/README.md`](cross_client_tests/README.md)
+-
+-## Confidentiality boundary review (2026-10-21)
+-
+-**Conclusion: the repository must stay private; external distribution covers only code and the skill package.**
+-**Review premise: GitHub repository visibility = Private (user-confirmed, 2026-10-21).**
+-
+-| Level | Scope | Notes |
+-|---|---|---|
+-| ✅ **Already public** | `07_granted_patents/` (public-status registry only) | Both patents have been granted and published; the full texts have been moved out of the repository, leaving only the registry table and sha256 |
+-| ⚠️ **Internal · includes derived content from unpublished applications** | `00_methodology/`, `01_search_plan/`, `04_comparative_analysis/`, `05_novelty_conclusions/`, `07_drafting/`, `08_polishing/`, `docs/delivery_summary.md`, `workspace.yml` | TGT-0001 is not yet published; its title, technical main axes, feature-level summaries, parameters and conclusions all live here. Full texts are outside this repo |
+-| ✅ **Directly distributable** | `patentkit/`, `patent-research-skill/`, `release/`, `tools/` | Code and skill package contain no project data |
+-
+-**Must comply**
+-
+-1. Do not make the repository public; do not package the whole repository for external distribution (archives / network drives / cloud-sync folders all count as external distribution).
+-2. Do not upload `00–08` or `docs/delivery_summary.md` to cloud AI clients; `patentkit/` and `patent-research-skill/` are fine.
+-3. Distribute only the skill package and `patentkit/` externally; keep workspace data on the local machine.
+-4. Before delivery / external distribution, tick off each item in the "Pre-delivery/public-disclosure · confidentiality checklist" in [`docs/operations_manual.md`](docs/operations_manual.md).
+-
+-## Language policy
+-
+-- The **documentation, code, tests, configuration and the skill package are written in English.**
+-- **Workspace data is archived in its original language (Chinese) and is intentionally not translated**:
+-  search-log evidence (`02_search_logs/`), candidate records (`03_candidates/`), review worksheets
+-  (`05_novelty_conclusions/review/`), citation data (`06_citation_management/`), raw cross-client evidence
+-  (`cross_client_tests/evidence/`), and the data values of `00_methodology/glossary.yml`,
+-  `01_search_plan/query_library.yml` and `07_drafting/manuscript_registry.yml`. These are primary records;
+-  translating them would destroy the audit trail.
+-- Docs that reference **real out-of-repo local paths, manuscript file names or person names** keep those
+-  strings verbatim for the same reason.
+-- Tests keep a few Chinese input fixtures where the code under test parses Chinese data (CNIPA pages,
+-  Chinese CSV headers, CJK title normalization).
+-- `01_search_plan/` keeps **bilingual reference tables**: the `Chinese name` columns (axis names from
+-  `00_methodology/glossary.yml`) and the `Chinese query` columns / code blocks (original CNIPA query strings
+-  from `01_search_plan/query_library.yml`) stay in Chinese, because the searches must be run with the
+-  original Chinese query strings. The surrounding prose is English.
+-- Git commit messages from before 2026-10-22 are historical and are not rewritten.
+-
+-## License
+-
+-Apache License 2.0 (consistent with the licenses of the 3 skills it depends on).
+-
+-> ⚠️ Do not put simulation models / actual patent manuscripts / experimental data into this repository — keep those outside the repo.
+-
+----
+-
+-**Documentation entry points**: [Operations Manual](docs/operations_manual.md) · [Roadmap](docs/roadmap.md) · [Delivery Summary](docs/delivery_summary.md) ·
+-[Release Gates](docs/release_gates_todo.md) · [Upgrade Plan](docs/upgrade_plan.md) · [Plugin Plan](docs/plugin_plan.md) ·
+-[CHANGELOG](CHANGELOG.md)
+diff --git a/patentkit.egg-info/SOURCES.txt b/a/patentkit.egg-info/SOURCES.txt
+deleted file mode 100644
+index fcedb02..0000000
+--- a/patentkit.egg-info/SOURCES.txt
++++ /dev/null
+@@ -1,66 +0,0 @@
+-LICENSE
+-MANIFEST.in
+-README.md
+-pyproject.toml
+-patentkit/__init__.py
+-patentkit/__main__.py
+-patentkit/api.py
+-patentkit/attest.py
+-patentkit/backfill.py
+-patentkit/bibsync.py
+-patentkit/cli.py
+-patentkit/cnipa.py
+-patentkit/doi_abstract.py
+-patentkit/fetch_crossref.py
+-patentkit/fetch_googlepatents.py
+-patentkit/gates.py
+-patentkit/index.py
+-patentkit/ingest.py
+-patentkit/init.py
+-patentkit/mcp_server.py
+-patentkit/migrate.py
+-patentkit/model.py
+-patentkit/paths.py
+-patentkit/registry.py
+-patentkit/report.py
+-patentkit/review.py
+-patentkit/runs.py
+-patentkit/topics.py
+-patentkit/validate.py
+-patentkit.egg-info/PKG-INFO
+-patentkit.egg-info/SOURCES.txt
+-patentkit.egg-info/dependency_links.txt
+-patentkit.egg-info/entry_points.txt
+-patentkit.egg-info/requires.txt
+-patentkit.egg-info/top_level.txt
+-patentkit/templates/workspace/workspace.yml
+-patentkit/templates/workspace/00_methodology/glossary.yml
+-patentkit/templates/workspace/01_search_plan/query_library.yml
+-patentkit/templates/workspace/03_candidates/candidates_schema.json
+-tests/test_api.py
+-tests/test_attest.py
+-tests/test_backfill.py
+-tests/test_baseline.py
+-tests/test_bibsync.py
+-tests/test_cli_help.py
+-tests/test_cnipa.py
+-tests/test_cross_client_checker.py
+-tests/test_crossref.py
+-tests/test_docs.py
+-tests/test_gates.py
+-tests/test_index.py
+-tests/test_ingest.py
+-tests/test_init.py
+-tests/test_mcp.py
+-tests/test_migrate.py
+-tests/test_model.py
+-tests/test_paths.py
+-tests/test_review.py
+-tests/test_runs.py
+-tests/test_skill_package.py
+-tests/test_skill_release.py
+-tests/test_skill_scripts.py
+-tests/test_snapshot.py
+-tests/test_topics.py
+-tests/test_validate.py
+-tests/test_version.py
+\ No newline at end of file
+diff --git a/patentkit.egg-info/dependency_links.txt b/a/patentkit.egg-info/dependency_links.txt
+deleted file mode 100644
+index 8b13789..0000000
+--- a/patentkit.egg-info/dependency_links.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-
+diff --git a/patentkit.egg-info/entry_points.txt b/a/patentkit.egg-info/entry_points.txt
+deleted file mode 100644
+index 7f6c329..0000000
+--- a/patentkit.egg-info/entry_points.txt
++++ /dev/null
+@@ -1,2 +0,0 @@
+-[console_scripts]
+-patentkit = patentkit.cli:main
+diff --git a/patentkit.egg-info/requires.txt b/a/patentkit.egg-info/requires.txt
+deleted file mode 100644
+index f83fa44..0000000
+--- a/patentkit.egg-info/requires.txt
++++ /dev/null
+@@ -1,8 +0,0 @@
+-jsonschema>=4.18
+-PyYAML>=6.0
+-
+-[dev]
+-pytest>=7.4
+-
+-[mcp]
+-mcp<2,>=1.0
+diff --git a/patentkit.egg-info/top_level.txt b/a/patentkit.egg-info/top_level.txt
+deleted file mode 100644
+index 28d32a3..0000000
+--- a/patentkit.egg-info/top_level.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-patentkit
+diff --git a/pyproject.toml b/pyproject.toml
+index 1d71437..38495aa 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -29,7 +29,9 @@ dependencies = [
+ # MCP adapter (local coding clients: Cursor / Claude Code / Cline / Continue)
+ # Upper bound pinned to v1: SDK v2 changed the server API (FastMCP -> MCPServer), while the adapter is still written against v1
+ mcp = ["mcp>=1.0,<2"]
+-dev = ["pytest>=7.4"]
++# Word export of the search report (patentkit export-docx); optional so the kernel stays light
++docx = ["python-docx>=1.1"]
++dev = ["pytest>=7.4", "python-docx>=1.1"]
+ 
+ [project.scripts]
+ patentkit = "patentkit.cli:main"
+diff --git a/b/regression_tests/test_assessment.py b/regression_tests/test_assessment.py
+new file mode 100644
+index 0000000..2a8a2ee
+--- /dev/null
++++ b/regression_tests/test_assessment.py
+@@ -0,0 +1,353 @@
++"""来源与判断分离的独立行为回归，不依赖发布包遗漏的上游 conftest。"""
++
++import copy
++import json
++from pathlib import Path
++
++import pytest
++
++from patentkit import api
++from patentkit.init import init_workspace
++from patentkit.model import load_candidates
++
++
++def write_json(path, value):
++    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
++
++
++@pytest.fixture
++def ws(tmp_path):
++    root = tmp_path / "workspace"
++    init_workspace(root, "TGT-0002", "合成燃料电池测试")
++    raw = root / "02_search_logs/raw/source.json"
++    abstract = "解决阴极供氧滞后问题。采用负载前馈与流量反馈控制。"
++    write_json(raw, {"author": "示例作者", "abstract": abstract,
++                     "hits": [{"pub_number": "SYNTHETIC-900", "title": "合成供氧控制文献", "abstract": abstract}]})
++    log = root / "02_search_logs/cnipa_2026-01-01_N1-1_1.log.json"
++    write_json(log, {
++        "target": "TGT-0002", "db": "cnipa", "actor": "synthetic-test",
++        "capture_mode": "live", "query": {"id": "N1@TGT-0002", "axis": "N1"},
++        "result": {"hit_count": 1, "raw_export": "raw/source.json", "complete": True},
++        "timestamp": "2026-01-01T00:00:00+08:00",
++    })
++    data = {
++        "id": "P-900", "kind": "patent", "title": "合成供氧控制文献",
++        "authors_or_applicants": ["示例作者"], "year": 2026, "source_db": "CNIPA",
++        "url_or_doc_number": "SYNTHETIC-900", "relevance": 4,
++        "relevance_problem": 4, "relevance_means": 4,
++        "novelty_check": "partial", "tags": ["N1@TGT-0002"],
++        "logged_at": "2026-01-01T00:00:00+08:00",
++        "source_log": "../02_search_logs/cnipa_2026-01-01_N1-1_1.log.json",
++        "evidence_level": "verified", "evidence_ref": "../02_search_logs/raw/source.json",
++        "role": "near_prior_art", "target": "TGT-0002", "review_note": "旧记录缺少判定身份",
++        "family": [], "cited_by": [], "bibtex_key": "synthetic900",
++    }
++    write_json(root / "03_candidates/P-900.json", data)
++    (root / "06_citation_management/synthetic.bib").write_text("@misc{synthetic900,\n title={Synthetic test only}\n}\n", encoding="utf-8")
++    return root
++
++
++def candidate(root):
++    return load_candidates(root)[0]
++
++
++def gates(root):
++    return {g["gate_id"]: g for g in api.gates(root)["gates"]}
++
++
++def row(root, **changes):
++    from patentkit import assessment as a
++    cite = {"ref": "02_search_logs/raw/source.json", "locator": "/abstract"}
++    value = {
++        "candidate_id": "P-900", "expected_fingerprint": a.fingerprint(candidate(root), root),
++        "relevance_problem": 4, "relevance_means": 4, "role": "near_prior_art",
++        "novelty_check": "partial", "review_note": "同为阴极供氧动态响应问题，主要手段为前馈反馈控制。",
++        "basis": {"N1@TGT-0002": {
++            "problem": {**cite, "quote": "解决阴极供氧滞后问题", "rationale": "技术问题相同"},
++            "means": {**cite, "quote": "采用负载前馈与流量反馈控制", "rationale": "主要控制手段相同"},
++        }},
++    }
++    value.update(changes)
++    return value
++
++
++def assess(root, actor="ai", **changes):
++    from patentkit import assessment as a
++    return a.assess_batch(root, [row(root, **changes)], actor=actor, by="测试判定者", apply=True)
++
++
++def confirm(root):
++    from patentkit import assessment as a
++    return a.confirm_batch(root, [{"candidate_id": "P-900", "expected_fingerprint": a.fingerprint(candidate(root), root)}], by="测试复核人", apply=True)
++
++
++def test_legacy_role_and_scores_do_not_imply_review(ws):
++    assert gates(ws)["G-S-01"]["values"]["verified"] == "1P / 0L"
++    assert gates(ws)["G-S-02"]["values"]["verified"] == "min axis 0"
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++
++
++def test_grounded_ai_counts_axis_but_not_near_prior_art(ws):
++    assess(ws)
++    report = api.gates(ws)
++    assert report["per_axis"]["N1"]["verified"] == 1
++    assert report["per_axis"]["N2"]["verified"] == 0
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert candidate(ws).data["evidence_level"] == "verified"
++
++
++def test_human_confirmation_enables_gs03(ws):
++    assess(ws)
++    confirm(ws)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++    assert candidate(ws).data["human_confirmation"]["by"] == "测试复核人"
++
++
++@pytest.mark.parametrize("field,value", [("relevance_means", 2), ("review_note", "新的判定理由"), ("role", "pool"), ("tags", ["N2@TGT-0002"])])
++def test_substantive_edit_invalidates_confirmation(ws, field, value):
++    assess(ws)
++    confirm(ws)
++    c = candidate(ws)
++    c.data[field] = value
++    write_json(c.path, c.data)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert candidate(ws).data["human_confirmation"]
++
++
++def test_supporting_passage_change_invalidates_confirmation(ws):
++    assess(ws)
++    confirm(ws)
++    p = ws / "02_search_logs/raw/source.json"
++    data = json.loads(p.read_text(encoding="utf-8"))
++    data["abstract"] += "具体适用条件发生变化。"
++    write_json(p, data)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++
++
++def test_unrelated_metadata_edit_keeps_confirmation(ws):
++    assess(ws)
++    confirm(ws)
++    c = candidate(ws)
++    c.data["authors_or_applicants"] = ["修正作者拼写"]
++    write_json(c.path, c.data)
++    p = ws / "02_search_logs/raw/source.json"
++    data = json.loads(p.read_text(encoding="utf-8"))
++    data["author"] = "修正作者拼写"
++    write_json(p, data)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++
++
++def test_ai_cannot_overwrite_human_exclusion(ws):
++    assess(ws, actor="human", relevance_problem=2, relevance_means=2, role="excluded")
++    assess(ws)
++    c = candidate(ws)
++    assert c.data["relevance"] == 2
++    assert c.data["role"] == "excluded"
++    assert len(c.data["assessment_proposals"]) == 1
++
++
++def test_ai_cannot_overwrite_confirmed_ai_decision(ws):
++    assess(ws)
++    confirm(ws)
++    assess(ws, relevance_problem=5, relevance_means=5)
++    assert candidate(ws).data["relevance"] == 4
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++
++
++@pytest.mark.parametrize("mutation", ["missing_means", "invented_quote", "outside_workspace", "unknown_axis", "missing_score"])
++def test_bad_assessment_does_not_write(ws, mutation):
++    from patentkit import assessment as a
++    r = row(ws)
++    if mutation == "missing_means":
++        del r["basis"]["N1@TGT-0002"]["means"]
++    elif mutation == "invented_quote":
++        r["basis"]["N1@TGT-0002"]["means"]["quote"] = "虚构的控制手段"
++    elif mutation == "outside_workspace":
++        r["basis"]["N1@TGT-0002"]["means"]["ref"] = "../secret.txt"
++    elif mutation == "unknown_axis":
++        r["basis"]["N9@TGT-0002"] = r["basis"].pop("N1@TGT-0002")
++    else:
++        del r["relevance_means"]
++    before = candidate(ws).path.read_bytes()
++    with pytest.raises(ValueError):
++        a.assess_batch(ws, [r], actor="ai", by="测试", apply=True)
++    assert candidate(ws).path.read_bytes() == before
++
++
++def test_confirm_batch_is_fail_closed_and_rejects_duplicates(ws):
++    from patentkit import assessment as a
++    assess(ws)
++    good = {"candidate_id": "P-900", "expected_fingerprint": a.fingerprint(candidate(ws), ws)}
++    before = candidate(ws).path.read_bytes()
++    for rows in ([good, {"candidate_id": "P-999", "expected_fingerprint": "x"}], [good, good], [{**good, "expected_fingerprint": "old"}]):
++        with pytest.raises(ValueError):
++            a.confirm_batch(ws, rows, by="复核人", apply=True)
++        assert candidate(ws).path.read_bytes() == before
++
++
++def test_migration_preserves_source_and_does_not_invent_confirmation(ws):
++    from patentkit import assessment as a
++    before = candidate(ws).path.read_bytes()
++    a.migrate_workspace(ws)
++    assert candidate(ws).path.read_bytes() == before
++    a.migrate_workspace(ws, apply=True)
++    c = candidate(ws)
++    assert c.data["evidence_level"] == "verified"
++    assert not c.data.get("human_confirmation")
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert a.migrate_workspace(ws, apply=True)["changed"] == 0
++
++
++def test_legacy_csv_cannot_implicitly_confirm_near_prior_art(ws, tmp_path):
++    import csv
++    from patentkit import review
++    from patentkit.registry import load_registry
++    path = tmp_path / "review.csv"
++    with path.open("w", encoding="utf-8", newline="") as stream:
++        writer = csv.DictWriter(stream, fieldnames=["candidate_id", "role", "review_note"])
++        writer.writeheader()
++        writer.writerow({"candidate_id": "P-900", "role": "near_prior_art", "review_note": "CSV 人工建议"})
++    review.apply_worksheet(ws, load_registry(ws), path, dry_run=False)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++
++
++def test_schema_accepts_new_records_and_validation_reports_stale(ws):
++    from patentkit import assessment as a
++    from patentkit.validate import check_schema, check_assessments
++    a.migrate_workspace(ws, apply=True)
++    assess(ws)
++    confirm(ws)
++    assert check_schema(ws) == []
++    assert check_assessments(load_candidates(ws), ws) == []
++    c = candidate(ws)
++    c.data["review_note"] = "判断发生变化"
++    write_json(c.path, c.data)
++    assert any(f.code == "V030" for f in check_assessments(load_candidates(ws), ws))
++
++
++def test_actual_batch_confirmation_and_history(ws):
++    from patentkit import assessment as a
++    data = copy.deepcopy(candidate(ws).data)
++    data.update(id="P-901", url_or_doc_number="SYNTHETIC-901")
++    write_json(ws / "03_candidates/P-901.json", data)
++    second = row(ws)
++    second["candidate_id"] = "P-901"
++    second["expected_fingerprint"] = a.fingerprint(load_candidates(ws)[1], ws)
++    a.assess_batch(ws, [row(ws), second], actor="ai", by="测试模型", apply=True)
++    rows = [{"candidate_id": c.id, "expected_fingerprint": a.fingerprint(c, ws)} for c in load_candidates(ws)]
++    a.confirm_batch(ws, rows, by="测试复核人", apply=True)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "2 docs"
++    assert all(len(c.data["review_history"]) == 2 for c in load_candidates(ws))
++
++
++def test_asserted_source_is_not_promoted_by_human_confirmation(ws):
++    c = candidate(ws)
++    c.data["evidence_level"] = "asserted"
++    write_json(c.path, c.data)
++    assess(ws)
++    confirm(ws)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert gates(ws)["G-S-03"]["values"]["asserted"] == "1 docs"
++    assert candidate(ws).data["evidence_level"] == "asserted"
++
++
++def test_failed_write_rolls_back_all_candidates(ws, monkeypatch):
++    from patentkit import assessment as a
++    first = candidate(ws)
++    second_path = ws / "03_candidates/P-901.json"
++    second = {**first.data, "id": "P-901"}
++    write_json(second_path, second)
++    before = {p: p.read_bytes() for p in (first.path, second_path)}
++    original_replace = a.os.replace
++    calls = 0
++    def fail_second(src, dst):
++        nonlocal calls
++        calls += 1
++        if calls == 2:
++            raise OSError("模拟第二个文件替换失败")
++        return original_replace(src, dst)
++    monkeypatch.setattr(a.os, "replace", fail_second)
++    with pytest.raises(OSError):
++        a.commit_batch([(first.path, first.data, {**first.data, "role": "pool"}),
++                        (second_path, second, {**second, "role": "pool"})], True)
++    assert all(p.read_bytes() == value for p, value in before.items())
++    assert not list(first.path.parent.glob(".assessment-*.tmp"))
++
++
++def test_cross_target_and_empty_batches_do_not_write(ws):
++    from patentkit import assessment as a
++    before = candidate(ws).path.read_bytes()
++    with pytest.raises(ValueError):
++        a.assess_batch(ws, [row(ws)], actor="ai", by="模型", target="TGT-9999", apply=True)
++    with pytest.raises(ValueError):
++        a.confirm_batch(ws, [], by="复核人", apply=True)
++    assert candidate(ws).path.read_bytes() == before
++
++
++def test_text_line_citation_and_invalid_pointer(ws):
++    from patentkit import assessment as a
++    p = ws / "02_search_logs/raw/body.txt"
++    p.write_text("合成正文\n负载前馈与流量反馈控制\n", encoding="utf-8")
++    cite = {"ref": "02_search_logs/raw/body.txt", "locator": "L2", "quote": "流量反馈", "rationale": "控制手段相同"}
++    assert a.passage(ws, cite) == "负载前馈与流量反馈控制"
++    for locator in ("L0", "L4", "L2-L1"):
++        with pytest.raises(ValueError):
++            a.passage(ws, {**cite, "locator": locator})
++    with pytest.raises(ValueError):
++        a.passage(ws, {**cite, "ref": "02_search_logs/raw/source.json", "locator": "/abstract/missing"})
++
++
++def test_cli_json_export_assess_confirm_and_scripts(ws, tmp_path):
++    import subprocess
++    import sys
++    from patentkit import assessment as a
++    env = {**__import__("os").environ, "PYTHONIOENCODING": "utf-8"}
++    def run(*args):
++        return subprocess.run([sys.executable, "-m", "patentkit", "review", *args, "--root", str(ws)], capture_output=True, text=True, encoding="utf-8", env=env, timeout=30)
++    export = run("export", "--format", "json", "--out", "assessment.json")
++    assert export.returncode == 0, export.stderr
++    rows = json.loads((ws / "assessment.json").read_text(encoding="utf-8"))
++    assert rows[0]["expected_fingerprint"] == a.fingerprint(candidate(ws), ws)
++    write_json(ws / "assessment.json", [row(ws)])
++    assert run("assess", "assessment.json", "--actor", "ai", "--by", "测试模型", "--apply").returncode == 0
++    write_json(ws / "confirm.json", [{"candidate_id": "P-900", "expected_fingerprint": a.fingerprint(candidate(ws), ws)}])
++    assert run("confirm", "confirm.json", "--by", "测试复核人", "--apply").returncode == 0
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++
++
++def test_legacy_csv_edit_preserves_history_and_cannot_reconfirm(ws, tmp_path):
++    import csv
++    from patentkit import review
++    from patentkit.registry import load_registry
++    assess(ws)
++    confirm(ws)
++    path = tmp_path / "edit.csv"
++    with path.open("w", encoding="utf-8", newline="") as stream:
++        writer = csv.DictWriter(stream, fieldnames=["candidate_id", "review_note"])
++        writer.writeheader()
++        writer.writerow({"candidate_id": "P-900", "review_note": "人工修改判断依据"})
++    result = review.apply_worksheet(ws, load_registry(ws), path, dry_run=False, by="新的人工审阅者")
++    assert result.written == 1
++    assert candidate(ws).data["assessment"]["actor"] == "human"
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "0 docs"
++    assert len(candidate(ws).data["review_history"]) == 3
++
++
++def test_repeating_same_assessment_and_confirmation_is_idempotent(ws):
++    assess(ws)
++    confirm(ws)
++    assert confirm(ws)["changed"] == 0
++    # 相同判断的时间戳变化不属于实质变更。
++    c = candidate(ws)
++    c.data["assessment"]["at"] = "2026-10-23T12:00:00+08:00"
++    write_json(c.path, c.data)
++    assert gates(ws)["G-S-03"]["values"]["verified"] == "1 docs"
++
++
++@pytest.mark.parametrize("changes", [{"review_note": "超" * 301}, {"feature_mapping": "错误类型"}, {"role": []}])
++def test_schema_invalid_edit_fails_before_write(ws, changes):
++    from patentkit import assessment as a
++    before = candidate(ws).path.read_bytes()
++    with pytest.raises(ValueError):
++        a.assess_batch(ws, [row(ws, **changes)], actor="ai", by="模型", apply=True)
++    assert candidate(ws).path.read_bytes() == before
+diff --git a/b/regression_tests/test_delivery_safety.py b/regression_tests/test_delivery_safety.py
+new file mode 100644
+index 0000000..cc98b12
+--- /dev/null
++++ b/regression_tests/test_delivery_safety.py
+@@ -0,0 +1,100 @@
++"""0.3.0 交付安全回归：数值溯源 fail-closed、结论引用必须命中账本、附图标记仅告警、
++期限缺基础信息拒绝计算、导出数字与工作区一致。自包含，不依赖 tests/conftest。"""
++
++from __future__ import annotations
++
++from datetime import date
++from pathlib import Path
++
++import pytest
++import yaml
++
++from patentkit import deadlines, figures, provenance, validate
++from patentkit.init import init_workspace
++
++
++@pytest.fixture
++def ws(tmp_path):
++    root = tmp_path / "workspace"
++    init_workspace(root, "TGT-0002", "合成燃料电池测试")
++    return root
++
++
++def test_v031_unsourced_number_fails_closed(ws):
++    (ws / "07_drafting").mkdir(exist_ok=True)
++    registry = {"entries": [{"id": "NUM-001", "statement": "效率 90-95%", "sources": []}]}
++    (ws / provenance.REGISTRY_REL).write_text(yaml.safe_dump(registry, allow_unicode=True), encoding="utf-8")
++
++    findings = validate.validate_all(ws)
++    assert any(f.code == "V031" and f.is_error for f in findings)
++
++    registry["entries"][0]["sources"] = [
++        {"grade": "C", "ref": "embodiment-1", "locator": "para 0040", "note": "实施例示例值，非实测"}]
++    (ws / provenance.REGISTRY_REL).write_text(yaml.safe_dump(registry, allow_unicode=True), encoding="utf-8")
++    assert "V031" not in {f.code for f in validate.validate_all(ws)}
++
++
++def test_v032_grade_b_must_cite_known_candidate(ws):
++    (ws / "07_drafting").mkdir(exist_ok=True)
++    registry = {"entries": [{"id": "NUM-001", "statement": "效率 90%", "claim_ref": "claim 1",
++                             "sources": [{"grade": "B", "ref": "P-777", "locator": "abstract"}]}]}
++    (ws / provenance.REGISTRY_REL).write_text(yaml.safe_dump(registry, allow_unicode=True), encoding="utf-8")
++    assert "V032" in {f.code for f in validate.validate_all(ws)}
++
++
++def test_v034_conclusion_cannot_cite_invented_evidence(ws):
++    concl = ws / "05_novelty_conclusions" / "novelty.md"
++    concl.write_text("P-907 披露全部特征，新颖性不成立。\n", encoding="utf-8")
++    findings = [f for f in validate.validate_all(ws) if f.code == "V034"]
++    assert findings and findings[0].is_error and "P-907" in findings[0].message
++
++
++def test_v033_figure_mark_mismatch_is_warn_never_error(ws):
++    d = ws / "07_drafting" / "figures"
++    d.mkdir(parents=True, exist_ok=True)
++    (d / "FIG-1.figure.yml").write_text(yaml.safe_dump({
++        "figure": "FIG-1", "title": "框图",
++        "parts": [{"id": "10", "name": "电解槽"}, {"id": "77", "name": "未在正文出现"}],
++        "connections": [],
++    }, allow_unicode=True), encoding="utf-8")
++    (ws / "07_drafting").mkdir(exist_ok=True)
++    (ws / "07_drafting" / "spec.md").write_text("电解槽10 连接于管路。\n", encoding="utf-8")
++
++    findings = [f for f in validate.validate_all(ws) if f.code == "V033"]
++    assert findings and all(f.level == "warn" for f in findings)
++
++
++def test_deadlines_refuse_to_compute_without_base_date(ws, capsys):
++    path = ws / deadlines.LEDGER_REL
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(yaml.safe_dump({"entries": [
++        {"id": "DL-001", "target": "TGT-0002", "type": "oa_response", "base_date": "", "done": False}
++    ]}, allow_unicode=True), encoding="utf-8")
++
++    rows = deadlines.evaluate(ws, today=date(2026, 10, 25))
++    assert rows[0]["due"] is None and rows[0]["status"] == "incomplete"
++    assert deadlines.main(["check", "--root", str(ws)]) == 1
++
++
++def test_export_docx_numbers_come_from_the_workspace(ws, tmp_path):
++    docx = pytest.importorskip("docx")
++    from patentkit import export as export_mod
++
++    out = tmp_path / "r.docx"
++    assert export_mod.main(["TGT-0002", "--root", str(ws), "--out", str(out)]) == 0
++    document = docx.Document(str(out))
++    text = "\n".join(p.text for p in document.paragraphs)
++    assert "TGT-0002" in text and "不构成法律意见" in text
++    cells = [c.text for t in document.tables for r in t.rows for c in r.cells]
++    assert any("G-S-01" in c for c in cells)  # 五门表随工作区状态转写
++
++
++def test_map_and_ledger_are_read_only_views(ws, tmp_path):
++    from patentkit import ledger, map as map_mod
++
++    out = tmp_path / "m.html"
++    assert map_mod.main(["TGT-0002", "--root", str(ws), "--out", str(out)]) == 0
++    assert "<script" not in out.read_text(encoding="utf-8")
++
++    rows = ledger.build_entries(ws, __import__("patentkit.registry", fromlist=["x"]).load_registry(ws), "TGT-0002")
++    assert rows == []  # 无候选 → 空账本，不编造
+diff --git a/b/tests/conftest.py b/tests/conftest.py
+new file mode 100644
+index 0000000..0ec7d35
+--- /dev/null
++++ b/tests/conftest.py
+@@ -0,0 +1,309 @@
++"""Shared fixtures for the kernel test suite (reconstructed).
++
++The sdist ships the private repository's ``tests/`` but not its ``conftest.py``; this file
++reconstructs that fixture layer so the suite runs from the distributed tree. The public API
++was recovered from the usages across ``tests/*.py``:
++
++* constants: ``LOG_NAME`` / ``RAW_NAME`` / ``SCHEMA`` / ``BASE_BIB``
++* factories: ``make_candidate(**overrides)`` / ``make_log(**overrides)`` (deep-copied bases)
++* helpers: ``write_json(path, data)`` / ``assessed_candidate(repo, **overrides)``
++* fixture: ``repo`` — a clean two-target workspace:
++
++  - one pre-written candidate ``P-001`` (asserted / pool / default relevance 3, no assessment
++    yet — exactly the state right after ingest);
++  - one live Espacenet log whose CSV raw artifact carries 5 parseable records (G-S-05
++    replayable, V026 clean);
++  - ``citations.bib`` with the default bibliography key plus ``citation-template.bib`` with
++    placeholder keys (exempt from V004/V005 by file name).
++
++A clean repository must validate to zero findings and pass G-S-05 only (see ``test_baseline.py``).
++"""
++
++from __future__ import annotations
++
++import copy
++import json
++from pathlib import Path
++
++import pytest
++
++from patentkit import assessment
++from patentkit import gates as gates_mod
++from patentkit import runs as runs_mod
++from patentkit import validate as validate_mod
++from patentkit.model import Candidate
++
++#: Default search log (Espacenet, 5 hits, N1 axis of TGT-0000)
++LOG_NAME = "espacenet_2026-01-01_N1_5.log.json"
++
++#: Default raw artifact referenced by that log (one Espacenet CSV page with 5 records)
++RAW_NAME = "espacenet_2026-01-01_N1_5_page-1.csv"
++
++#: Default bibliography key of ``make_candidate`` (must exist in ``BASE_BIB``)
++BIB_KEY = "us12345672020"
++
++#: Quotes file backing the default assessment citations (see ``assessed_candidate``)
++QUOTES_REF = "03_candidates/quotes/P-001.md"
++
++#: The parsed candidates schema, shipped with the package templates
++SCHEMA = json.loads(
++    (Path(__file__).resolve().parents[1] / "patentkit" / "templates" / "workspace"
++     / "03_candidates" / "candidates_schema.json").read_text(encoding="utf-8")
++)
++
++#: Bibliography of the fixture workspace — exactly one entry matching ``BIB_KEY``
++BASE_BIB = (
++    "@patent{us12345672020,\n"
++    "  title = {Localized capillary water removal},\n"
++    "  number = {US 1234567 B2},\n"
++    "  year = {2020}\n"
++    "}\n"
++)
++
++#: Template bibliography: recognized by file name, so its placeholder keys never satisfy V004
++TEMPLATE_BIB = (
++    "@patent{YYYY-AUTHORS-KEYWORDS,\n"
++    "  title = {TEMPLATE PLACEHOLDER},\n"
++    "}\n"
++)
++
++GLOSSARY = """\
++version: 2
++updated: '2026-01-01'
++active_target: TGT-0000
++
++targets:
++  TGT-0000:
++    title: 'Fixture target A'
++    status: active
++    note: 'conftest fixture'
++  TGT-0001:
++    title: 'Fixture target B'
++    status: active
++    note: 'conftest fixture'
++
++axes:
++  N1@TGT-0000: {name_zh: 'Local Capability Interface', name_en: 'local capability interface', definition: 'fixture axis'}
++  N2@TGT-0000: {name_zh: 'Second Fixture Axis', name_en: 'second fixture axis', definition: 'fixture axis'}
++  N1@TGT-0001: {name_zh: 'Microgravity Gas-Liquid Separation', name_en: 'microgravity gas-liquid separation', definition: 'fixture axis'}
++  N2@TGT-0001: {name_zh: 'Second B Axis', name_en: 'second b axis', definition: 'fixture axis'}
++
++novelty_states:
++  untouched: {definition: 'not reviewed, or reviewed and unrelated'}
++  partial: {definition: 'discloses only some features'}
++  covered: {definition: 'covers a single claim but not the overall solution'}
++  blocking: {definition: 'a single document blocks novelty'}
++
++roles:
++  near_prior_art: {definition: 'enters column D; counts toward G-S-03/G-S-04'}
++  pool: {definition: 'counts toward G-S-02 only'}
++  excluded: {definition: 'counts toward no gate'}
++  family: {definition: 'counts toward G-S-04'}
++
++evidence_levels:
++  verified: {definition: 'raw artifact archived inside the repo'}
++  attested: {definition: 'hash-bound external material'}
++  asserted: {definition: 'self-reported, no artifact'}
++
++db_aliases:
++  CNIPA: ['cnipa']
++"""
++
++#: Pre-written run: mentions P-001's publication number so runs/V018/inference have data
++RUN_NOTE = "comparison of the content of US 1234567 B2\n"
++
++QUOTES = (
++    "The interface continuously reports local capability states to the controller.\n"
++    "The controller routes water through a capillary matrix for removal.\n"
++)
++
++
++def make_candidate(**overrides):
++    """A schema-valid, zero-finding candidate (asserted / pool / TGT-0000, relevance 3).
++
++    This is the post-ingest state: no assessment yet. Use ``assessed_candidate`` (or the
++    kernel's ``assess_batch``) when a test needs an entry eligible for G-S-02.
++    """
++    data = {
++        "id": "P-001",
++        "kind": "patent",
++        "title": "Localized capillary water removal device",
++        "authors_or_applicants": ["Fixture Applicant"],
++        "year": 2020,
++        "source_db": "CNIPA",
++        "url_or_doc_number": "US 1234567 B2",
++        "relevance": 3,
++        "novelty_check": "untouched",
++        "tags": ["N1@TGT-0000"],
++        "logged_at": "2026-01-01T00:00:00+00:00",
++        "source_log": f"../02_search_logs/{LOG_NAME}",
++        "family": [],
++        "cited_by": [],
++        "pdf_path": None,
++        "bibtex_key": BIB_KEY,
++        "evidence_level": "asserted",
++        "evidence_ref": None,
++        "evidence_sha256": None,
++        "role": "pool",
++        "target": "TGT-0000",
++    }
++    data.update(copy.deepcopy(overrides))
++    return data
++
++
++def make_log(**overrides):
++    """A live Espacenet log for N1@TGT-0000 whose CSV raw artifact exists (G-S-05 replayable)."""
++    data = {
++        "db": "Espacenet",
++        "target": "TGT-0000",
++        "actor": "conftest",
++        "capture_mode": "live",
++        "timestamp": "2026-01-01T00:00:00+00:00",
++        "query": {"id": "N1", "axis": "N1@TGT-0000"},
++        "result": {"hit_count": 5, "raw_export": f"raw/{RAW_NAME}", "complete": True},
++    }
++    data.update(copy.deepcopy(overrides))
++    return data
++
++
++def assessed_candidate(repo, **overrides):
++    """A candidate with a valid AI assessment on N1 (problem+means citations → eligible).
++
++    Uses the kernel's own fingerprint logic so the record stays valid under the current
++    assessment protocol. Returns the written data dict.
++    """
++    data = make_candidate()
++    data.update(copy.deepcopy(overrides))
++    data.update({
++        "review_note": data.get("review_note") or "discloses the local capability interface feeding loop",
++        "reviewed_at": data.get("reviewed_at") or "2026-01-02T00:00:00+00:00",
++        "assessment": {
++            "actor": "ai",
++            "by": "conftest",
++            "at": "2026-01-02T00:00:00+00:00",
++            "basis": {
++                "N1@TGT-0000": {
++                    "problem": {
++                        "ref": QUOTES_REF,
++                        "locator": "L1",
++                        "quote": "The interface continuously reports local capability states to the controller.",
++                        "rationale": "same reporting problem",
++                    },
++                    "means": {
++                        "ref": QUOTES_REF,
++                        "locator": "L2",
++                        "quote": "The controller routes water through a capillary matrix for removal.",
++                        "rationale": "same routing means",
++                    },
++                }
++            },
++        },
++    })
++    if data.get("relevance") is None or "relevance_problem" not in overrides:
++        data.setdefault("relevance_problem", 4)
++    if "relevance_means" not in overrides:
++        data.setdefault("relevance_means", 4)
++    data["relevance"] = min(data["relevance_problem"], data["relevance_means"])
++    cand = Candidate(data, repo.candidate_path(data["id"]))
++    materials = {"N1@TGT-0000": {k: data["assessment"]["basis"]["N1@TGT-0000"][k] for k in ("problem", "means")}}
++    data["assessment"]["materials"] = materials
++    data["assessment"]["fingerprint"] = assessment.fingerprint(cand, repo.root)
++    repo.write_candidate(data)
++    return data
++
++
++def write_json(path: Path, data) -> None:
++    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
++
++
++def _raw_csv() -> str:
++    lines = ["Publication number,Title,Applicant,Publication date"]
++    lines += [f"US10900000{i}A,fixture publication {i},Fixture Applicant {i},2020-05-01" for i in range(1, 6)]
++    return "\n".join(lines) + "\n"
++
++
++class Repo:
++    """A clean fixture workspace plus the write/read helpers used by the tests."""
++
++    def __init__(self, root: Path):
++        self.root = root
++        self.candidates_dir = root / "03_candidates"
++        self.runs_dir = root / "04_comparative_analysis" / "runs"
++        self.bib = root / "06_citation_management" / "citations.bib"
++        for d in (
++            "00_methodology",
++            "01_search_plan",
++            "02_search_logs",
++            "02_search_logs/raw",
++            "03_candidates",
++            "03_candidates/quotes",
++            "04_comparative_analysis",
++            "04_comparative_analysis/runs",
++            "05_novelty_conclusions",
++            "06_citation_management",
++            "07_drafting",
++            "08_polishing",
++        ):
++            (root / d).mkdir(parents=True, exist_ok=True)
++        (root / "00_methodology" / "glossary.yml").write_text(GLOSSARY, encoding="utf-8")
++        write_json(self.candidates_dir / "candidates_schema.json", SCHEMA)
++        (root / QUOTES_REF).write_text(QUOTES, encoding="utf-8")
++        self.write_bib(BASE_BIB)
++        (self.bib.parent / "citation-template.bib").write_text(TEMPLATE_BIB, encoding="utf-8")
++        self.raw_path().write_text(_raw_csv(), encoding="utf-8")
++        self.write_log(make_log())
++        (root / "05_novelty_conclusions" / "five_acceptance_gates_tracking.md").write_text(
++            "# Five acceptance gates tracking\n\nGenerated per target by `patentkit gates`.\n",
++            encoding="utf-8",
++        )
++        self.write_run("2026-01-01_tgt-test.md", RUN_NOTE)
++        assessed_candidate(self, relevance_problem=5, relevance_means=5, relevance=5,
++                          review_note="discloses the local capability interface feeding loop")
++
++    # ── paths ──────────────────────────────────────────────────────
++    def candidate_path(self, cid: str) -> Path:
++        return self.candidates_dir / f"{cid}.json"
++
++    def log_path(self, name: str = LOG_NAME) -> Path:
++        return self.root / "02_search_logs" / name
++
++    def raw_path(self, name: str = RAW_NAME) -> Path:
++        return self.root / "02_search_logs" / "raw" / name
++
++    # ── writers ────────────────────────────────────────────────────
++    def write_candidate(self, data, name: str | None = None) -> Path:
++        return self.write_candidate_raw(name or data["id"], data)
++
++    def write_candidate_raw(self, name: str, data) -> Path:
++        path = self.candidates_dir / f"{name}.json"
++        write_json(path, data)
++        return path
++
++    def write_log(self, data, name: str = LOG_NAME) -> Path:
++        path = self.log_path(name)
++        write_json(path, data)
++        return path
++
++    def write_run(self, name: str, content: str) -> Path:
++        path = self.runs_dir / name
++        path.write_text(content, encoding="utf-8")
++        return path
++
++    def write_bib(self, content: str) -> Path:
++        self.bib.write_text(content, encoding="utf-8")
++        return self.bib
++
++    # ── kernel entry points ────────────────────────────────────────
++    def validate(self):
++        return validate_mod.validate_all(self.root)
++
++    def gates(self):
++        return gates_mod.compute_all(self.root)
++
++    def runs(self):
++        return runs_mod.load_runs(self.root)
++
++
++@pytest.fixture
++def repo(tmp_path: Path) -> Repo:
++    return Repo(tmp_path)
+diff --git a/tests/test_bibsync.py b/tests/test_bibsync.py
+index 6a298f3..a90e755 100644
+--- a/tests/test_bibsync.py
++++ b/tests/test_bibsync.py
+@@ -57,7 +57,7 @@ def test_apply_appends_entry(repo, capsys):
+ 
+     text = bib_text(repo)
+     assert "@misc{brand_new_key," in text
+-    assert "A sufficiently long patent title" in text
++    assert "Localized capillary water removal device" in text  # the fixture default title
+     assert "US 1234567 B2" in text
+ 
+ 
+@@ -69,7 +69,7 @@ def test_corporate_author_double_braces(repo, capsys):
+ 
+     line = [ln for ln in bib_text(repo).splitlines() if "brand_new_key" in ln][0]
+     assert line.startswith("@misc{brand_new_key")
+-    authors = [ln for ln in bib_text(repo).splitlines() if ln.strip().startswith("author = {{ACME")]
++    authors = [ln for ln in bib_text(repo).splitlines() if ln.strip().startswith("author = {{Fixture Applicant")]
+     assert authors, bib_text(repo)[-500:]
+     assert "{{{" not in bib_text(repo).split("@misc{brand_new_key,")[1].split("}")[0]
+ 
+diff --git a/tests/test_cross_client_checker.py b/tests/test_cross_client_checker.py
+index d90669d..97ab2c1 100644
+--- a/tests/test_cross_client_checker.py
++++ b/tests/test_cross_client_checker.py
+@@ -14,6 +14,8 @@ import pathlib
+ import pytest
+ 
+ ROOT = pathlib.Path(__file__).resolve().parent.parent
++if not (ROOT / "cross_client_tests" / "check_output.py").is_file():
++    pytest.skip("private monorepo layout not present in this distributed tree", allow_module_level=True)
+ CHECKER = ROOT / "cross_client_tests" / "check_output.py"
+ RUNNER = ROOT / "cross_client_tests" / "run_cases.py"
+ 
+diff --git a/tests/test_docs.py b/tests/test_docs.py
+index eac73d5..748c4fa 100644
+--- a/tests/test_docs.py
++++ b/tests/test_docs.py
+@@ -23,6 +23,10 @@ import pytest
+ 
+ from patentkit import cli
+ 
++_ROOT = pathlib.Path(__file__).resolve().parent.parent
++if not (_ROOT / "docs" / "operations_manual.md").is_file():
++    pytest.skip("private monorepo docs not present in this distributed tree", allow_module_level=True)
++
+ DOCS = (
+     pathlib.Path("docs/operations_manual.md"),
+     pathlib.Path("README.md"),
+diff --git a/tests/test_gates.py b/tests/test_gates.py
+index 20c2126..8eeb3dd 100644
+--- a/tests/test_gates.py
++++ b/tests/test_gates.py
+@@ -80,9 +80,18 @@ def test_gs03_counts_role_not_novelty_check(repo):
+ 
+ 
+ def test_gs03_counts_near_prior_art(repo):
+-    repo.write_candidate(
+-        make_candidate(role="near_prior_art", url_or_doc_number="US 1234567 B2")
+-    )
++    """Since assessment protocol 1, G-S-03 counts only near_prior_art with a current supported
++    assessment AND an explicit human confirmation — the canonical path is assess → confirm."""
++    from conftest import assessed_candidate
++    from patentkit import assessment as assessment_mod
++    from patentkit.model import Candidate
++
++    data = assessed_candidate(repo, role="near_prior_art", url_or_doc_number="US 1234567 B2")
++    cand = Candidate(data, repo.candidate_path(data["id"]))
++    fp = assessment_mod.fingerprint(cand, repo.root)
++    assessment_mod.confirm_batch(repo.root, [{"candidate_id": "P-001", "expected_fingerprint": fp}],
++                                 by="human-reviewer", apply=True)
++
+     gs03 = by_id(repo.gates())["G-S-03"]
+     assert gs03.values["asserted"] == "1 docs"
+     assert gs03.values["verified"] == "0 docs"
+diff --git a/b/tests/test_new_features.py b/tests/test_new_features.py
+new file mode 100644
+index 0000000..7d6c263
+--- /dev/null
++++ b/tests/test_new_features.py
+@@ -0,0 +1,250 @@
++"""New-in-0.3.0 modules: provenance / figures / export-docx / deadlines / map / layout / ledger.
++
++Each test pins the safety property the module was built for, not just shape:
++provenance fails closed on unsourced numbers, figure marks only warn, conclusions cannot cite
++invented evidence, the docx carries the workspace numbers verbatim, deadlines refuse to compute
++without a base date, map/layout/ledger are read-only views.
++"""
++
++from __future__ import annotations
++
++import json
++import re
++from datetime import date
++from pathlib import Path
++
++import pytest
++import yaml
++
++from patentkit import deadlines, figures, layout, ledger, map as map_mod, provenance
++from patentkit import validate as validate_mod
++
++
++# ── provenance ────────────────────────────────────────────────────────
++
++
++def test_scan_finds_units_ranges_and_cjk_counts():
++    text = (
++        "电解槽的工作温度为 80-95℃。\n"
++        "分离效率达到 99.2% 以上；该膜厚度为 3 mm。\n"
++        "步骤3重复至少两次。\n"
++        "如图1所示。"
++    )
++    got = provenance.scan_text(text)
++    joined = " | ".join(got)
++    assert any("80-95" in s for s in got)
++    assert any("99.2%" in s for s in got)
++    assert any("3 mm" in s for s in got)
++    assert any("至少两" in s for s in got)
++    assert "如图1" not in joined  # 图N 不是数值声明
++    assert len(set(got)) == len(got)
++
++
++def test_scan_skeleton_is_fail_closed(repo):
++    sk = provenance.build_skeleton(provenance.scan_text("温度为 50-90%。"), "claims.md")
++    assert sk["entries"][0]["sources"] == []
++    assert sk["entries"][0]["id"] == "NUM-001"
++
++
++def test_provenance_check_grades(repo, tmp_path):
++    data = repo.root / "00_methodology" / "experiment_notes.md"
++    data.write_text("实测效率 92.4%，见第 3 行。\n实测效率 92.4%\n", encoding="utf-8")
++
++    good = {
++        "entries": [
++            {"id": "NUM-001", "statement": "效率为 92.4%", "claim_ref": "claim 1",
++             "sources": [
++                 {"grade": "A", "ref": "00_methodology/experiment_notes.md", "locator": "L2"},
++                 {"grade": "B", "ref": "P-001", "locator": "abstract, parametric range"},
++             ]},
++            {"id": "NUM-002", "statement": "示例厚度 5 mm", "claim_ref": "spec [0031]",
++             "sources": [{"grade": "C", "ref": "embodiment-2", "locator": "para 0031",
++                          "note": "实施例示例值，非实测"}]},
++        ]
++    }
++    (repo.root / "07_drafting").mkdir(exist_ok=True)
++    (repo.root / provenance.REGISTRY_REL).write_text(
++        yaml.safe_dump(good, allow_unicode=True), encoding="utf-8"
++    )
++    assert provenance.check_registry(repo.root, good) == []
++
++    bad = json.loads(json.dumps(good))  # deep copy
++    bad["entries"][0]["sources"] = []                                   # V031
++    bad["entries"][1]["sources"] = [{"grade": "B", "ref": "P-999", "locator": "x"}]  # V032 unknown candidate
++    problems = provenance.check_registry(repo.root, bad)
++    codes = {c for c, _ in problems}
++    assert "V031" in codes and "V032" in codes
++
++
++def test_validate_integrates_provenance_rules(repo):
++    (repo.root / "07_drafting").mkdir(exist_ok=True)
++    registry = {"entries": [{"id": "NUM-001", "statement": "温度 50-90%", "sources": []}]}
++    (repo.root / provenance.REGISTRY_REL).write_text(
++        yaml.safe_dump(registry, allow_unicode=True), encoding="utf-8"
++    )
++    codes = {f.code for f in repo.validate()}
++    assert "V031" in codes
++
++    (repo.root / provenance.REGISTRY_REL).unlink()
++    assert "V031" not in {f.code for f in repo.validate()}  # opt-in: no registry, no rule
++
++
++# ── figures ───────────────────────────────────────────────────────────
++
++
++def _write_spec(repo, parts, name="FIG-1"):
++    d = repo.root / figures.FIGURES_DIR
++    d.mkdir(parents=True, exist_ok=True)
++    spec = {"figure": name, "title": "系统框图", "parts": parts, "connections": []}
++    (d / f"{name}.figure.yml").write_text(yaml.safe_dump(spec, allow_unicode=True), encoding="utf-8")
++    return spec
++
++
++def test_figure_marks_bidirectional_check(repo):
++    (repo.root / "07_drafting").mkdir(exist_ok=True)
++    ms = repo.root / "07_drafting" / "spec.md"
++    ms.write_text("电解槽10 与分离器20 相连；膜组件31 设于槽内。\n", encoding="utf-8")
++
++    _write_spec(repo, [{"id": "10", "name": "电解槽"}, {"id": "20", "name": "分离器"},
++                       {"id": "31", "name": "膜组件"}])
++    assert figures.check_marks(repo.root) == []
++
++    _write_spec(repo, [{"id": "10", "name": "电解槽"}, {"id": "20", "name": "分离器"},
++                       {"id": "99", "name": "不存在于正文的部件"}])  # 31 在正文却不在 spec；99 在 spec 不在正文
++    problems = figures.check_marks(repo.root)
++    assert problems and all(p["code"] == "V033" for p in problems)
++    joined = json.dumps(problems, ensure_ascii=False)
++    assert "99" in joined and "31" in joined
++
++
++def test_validate_reports_v033_as_warning_only(repo):
++    (repo.root / "07_drafting").mkdir(exist_ok=True)
++    (repo.root / "07_drafting" / "spec.md").write_text("电解槽10。\n", encoding="utf-8")
++    _write_spec(repo, [{"id": "10", "name": "电解槽"}, {"id": "55", "name": "未提及"}])
++    findings = [f for f in repo.validate() if f.code == "V033"]
++    assert findings and findings[0].level == "warn"
++
++
++def test_figures_render_svg_is_deterministic_and_offline(repo):
++    _write_spec(repo, [{"id": "10", "name": "电解槽"}, {"id": "20", "name": "分离器"}])
++    _write_spec(repo, [{"id": "10", "name": "电解槽"}, {"id": "20", "name": "分离器"}], name="FIG-2")
++    spec = figures.load_specs(repo.root)["FIG-1"]
++    svg1, svg2 = figures.render_svg(spec), figures.render_svg(spec)
++    assert svg1 == svg2
++    assert svg1.startswith("<svg") and "http" not in svg1.replace(
++        "http://www.w3.org/2000/svg", "")  # 只有命名空间，无外链
++
++
++# ── evidence ledger + V034 ────────────────────────────────────────────
++
++
++def test_ledger_rows_and_render(repo):
++    from conftest import assessed_candidate
++    from patentkit import assessment as assessment_mod
++    from patentkit.model import Candidate
++
++    data = assessed_candidate(repo, role="near_prior_art")
++    cand = Candidate(data, repo.candidate_path(data["id"]))
++    fp = assessment_mod.fingerprint(cand, repo.root)
++    assessment_mod.confirm_batch(repo.root, [{"candidate_id": "P-001", "expected_fingerprint": fp}],
++                                 by="human-reviewer", apply=True)
++
++    rows = ledger.build_entries(repo.root, None, "TGT-0000")
++    row = next(r for r in rows if r["id"] == "P-001")
++    assert row["role"] == "near_prior_art"
++    assert row["human_confirmed"] is True
++    assert "P-001" in ledger.render(rows, "TGT-0000")
++
++
++def test_v034_rejects_conclusions_citing_unknown_evidence(repo):
++    concl = repo.root / "05_novelty_conclusions" / "novelty.md"
++    concl.write_text("结论：P-907 披露了 N1 轴的全部特征。\n", encoding="utf-8")
++    findings = [f for f in repo.validate() if f.code == "V034"]
++    assert findings and "P-907" in findings[0].message
++
++    concl.write_text("结论：P-001 相关性有限。\n", encoding="utf-8")
++    assert "V034" not in {f.code for f in repo.validate()}
++
++
++# ── export-docx ───────────────────────────────────────────────────────
++
++
++def test_export_docx_carries_workspace_numbers(repo, tmp_path):
++    docx = pytest.importorskip("docx")
++    from patentkit import export as export_mod
++
++    out = tmp_path / "report.docx"
++    assert export_mod.main(["TGT-0000", "--root", str(repo.root), "--out", str(out)]) == 0
++    document = docx.Document(str(out))
++    text = "\n".join(p.text for p in document.paragraphs) + "\n" + "\n".join(
++        c.text for t in document.tables for r in t.rows for c in r.cells
++    )
++    assert "TGT-0000" in text
++    assert "G-S-01" in text and "G-S-05" in text
++    assert "US 1234567 B2" not in text  # P-001 是 pool，不出现在 D 列
++    assert "不构成法律意见" in text  # 边界声明随文件走
++    gates_row = [c.text for t in document.tables for r in t.rows for c in r.cells]
++    assert any("0P / 0L" in c for c in gates_row)  # verified 列原样转写（P-001 是 asserted）
++
++
++# ── deadlines ─────────────────────────────────────────────────────────
++
++
++def test_deadlines_compute_and_fail_closed(repo):
++    ledger_path = repo.root / deadlines.LEDGER_REL
++    ledger_path.parent.mkdir(parents=True, exist_ok=True)
++    ledger_path.write_text(yaml.safe_dump({
++        "entries": [
++            {"id": "DL-001", "target": "TGT-0000", "type": "application_fee",
++             "base_date": "2026-10-01", "done": False},
++            {"id": "DL-002", "target": "TGT-0000", "type": "oa_response",
++             "base_date": "2026-01-01", "done": False},
++            {"id": "DL-003", "target": "TGT-0000", "type": "custom",
++             "base_date": "", "done": False},  # 缺 base_date → incomplete
++            {"id": "DL-004", "target": "TGT-0000", "type": "custom",
++             "base_date": "2026-11-05", "months": 0, "done": False},  # 当日到期 → due-soon
++        ]
++    }, allow_unicode=True), encoding="utf-8")
++
++    rows = deadlines.evaluate(repo.root, today=date(2026, 10, 25))
++    by_id = {r["id"]: r for r in rows}
++    assert by_id["DL-001"]["due"] == "2026-12-01"     # 申请日+2个月
++    assert by_id["DL-001"]["status"] == "ok"          # 还有 37 天
++    assert by_id["DL-002"]["status"] == "overdue"     # 2026-05-01 已过
++    assert by_id["DL-003"]["status"] == "incomplete"  # 拒绝无依据计算
++    assert by_id["DL-004"]["status"] == "due-soon"    # 2026-11-05，14 天窗口内
++    assert deadlines.main(["check", "--root", str(repo.root)]) == 1
++
++    by_id["DL-002"]["done"] = True  # 已办理不再报警：重新落盘验证
++    entries = yaml.safe_load(ledger_path.read_text(encoding="utf-8"))
++    entries["entries"][1]["done"] = True
++    ledger_path.write_text(yaml.safe_dump(entries, allow_unicode=True), encoding="utf-8")
++    rows2 = deadlines.evaluate(repo.root, today=date(2026, 10, 25))
++    assert {r["id"] for r in rows2} == {"DL-001", "DL-003", "DL-004"}
++
++
++def test_add_months_clamps_to_month_end():
++    assert deadlines.add_months(date(2026, 1, 31), 1) == date(2026, 2, 28)
++    assert deadlines.add_months(date(2026, 10, 15), 36) == date(2029, 10, 15)
++
++
++# ── map / layout: read-only views ─────────────────────────────────────
++
++
++def test_map_html_is_self_contained(repo, tmp_path):
++    out = tmp_path / "m.html"
++    assert map_mod.main(["TGT-0000", "--root", str(repo.root), "--out", str(out)]) == 0
++    html = out.read_text(encoding="utf-8")
++    assert html.startswith("<html") or "<html" in html
++    assert "G-S-01" in html
++    for banned in ("http://", "https://", "<script"):
++        assert banned not in html, banned  # 离线、无脚本
++
++
++def test_layout_overview_and_thin_data_refusal(repo):
++    payload = layout.collect(repo.root, __import__("patentkit.registry", fromlist=["load_registry"]).load_registry(repo.root))
++    ids = [r["target"] for r in payload]
++    assert set(ids) == {"TGT-0000", "TGT-0001"}
++    assert "暂不建议指定主件" in layout.suggest_primary(payload)  # verified=0 → 拒绝排名
++    text = layout.render(payload)
++    assert "TGT-0000" in text and "空轴" in text
+diff --git a/tests/test_review.py b/tests/test_review.py
+index 7d702ec..9c95670 100644
+--- a/tests/test_review.py
++++ b/tests/test_review.py
+@@ -126,15 +126,12 @@ def test_select_with_abstract(repo):
+ 
+ 
+ def test_select_unreviewed_only(repo):
+-    """relevance==3 means unjudged. Already judged entries (non-3) should be excluded.
++    """Since assessment protocol 1, "judged" means a current supported assessment — not relevance!=3."""
++    from conftest import assessed_candidate
+ 
+-    Note: the fixture's BASE_CANDIDATE has relevance **5** by default (representing "already judged"),
+-    so it must be explicitly set to 3 here to represent "unjudged".
+-    """
+-    repo.write_candidate(make_candidate(relevance=3))  # P-001 unjudged
+-    repo.write_candidate_raw(
+-        "P-002", make_candidate(id="P-002", relevance=5, url_or_doc_number="US 9999999 B2")
+-    )
++    repo.write_candidate(make_candidate(relevance=3))  # P-001 unjudged (no assessment)
++    assessed_candidate(repo, id="P-002", url_or_doc_number="US 9999999 B2",
++                       bibtex_key=None)  # judged: valid assessment (dims 4/4)
+     got = review.select_candidates(repo.root, term_of(repo), unreviewed_only=True)
+     assert [c.id for c in got] == ["P-001"]
+ 
+@@ -247,8 +244,10 @@ def test_apply_does_not_touch_other_fields(repo, capsys):
+     after = json.loads(repo.candidate_path("P-001").read_text(encoding="utf-8"))
+ 
+     assert after["relevance"] == 4
+-    # apply's side-effect fields (review timestamp + the two raw dimension scores) do not count as "pollution"
+-    skip = {"relevance", "reviewed_at", "relevance_problem", "relevance_means"}
++    # apply's side-effect fields (review timestamp, the two raw dimension scores, and the
++    # assessment bookkeeping it must maintain since protocol 1) do not count as "pollution"
++    skip = {"relevance", "reviewed_at", "relevance_problem", "relevance_means",
++            "assessment", "review_history"}
+     assert {k: v for k, v in after.items() if k not in skip} == {
+         k: v for k, v in before.items() if k not in skip
+     }
+@@ -391,11 +390,11 @@ def test_apply_keeps_key_order(repo, capsys):
+ 
+ 
+ def test_progress_counts_unjudged_as_three(repo, capsys):
+-    repo.write_candidate(make_candidate(relevance=3))  # P-001 unjudged (the fixture default is 5)
+-    repo.write_candidate_raw(
+-        "P-002",
+-        make_candidate(id="P-002", relevance=5, url_or_doc_number="US 9999999 B2"),
+-    )
++    from conftest import assessed_candidate
++
++    repo.write_candidate(make_candidate(relevance=3))  # P-001 unjudged (the fixture default is judged)
++    assessed_candidate(repo, id="P-002", url_or_doc_number="US 9999999 B2",
++                       bibtex_key=None)  # P-002 judged via a valid assessment
+     review.main(["progress", "--root", str(repo.root)])
+     out = capsys.readouterr().out
+     assert "N1" in out
+@@ -417,12 +416,17 @@ def test_progress_cli_through_api(repo):
+ 
+ 
+ def test_is_reviewed_true_when_reviewed_at_present(repo):
+-    """**Core disambiguation**: relevance is still 3, but reviewed_at is filled in → already judged."""
++    """**Core disambiguation** since assessment protocol 1: a bare reviewed_at no longer marks an
++    entry judged — only a current supported assessment does (reviewed_at alone has unknown origin)."""
++    from conftest import assessed_candidate
++
+     repo.write_candidate(
+         make_candidate(relevance=3, reviewed_at="2026-10-17T12:00:00+08:00")
+     )
+-    cand = load_candidates(repo.root)[0]
+-    assert review.is_reviewed(cand) is True
++    assert review.is_reviewed(load_candidates(repo.root)[0]) is False
++
++    assessed_candidate(repo, relevance_problem=3, relevance_means=3, relevance=3)
++    assert review.is_reviewed(load_candidates(repo.root)[0]) is True
+ 
+ 
+ def test_is_reviewed_false_when_default_three(repo):
+@@ -432,10 +436,11 @@ def test_is_reviewed_false_when_default_three(repo):
+ 
+ 
+ def test_is_reviewed_legacy_fallback(repo):
+-    """Old data without reviewed_at falls back to "relevance != 3", so everything does not suddenly become unjudged."""
++    """Legacy data (relevance 5, no assessment) has an unknown judgment origin — since protocol 1
++    it counts as NOT reviewed until re-assessed; the source evidence_level itself is untouched."""
+     repo.write_candidate(make_candidate(relevance=5))
+     cand = load_candidates(repo.root)[0]
+-    assert review.is_reviewed(cand) is True
++    assert review.is_reviewed(cand) is False
+ 
+ 
+ def test_apply_sets_reviewed_at_even_for_judged_as_three(repo, capsys):
+@@ -469,7 +474,9 @@ def test_apply_is_idempotent_for_reviewed_at(repo, capsys):
+ 
+ def test_progress_reports_judged_as_three(repo, capsys):
+     """progress must break out "judged as 3" separately, otherwise it becomes indistinguishable again."""
+-    repo.write_candidate(make_candidate(relevance=3, reviewed_at="2026-10-17T12:00:00+08:00"))
++    from conftest import assessed_candidate
++
++    assessed_candidate(repo, relevance_problem=3, relevance_means=3, relevance=3)
+     review.main(["progress", "--root", str(repo.root)])
+     out = capsys.readouterr().out
+     row = [ln for ln in out.splitlines() if ln.startswith("N1")][0].split()
+@@ -478,10 +485,10 @@ def test_progress_reports_judged_as_three(repo, capsys):
+ 
+ 
+ def test_export_unreviewed_uses_reviewed_at(repo, tmp_path):
+-    """Entries already judged as 3 (with reviewed_at) must not appear again in --unreviewed."""
+-    repo.write_candidate(
+-        make_candidate(relevance=3, reviewed_at="2026-10-17T12:00:00+08:00")
+-    )
++    """Entries already judged as 3 (via a supported assessment) must not appear again in --unreviewed."""
++    from conftest import assessed_candidate
++
++    assessed_candidate(repo, relevance_problem=3, relevance_means=3, relevance=3)
+     repo.write_candidate_raw(
+         "P-002",
+         make_candidate(id="P-002", relevance=3, url_or_doc_number="US 9999999 B2"),
+@@ -524,11 +531,13 @@ def test_relevance_levels_defined_in_glossary():
+     """The criterion must be a section of the definition source, otherwise the review is not reproducible."""
+     import yaml
+ 
+-    from patentkit.paths import find_workspace
++    from patentkit.paths import WorkspaceNotFound, find_workspace
+ 
+-    term = yaml.safe_load(
+-        (find_workspace() / "00_methodology" / "glossary.yml").read_text(encoding="utf-8")
+-    )
++    try:
++        glossary = find_workspace() / "00_methodology" / "glossary.yml"
++    except WorkspaceNotFound:
++        pytest.skip("no real workspace around this tree (private monorepo fixture)")
++    term = yaml.safe_load(glossary.read_text(encoding="utf-8"))
+     assert "relevance_levels" in term, "the glossary is missing the relevance_levels section"
+     levels = term["relevance_levels"]
+     for n in (1, 2, 3, 4, 5):
+diff --git a/tests/test_runs.py b/tests/test_runs.py
+index 6a887b6..33a7d66 100644
+--- a/tests/test_runs.py
++++ b/tests/test_runs.py
+@@ -113,7 +113,8 @@ def test_load_runs_extracts_doc_numbers(repo):
+ 
+ 
+ def test_infer_includes_matching_candidate(repo):
+-    cands = [cand_from(make_candidate())]
++    # inference additionally requires novelty_check != untouched (mis-mapped entries are excluded)
++    cands = [cand_from(make_candidate(novelty_check="partial"))]
+     cands[0].data["url_or_doc_number"] = "US 1234567 B2"
+     assert infer_near_prior_ids(cands, repo.runs()) == frozenset({"P-001"})
+ 
+diff --git a/tests/test_skill_package.py b/tests/test_skill_package.py
+index 469c3b2..eb47c0d 100644
+--- a/tests/test_skill_package.py
++++ b/tests/test_skill_package.py
+@@ -21,7 +21,10 @@ import pathlib
+ import pytest
+ import yaml
+ 
+-SKILL_DIR = pathlib.Path("patent-research-skill")
++SKILL_DIR = pathlib.Path(__file__).resolve().parent.parent / "patent-research-skill"
++if not (SKILL_DIR / "SKILL.md").is_file():
++    pytest.skip("private monorepo layout not present in this distributed tree", allow_module_level=True)
++
+ SKILL_MD = SKILL_DIR / "SKILL.md"
+ README = SKILL_DIR / "README.md"
+ REFS = SKILL_DIR / "references"
+diff --git a/tests/test_skill_release.py b/tests/test_skill_release.py
+index b6d4ee0..092bff6 100644
+--- a/tests/test_skill_release.py
++++ b/tests/test_skill_release.py
+@@ -25,6 +25,8 @@ import zipfile
+ import pytest
+ 
+ ROOT = pathlib.Path(__file__).resolve().parent.parent
++if not (ROOT / "tools" / "build_skill_release.py").is_file():
++    pytest.skip("private monorepo layout not present in this distributed tree", allow_module_level=True)
+ BUILD = ROOT / "tools" / "build_skill_release.py"
+ SKILL_NAME = "patent-research"
+ BUILT_AT = "2026-10-20T00:00:00+08:00"
+diff --git a/tests/test_skill_scripts.py b/tests/test_skill_scripts.py
+index 22098bc..d69362e 100644
+--- a/tests/test_skill_scripts.py
++++ b/tests/test_skill_scripts.py
+@@ -28,6 +28,8 @@ import pytest
+ import yaml
+ 
+ REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
++if not (REPO_ROOT / "patent-research-skill" / "scripts").is_file():
++    pytest.skip("private monorepo layout not present in this distributed tree", allow_module_level=True)
+ SCRIPTS = REPO_ROOT / "patent-research-skill" / "scripts"
+ COMMAND_SCRIPTS = ("status.py", "validate.py", "gates.py", "report.py", "check.py")
+ 
+diff --git a/tests/test_snapshot.py b/tests/test_snapshot.py
+index f47dfe2..5161874 100644
+--- a/tests/test_snapshot.py
++++ b/tests/test_snapshot.py
+@@ -19,6 +19,8 @@ import re
+ import pytest
+ 
+ ROOT = pathlib.Path(__file__).resolve().parent.parent
++if not (ROOT / "tools" / "snapshot.py").is_file():
++    pytest.skip("private monorepo layout not present in this distributed tree", allow_module_level=True)
+ SNAPSHOT_MD = ROOT / "docs" / "delivery_summary.md"
+ SNAPSHOT_PY = ROOT / "tools" / "snapshot.py"
+ 
+diff --git a/tests/test_validate.py b/tests/test_validate.py
+index d4f60db..c6e3628 100644
+--- a/tests/test_validate.py
++++ b/tests/test_validate.py
+@@ -16,7 +16,7 @@ def codes(findings) -> set[str]:
+ 
+ def test_v001_schema_violation(repo):
+     pytest.importorskip("jsonschema")
+-    repo.write_candidate(make_candidate(title="abc"))  # minLength 5
++    repo.write_candidate(make_candidate(title="a"))  # minLength 2 (relaxed for CJK titles)
+     assert "V001" in codes(repo.validate())
+ 
+ 
+diff --git a/tests/test_version.py b/tests/test_version.py
+index 435719b..15db06d 100644
+--- a/tests/test_version.py
++++ b/tests/test_version.py
+@@ -73,6 +73,7 @@ def test_installed_metadata_matches_package_version():
+     )
+ 
+ 
++@pytest.mark.skipif(not BUILD_SCRIPT.is_file(), reason="release builder lives in the skill repository")
+ def test_release_builder_uses_package_version():
+     """The compatibility floor in the release manifest must come from the package version, never an unknown or stale value."""
+     spec = importlib.util.spec_from_file_location("build_skill_release_testcopy", BUILD_SCRIPT)

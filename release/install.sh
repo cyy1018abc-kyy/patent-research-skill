@@ -148,7 +148,7 @@ fi
 [ -d "$PAYLOAD" ] || fail "release package is missing the payload directory: $INSTALL_DIR_NAME (the zip may not have been fully extracted)" 2
 
 if [ "$DRY_RUN" -eq 0 ] && [ "$NO_SELF_CHECK" -eq 0 ]; then
-    "$PYTHON_BIN" -c 'from patentkit.assessment import PROTOCOL_VERSION; assert PROTOCOL_VERSION == 1' || fail "Install the patentkit 0.2.0 wheel before replacing the skill"
+    "$PYTHON_BIN" -c 'from patentkit.assessment import PROTOCOL_VERSION; assert PROTOCOL_VERSION == 1' || fail "Install the patentkit 0.3.0 wheel before replacing the skill"
 fi
 
 for root in "${ROOTS[@]}"; do
@@ -191,7 +191,7 @@ if [ "$NO_SELF_CHECK" -ne 1 ]; then
         fail "sample workspace is missing from the release package" 2
     fi
     if [ $? -ne 0 ]; then
-        fail "self-check failed. Install the matching patentkit 0.2.0 wheel and retry"
+        fail "self-check failed. Install the matching patentkit 0.3.0 wheel and retry"
     fi
     echo "✅ Self-check passed: the scripts can locate the workspace and compute the status"
 fi

@@ -30,7 +30,7 @@ class AssessmentContract(unittest.TestCase):
         self.assertEqual(caught.exception.code, 3)
         result = json.loads(output.getvalue())
         self.assertEqual(result["code"], 3)
-        self.assertIn("0.2.0", result["error"])
+        self.assertIn("0.3.0", result["error"])
 
     def test_supported_protocol_is_accepted_without_output(self):
         protocol = types.ModuleType("patentkit.assessment")
@@ -52,7 +52,7 @@ class AssessmentContract(unittest.TestCase):
 
     def test_skill_and_sample_keep_source_and_judgment_separate(self):
         skill = (ROOT / "patent-research-skill/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("version: 2.4.0", skill)
+        self.assertIn("version: 2.5.0", skill)
         self.assertIn("07-assessment-protocol.md", skill)
         self.assertNotIn("conclusion is downgraded to `asserted`", skill)
         sample = json.loads((ROOT / "patent-research-skill/assets/sample_data/candidates_example.json").read_text(encoding="utf-8"))

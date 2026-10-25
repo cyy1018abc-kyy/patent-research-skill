@@ -1,48 +1,46 @@
-# Blank comparison matrix (N axes × M closest prior-art documents)
+# 空白对比矩阵（N 轴 × M 近端对比文件）
 
-> **How to use**: copy this table into `04_comparative_analysis/` and add or remove rows according to the workspace's actual number of axes.
-> **Axis names are defined authoritatively only by the workspace's `00_methodology/glossary.yml`**; this template must not rename them or invent abbreviations.
-> Legend: ● fully disclosed / ○ partially disclosed / — not disclosed / ? to be verified (no ●/○ without evidence from the original text).
+> **用法**：把本表复制进 `04_comparative_analysis/`，按工作区实际轴数增删行。
+> **轴名以工作区 `00_methodology/glossary.yml` 为唯一权威定义**；本模板不得改名或另造简称。
+> 图例：● 全部披露 / ○ 部分披露 / — 未披露 / ? 待核（没有原文证据不得填 ●/○）。
 
-| Dimension \ comparison document | D1 | D2 | D3 | D4 | D5 |
+| 维度 \ 对比文件 | D1 | D2 | D3 | D4 | D5 |
 |---|---|---|---|---|---|
-| **N1: <axis name>** |  |  |  |  |  |
-| **N2: <axis name>** |  |  |  |  |  |
-| **N3: <axis name>** |  |  |  |  |  |
-| **N4: <axis name>** |  |  |  |  |  |
-| **N5: <axis name>** |  |  |  |  |  |
-| **N6: <axis name>** |  |  |  |  |  |
-| **Overall closure** |  |  |  |  |  |
+| **N1：<轴名>** |  |  |  |  |  |
+| **N2：<轴名>** |  |  |  |  |  |
+| **N3：<轴名>** |  |  |  |  |  |
+| **N4：<轴名>** |  |  |  |  |  |
+| **N5：<轴名>** |  |  |  |  |  |
+| **N6：<轴名>** |  |  |  |  |  |
+| **整体闭合** |  |  |  |  |  |
 
-## Output per column (per comparison document)
+## 每列输出（每个对比文件一份）
 
 ```text
-D1 — <title>  <publication number or URL>
-- Applicant: <applicant>
-- Publication year: <year>
-- Hit axes: N<n>, N<m>
-- Relationship: □ blocking (blocks novelty) / □ partial overlap / □ marginal
-- Key passages: <cite 1–3 original paragraphs; must be traceable to raw/ or the original text>
-- Distinguishing points: <our distinguishing features / what the other document does not disclose>
-- Source level: verified / attested / asserted
-- Judgment: actor / problem and means original-text support / current fingerprint
-- Human confirmation: pending / valid / stale; reviewer and time
+D1 — <标题>  <公开号或 URL>
+- 申请人：<申请人>
+- 公开年：<年份>
+- 命中轴：N<n>, N<m>
+- 关系：□ blocking（阻挡新颖性）/ □ 部分重叠 / □ 边缘相关
+- 关键段落：<引 1–3 段原文；必须能追溯到 raw/ 或原文>
+- 区别点：<我方区别特征 / 对方未披露什么>
+- 来源等级：verified / attested / asserted
+- 判定：actor / problem 与 means 原文支持 / 当前指纹
+- 人工确认：待定 / 有效 / 失效；确认人与时间
 ```
 
-## Three-tier determination (fill in together with the table)
+## 三层判定（与上表一起填）
 
-| Tier | Question | Conclusion | Basis (evidence level) |
+| 层 | 问题 | 结论 | 依据（证据等级） |
 |---|---|---|---|
-| Tier 1: per-document novelty | Does a single document cover **all** core features? | holds / doubtful / does not hold |  |
-| Tier 2: combination inventive step | Would a combination of 2–3 documents be "obvious"? Are there zero-disclosure atoms that cannot be assembled? | holds / doubtful / does not hold |  |
-| Tier 3: technical effect | Is there a non-obvious effect that must presuppose the distinguishing features? | holds / doubtful / does not hold |  |
+| 第一层：单篇新颖性 | 有没有单篇覆盖**全部**核心特征？ | 成立 / 存疑 / 不成立 |  |
+| 第二层：组合创造性 | 2–3 篇组合是否「显而易见」？是否存在拼不出的零披露原子？ | 成立 / 存疑 / 不成立 |  |
+| 第三层：技术效果 | 是否有必须以区别特征为前提的非显而易见效果？ | 成立 / 存疑 / 不成立 |  |
 
-> Tier 2 must include a **self-attack**: list the examiner's most likely motivation to combine and objections, then write the responses.
-> Report source provenance and judgment state separately. AI scoring does not downgrade genuine sources; G-S-03 requires explicit valid human confirmation.
+> 第二层必须包含**自我攻击**：列出审查员最可能的结合动机与反对意见，再写回应。
+> 来源等级与判定状态分开报告：AI 打分不降级真实来源；G-S-03 只认可显式有效的人工确认。
 
-## Proposed amendments
+## 修改建议
 
-- [ ] New claims / strengthened dependent claims (which axes need reinforcement)
-- [ ] Additional supporting paragraphs in the specification
-- [ ] Additional figures
-- [ ] Risk level: high / medium / low — basis:
+- [ ] 新增权利要求 / 加强从属权项（哪些轴需要加固）
+- [ ] 说明书补充支持段落

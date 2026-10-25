@@ -3,3 +3,14 @@ kernel-build/
 *.pyc
 dist/
 .pytest_cache/
+
+# ── 保密红线（2.5.0）：真实申请材料与稿件永不入库 ──────────────────
+# 工作区数据目录形态（若有人把专利工作区放进本仓库）
+/0?_*/
+/专利申请/
+/交付文本/
+/workspace.yml
+# 稿件类工作产物（Word/PowerPoint/PDF 定稿走私有渠道）
+*.docx
+*.doc
+*.pptx

@@ -1,13 +1,13 @@
-# Desktop (Codex / ChatGPT App) display and invocation metadata.
+# Desktop（Codex / ChatGPT App）显示与调用元数据。
 # Spec: https://learn.chatgpt.com/docs/build-skills#optional-metadata
-# Effect: shows the display name and summary in the Skills sidebar/selector; selecting via @ automatically attaches the default prompt.
-# Note: display_name / short_description are desktop UI strings and do not affect trigger matching;
-#      triggering is still determined by the description in SKILL.md.
+# 作用：在技能侧栏/选择器里显示名称与摘要；用 @ 选择时自动附带默认提示词。
+# 说明：display_name / short_description 是桌面 UI 字符串，不影响触发匹配；
+#      触发仍由 SKILL.md 的 description 决定（中文主版本，含英文关键词）。
 interface:
-  display_name: "Patent Research"
-  short_description: "Prior-art search, evidence chain, and acceptance gates (G-S)"
-  default_prompt: "Start with the patent-research skill: locate the workspace and self-check first, then proceed in execution order; when tools cannot run, begin each conclusion with \"⚠️ Unverified by tool checks\"."
+  display_name: "专利调研 Patent Research"
+  short_description: "现有技术检索、证据链与验收门（G-S）/ prior-art search, evidence chain, acceptance gates"
+  default_prompt: "使用 patent-research 技能：先定位工作区并自检，再按执行顺序推进；工具无法运行时，每条结论以「⚠️ 未经验证工具校验」开头 (use the patent-research skill: locate the workspace and self-check first, then follow the execution order; when tools cannot run, begin each conclusion with \"⚠️ Unverified by tool checks\")."
   brand_color: "#1F6FEB"
 policy:
-  # Allow implicit triggering by description (default true; the desktop app can also select explicitly via @)
+  # 允许按 description 隐式触发（默认 true；桌面端也可用 @ 显式选择）
   allow_implicit_invocation: true

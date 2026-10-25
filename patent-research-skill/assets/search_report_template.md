@@ -1,84 +1,86 @@
-# Search report template
+# 检索报告模板
 
-> Copy as `<date>_<target-ID>_search_report.md`, to accompany the comparison run under `04_comparative_analysis/runs/`.
-> Every number must be recomputable by `patentkit gates` / `validate`; where handwritten numbers disagree with the tools, the tools win.
+> 复制为 `<日期>_<目标ID>_检索报告.md`，与 `04_comparative_analysis/runs/` 下的对比 run 配套。
+> **每个数字必须能被 `patentkit gates` / `validate` 重算**；手写数字与工具冲突时，以工具为准。
+> 也可用 `patentkit export-docx <TGT>` 自动生成 docx 版（数字全部来自工作区，无手工转写）。
 
-## 1. Target and scope
+## 1. 目标与范围
 
-| Item | Content |
+| 项 | 内容 |
 |---|---|
-| Target ID | `<TGT-xxxx>` |
-| Invention title | `<title>` |
-| Search purpose | Novelty self-check / inventive-step self-check / infringement-risk screening / pre-hand-off verification |
-| Time window | last 10 years (or state the exception) |
-| Databases | CNIPA / Espacenet / WIPO / Google Patents / Crossref / arXiv / others |
+| 目标 ID | `<TGT-xxxx>` |
+| 发明名称 | `<名称>` |
+| 检索目的 | 新颖性自检 / 创造性自检 / 侵权风险初筛 / 交稿前核验 |
+| 时间窗 | 近 10 年（或写明例外） |
+| 数据库 | CNIPA / Espacenet / WIPO / Google Patents / Crossref / arXiv / 其它 |
 
-## 2. Queries and execution record
+## 2. 检索式与执行留痕
 
-| Axis/combination | Query (reproducible verbatim) | Database | Hit count (site) | Captured count | raw/ artifact | Log |
+| 轴/组合 | 检索式（逐字可复现） | 数据库 | 命中数（站内） | 实采数 | raw/ 工件 | 日志 |
 |---|---|---|---|---|---|---|
 | N1 |  |  |  |  |  |  |
 
-> Rule: every search must leave the `raw/` raw response + a log; incomplete collection must be declared with `result.complete=false`.
-> If either is missing → `validate` V009/V013 blocks it, and `verified` may not be tagged.
+> 规则：每次检索必须留下 `raw/` 原始响应 + 一条日志；未抓全必须用 `result.complete=false` 声明。
+> 缺任何一份 → `validate` 的 V009/V013 拦截，不得标 `verified`。
+> 站内命中数是**全库命中面**，不是实采数（SKILL 硬约束 5）。
 
-## 3. Candidate statistics
+## 3. 候选统计
 
-| Dimension | Value |
+| 维度 | 数值 |
 |---|---|
-| Total candidates |  |
-| Patents / literature |  |
-| Evidence-level distribution | verified:  / attested:  / asserted:  |
-| Supported per-axis judgments with both dimensions ≥4 (G-S-02) |  |
-| Judgment state distribution | unknown / needs_review / ai_assessed / human_assessed / human_confirmed |
-| Closest prior-art documents (role=near_prior_art) |  |
+| 候选总数 |  |
+| 专利 / 文献 |  |
+| 证据等级分布 | verified:  / attested:  / asserted:  |
+| 受支持判定、两维度 ≥4 的每轴计数（G-S-02） |  |
+| 判定状态分布 | unknown / needs_review / ai_assessed / human_assessed / human_confirmed |
+| 近端对比文件（role=near_prior_art） |  |
 
-## 4. Gate status (verified column only)
+## 4. 门禁状态（只看 verified 列）
 
-| Gate | Criterion | verified actual | Status |
+| 门 | 判据 | verified 实际值 | 状态 |
 |---|---|---|---|
-| G-S-01 | patents ≥200 + literature ≥200 |  |  |
-| G-S-02 | ≥10 documents with relevance≥4 per axis | minimum axis:  documents |  |
-| G-S-03 | ≥5 closest-prior-art documents with valid human confirmation |  |  |
-| G-S-04 | families/citations complete |  |  |
-| G-S-05 | replayability 100% |  |  |
+| G-S-01 | 专利 ≥200 + 文献 ≥200 |  |  |
+| G-S-02 | 每轴 ≥10 篇受支持判定 ≥4 | 最小轴： 篇 |  |
+| G-S-03 | ≥5 篇有效人工确认的近端对比 |  |  |
+| G-S-04 | 同族/被引完整 |  |  |
+| G-S-05 | 可复现性 100% |  |  |
 
-> Recompute with: `python scripts/gates.py` (or `patentkit gates`). PASS is based on the `verified` column only.
+> 重算：`python scripts/gates.py`（或 `patentkit gates`）。PASS 只认 `verified` 列。
 
-## 5. Three-tier determination conclusions
+## 5. 三层判定结论
 
-### 5.1 Per-document novelty
+### 5.1 单篇新颖性
 
-- Conclusion: holds / doubtful / does not hold
-- Key comparison documents and coverage:
-- Evidence level:
+- 结论：成立 / 存疑 / 不成立
+- 关键对比文件与覆盖情况：
+- 证据等级：
 
-### 5.2 Combination inventive step
+### 5.2 组合创造性
 
-- Conclusion: holds / doubtful / does not hold
-- Combination (D_a + D_b + …) and motivation to combine:
-- Zero-disclosure atoms (features that no combination of the comparison documents can assemble):
-- Self-attack (the examiner's most likely objections and responses):
-- Evidence level:
+- 结论：成立 / 存疑 / 不成立
+- 组合（D_a + D_b + …）与结合动机：
+- 零披露原子（对比文件的任何组合都拼不出的特征）：
+- 自我攻击（审查员最可能的最强反驳与回应）：
+- 证据等级：
 
-### 5.3 Technical effect
+### 5.3 技术效果
 
-- Conclusion: holds / doubtful / does not hold
-- Non-obvious technical effects and supporting data:
-- Evidence level:
+- 结论：成立 / 存疑 / 不成立
+- 非显而易见的技术效果与支撑数据（引 D 列量化值）：
+- 证据等级：
 
-## 6. Risks and recommendations
+## 6. 风险与建议
 
-| Risk | Level | Treatment |
+| 风险 | 等级 | 处置 |
 |---|---|---|
-|  | high/medium/low |  |
+|  | 高/中/低 |  |
 
-## 7. Unverified items and notes
+## 7. 未验证项与声明
 
-- [ ] Have all tools been run? List every part that was not run, item by item
-- [ ] Are there any conclusions supported only by `asserted`?
-- [ ] Are source grades and judgment actors reported separately, without downgrading genuine sources because AI participated?
-- [ ] Does each G-S-02 axis have problem/means quotations, locators and rationale?
-- [ ] Do G-S-03 rows have explicit human confirmation for the current fingerprint, with stale records excluded?
+- [ ] 所有工具都跑过了吗？逐项列出没跑的部分
+- [ ] 是否存在只靠 `asserted` 支撑的结论？
+- [ ] 来源等级与判断主体是否分开报告，没有因 AI 参与而降级真实来源？
+- [ ] G-S-02 每轴是否都有 problem/means 引文、定位符与理由？
+- [ ] G-S-03 各行是否都有绑定当前指纹的显式人工确认，失效记录已剔除？
 
-> Any statement of an unverified conclusion must carry "⚠️ Unverified by tool checks".
+> 任何未验证结论的表述必须带「⚠️ 未经验证工具校验」。

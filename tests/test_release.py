@@ -24,7 +24,7 @@ class ReleaseAcceptance(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix="patent-release-test-")
         cls.root = Path(cls.temp.name)
         cls.result = builder.build(cls.root / "dist", "2026-10-23T00:00:00+00:00")
-        cls.final_zip = ROOT / "dist/patent-research-skill-v2.4.0.zip"
+        cls.final_zip = ROOT / "dist/patent-research-skill-v2.5.0.zip"
         if not cls.final_zip.is_file():
             raise AssertionError("Build the final installation ZIP in dist before acceptance")
         cls.package = cls.root / "package"
@@ -127,7 +127,7 @@ class ReleaseAcceptance(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "nt", "Windows one-click installer")
     def test_oneclick_installs_the_final_zip_to_an_isolated_directory(self):
-        wheel = ROOT / "dist/patentkit-0.2.0-py3-none-any.whl"
+        wheel = ROOT / "dist/patentkit-0.3.0-py3-none-any.whl"
         self.assertTrue(wheel.is_file(), "Build the kernel wheel in dist before acceptance")
         bundle = self.root / "oneclick-bundle"
         bundle.mkdir()
