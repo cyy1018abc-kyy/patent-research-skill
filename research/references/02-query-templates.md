@@ -63,3 +63,23 @@ python -m patentkit fetch-cnipa --axis N1 --from-library --only 18,19,20
 
 子查询注册在 `01_search_plan/query_library.yml` 的 `cnipa_batches` 下；
 **只在末尾追加，永不重排已有编号** —— 否则历史日志对不上号。
+
+## 覆盖规划（内核 0.4.0 起有工具）
+
+「检索够不够」不再手工对表——`queryplan` 把本节的两个指标变成每个轴的数字：
+
+```powershell
+python -m patentkit queryplan             # 全轴：已登记 vs 已执行子查询、缓冲、缺口
+python -m patentkit queryplan --axis N1   # 单轴
+python -m patentkit queryplan --apply     # 把建议骨架追加进查询库（只追加，不动既有编号）
+```
+
+它回答三件事：
+
+1. **登记了没跑**：`cnipa_batches` 里登记了但日志里找不到对应执行的子查询——先跑完再谈补查；
+2. **缓冲状态**：每轴 G-S-02 verified 计数与缓冲（口径同 [05](05-acceptance-gates.md)），
+   零缓冲/缓冲不足直接给补检索结论；
+3. **措辞漂移**：目标技术要素组（topics 概念表）里**任何一个关键词都没出现在已登记子查询中**的组
+   ——这是「池子判满仍 FAIL」的最常见原因。对未覆盖组给出确定性骨架
+   （`label: auto-<组名>`，取组内前两个中文关键词），`--apply` 追加进查询库后
+   **人工措辞检查**再跑——骨架是导航，不是检索式成品。

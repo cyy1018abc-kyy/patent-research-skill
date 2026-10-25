@@ -64,3 +64,27 @@ python -m patentkit fetch-cnipa --axis N1 --from-library --only 18,19,20
 
 Sub-queries are registered under `cnipa_batches` in `01_search_plan/query_library.yml`;
 **append them at the end and never renumber the existing entries** — otherwise historical logs will not match.
+
+## Coverage planning (a tool exists since kernel 0.4.0)
+
+"Have we searched enough" no longer needs a manual table check — `queryplan` turns the two
+indicators above into per-axis numbers:
+
+```powershell
+python -m patentkit queryplan             # all axes: registered vs executed sub-queries, buffer, gaps
+python -m patentkit queryplan --axis N1   # one axis
+python -m patentkit queryplan --apply     # append suggested skeletons to the query library (append-only)
+```
+
+It answers three things:
+
+1. **Registered but never executed**: sub-queries in `cnipa_batches` with no matching execution
+   in the logs — run them before talking about supplementary searches;
+2. **Buffer state**: per-axis G-S-02 verified counts and buffer (same criteria as
+   [05](05-acceptance-gates.md)); zero/insufficient buffer directly yields the
+   "supplementary search required" verdict;
+3. **Wording drift**: concept groups of the target (topics concept table) where **none of the
+   keywords** appear in any registered sub-query — the most common cause of "pool fully judged
+   yet the gate still FAILs". For uncovered groups it emits deterministic skeletons
+   (`label: auto-<group>`, first two CJK keywords of the group); after `--apply`, a **human
+   words them properly** before running — the skeleton is navigation, not a finished query.

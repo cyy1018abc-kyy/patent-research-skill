@@ -47,7 +47,20 @@ KERNEL_PAIRING_FILES = (
     ("tools/publish_release.sh", "发布脚本 kernel tag 与 wheel/sdist 资产名"),
     (".github/workflows/ci.yml", "CI wheel glob 与 SHA256SUMS 名"),
     ("research/scripts/_env.py", "内核版本错误提示"),
-    ("release/patches/README.md", "补丁 README 的补丁文件名与 SHA"),
+    ("research/scripts/self_test.py", "REQUIRED_KERNEL 与文档"),
+    ("release/install-oneclick.cmd", "一键安装器 wheel 名"),
+    ("release/install.ps1", "PowerShell 安装器内核提示"),
+    ("release/install.sh", "bash 安装器内核提示"),
+    ("tests/test_release.py", "验收测试的 wheel 文件名"),
+    ("tests/test_assessment_contract.py", "内核错误消息版本断言"),
+    ("research/SKILL.md", "SKILL 配套版本行"),
+    ("drafting/SKILL.md", "SKILL 配套版本行"),
+    ("research/references.en/SKILL.en.md", "英文镜像配套版本行"),
+    ("drafting/references.en/SKILL.en.md", "英文镜像配套版本行"),
+    ("drafting/README.md", "drafting README 前置版本行"),
+    # 注意：release/patches/README.md 故意不在本清单——它含历史叙述段
+    # （"Skill 2.5.0 requires patentkit 0.3.0"），整文件替换会篡改历史；
+    # 当前补丁名与 notes 指针由 check() 专项校验，新版本的叙述段手工更新。
     ("release/INSTALL.md", "安装文档内核版本"),
     ("release/install-guide-for-colleagues.md", "同事安装指南内核版本"),
     ("README.md", "README 内核版本"),
@@ -61,6 +74,14 @@ RESIDUE_WHITELIST = (
     ("release/patches/", "历史补丁文件名"),
     ("research/references.en/README.md", "镜像完成时间的 since 陈述"),
     ("drafting/references.en/README.md", "镜像完成时间的 since 陈述"),
+    ("research/README.md", "历史能力表标题含当年内核版本；安装节 wheel 名由 check() 专项校验"),
+    ("research/references/06-drafting-and-polishing-rules.md", "「内核 0.3.0 起」历史陈述"),
+    ("research/references/07-assessment-protocol.md", "协议兼容性历史陈述"),
+    ("research/references/08-figures.md", "「实现于内核 0.3.0」历史陈述"),
+    ("research/references.en/08-figures.md", "「kernel 0.3.0」历史陈述"),
+    ("tools/build_kernel_patch.py", "工具文档字符串里的历史补丁名示例"),
+    ("tools/render_terminal_shot.py", "截图脚注按当次发布手工更新"),
+    ("evals/check_terminology.py", "「3.1.0 起全部双语」历史陈述"),
     ("tools/bump_version.py", "本工具自身的文档字符串"),
 )
 
@@ -157,6 +178,26 @@ def check() -> list[str]:
     if f"patentkit >= {kernel}" not in env_py:
         problems.append(f"research/scripts/_env.py 的错误提示与内核 {kernel} 不一致")
 
+    research_readme = (ROOT / "research/README.md").read_text(encoding="utf-8")
+    if f"patentkit-{kernel}-py3-none-any.whl" not in research_readme:
+        problems.append(f"research/README.md 安装节的 wheel 名与内核 {kernel} 不一致")
+
+    # 安装器 / 自检 / 测试里的内核版本（3.2.0 升级时由残留扫描发现，这里固化为常驻校验）
+    kernel_needles = {
+        "release/install-oneclick.cmd": [f"patentkit-{kernel}-py3-none-any.whl"],
+        "release/install.ps1": [f"patentkit {kernel}"],
+        "release/install.sh": [f"patentkit {kernel}"],
+        "research/scripts/self_test.py": [f'REQUIRED_KERNEL = "{kernel}"'],
+        "tests/test_assessment_contract.py": [f'assertIn("{kernel}"'],
+        "research/SKILL.md": [f"patentkit >= {kernel}"],
+        "drafting/SKILL.md": [f"patentkit >= {kernel}"],
+    }
+    for rel, needles in kernel_needles.items():
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        for needle in needles:
+            if needle not in text:
+                problems.append(f"{rel} 缺少 {needle!r}（内核 {kernel} 配对点）")
+
     ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     for needle in (f"patentkit-{kernel}-py3-none-any.whl", f"SHA256SUMS-patentkit-v{kernel}.txt"):
         if needle not in ci:
@@ -203,6 +244,11 @@ def bump(to: str, kernel_to: str | None, make_notes: bool, dry_run: bool, from_s
          from_kernel: str | None) -> int:
     old_skill = from_skill or _frontmatter_version("research")
     old_kernel = from_kernel or _kernel_version()
+    if kernel_to and kernel_to == old_kernel and old_skill != to:
+        raise SystemExit(
+            f"构建器 KERNEL_VERSION 已是 {kernel_to}——多半是上次升级中断在半途。"
+            f"恢复请显式传旧内核版本：--kernel-to {kernel_to} --kernel-from <中断前的内核版本>"
+        )
     if not re.fullmatch(r"\d+\.\d+\.\d+", to):
         raise SystemExit(f"--to 不是 x.y.z 形式：{to}")
     if to == old_skill and (kernel_to or None) in (None, old_kernel):

@@ -9,6 +9,15 @@
 > **语言**：自 2.5.0 起运行时文档为**中文主版本**（目标场景是中国专利实践）；
 > 英文镜像存于 `references.en/`（01–08 与 00/09–13 双侧维护）。
 
+## 3.2.0 新增（检索规划与改稿闭环，内核 0.4.0）
+
+| 能力 | 命令 |
+|---|---|
+| 每轴检索覆盖规划：已登记 vs 已执行子查询、G-S-02 缓冲、确定性补查骨架（只追加进查询库） | `patentkit queryplan [--axis N1] [--apply]` |
+| 证据链全景：日志→候选池→D 列→判定→账本→五门，一页离线 HTML | `patentkit chain <TGT>` |
+
+（改稿闭环 `patentkit revise` 属于 patent-drafting 技能，见其 references/13。）
+
 ## 2.5.0 新增（交付安全层，内核 0.3.0）
 
 | 能力 | 命令 |
@@ -43,13 +52,13 @@ SHA-256 清单，无需手工改名。三步：
 
 1. **装内核**（一次性）：
    ```powershell
-   python -m pip install ./patentkit-0.3.0-py3-none-any.whl
+   python -m pip install ./patentkit-0.4.0-py3-none-any.whl
    # 需要 docx 导出时加可选依赖：
    python -m pip install python-docx
    ```
 2. **解压并安装**（脚本会把技能目录改名为 `patent-research/` 并跑自检）。
-   没有 zip？从 [skill-v2.5.0 Release](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v2.5.0) 下载
-   （附件附 SHA-256）。
+   没有 zip？从 [GitHub Releases](https://github.com/cyy1018abc-kyy/patent-research-skill/releases)
+   下载最新的 `skill-v<x>` Release（附件附 SHA-256）。
 
    Windows：
    ```powershell

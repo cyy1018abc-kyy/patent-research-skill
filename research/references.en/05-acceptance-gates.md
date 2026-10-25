@@ -33,16 +33,21 @@
 | an axis ≥ 13 | buffer +3 or more | safe |
 
 **How to top it up**: first check whether that axis's pool is 100% judged — if it is, the problem is not
-"insufficient judging" but "insufficient searching", and only new sub-queries can help.
+"insufficient judging" but "insufficient searching", and only new sub-queries can help. Run
+`python -m patentkit queryplan --axis <axis>`: it reports registered-but-unexecuted sub-queries,
+concept-group coverage gaps, and deterministic supplementary-query skeletons (see [02](02-query-templates.md)).
 
 ## Difference between validate and gates
 
 | | What it governs | Consequence of failure |
 |---|---|---|
-| `validate` | **Data-structure consistency** (V001–V028) | any `error` → exit 1 |
+| `validate` | **Data-structure consistency** (V001–V036) | any `error` → exit 1 |
 | `gates` | **Acceptance gates** (5 gates × 3 columns) | any gate not PASS → exit 2 |
 
-V029 checks assessment provenance/support; V030 reports stale human confirmation. Source provenance and judgment eligibility are independent. See [07-assessment-protocol.md](07-assessment-protocol.md).
+V029 checks assessment provenance/support; V030 reports stale human confirmation. V031/V032 govern
+numerical-claim provenance, V033 figure marks (warn only), V034 blocks conclusions citing IDs outside
+the evidence ledger, V035/V036 govern the revision ledger (invalid structure / unlogged edit).
+Source provenance and judgment eligibility are independent. See [07-assessment-protocol.md](07-assessment-protocol.md).
 
 Both must pass. The CI entry point is `python -m patentkit check` (= `validate --strict` + `gates --quiet`).
 
