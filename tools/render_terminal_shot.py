@@ -54,7 +54,7 @@ def _render(text: str) -> None:
     font_sym = ImageFont.truetype(str(FONT_SYM), 15 * scale) if FONT_SYM.exists() else None
     title_font = ImageFont.truetype(str(FONT_CJK), 13 * scale)
 
-    footer = "⚠ 合成样例数据，不含任何真实项目信息 · kernel 0.4.0 / skill 3.2.0"
+    footer = "⚠ 合成样例数据，不含任何真实项目信息 · kernel 0.5.0 / skill 3.3.0"
     lines = text.splitlines() + ["", footer]
 
     char_w = font_mono.getbbox("M")[2]

@@ -38,15 +38,16 @@ jobs:
           with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
               archive.extractall(destination, filter="data")
           PY
-          git apply --directory=kernel-build/patentkit-0.1.2 "$GITHUB_WORKSPACE/release/patches/patentkit-0.1.2-to-0.4.1.patch"
+          git apply --directory=kernel-build/patentkit-0.1.2 "$GITHUB_WORKSPACE/release/patches/patentkit-0.1.2-to-0.5.0.patch"
           test -f kernel-build/patentkit-0.1.2/patentkit/assessment.py
           test -f kernel-build/patentkit-0.1.2/patentkit/provenance.py
           test -f kernel-build/patentkit-0.1.2/patentkit/revise.py
+          test -f kernel-build/patentkit-0.1.2/patentkit/fetch_bigquery.py
       - name: Build and install the actual kernel wheel
         run: |
           python -m build ./kernel-build/patentkit-0.1.2 --outdir dist
-          python -m pip install dist/patentkit-0.4.1-py3-none-any.whl python-docx
-          python -c "import patentkit; from patentkit.assessment import PROTOCOL_VERSION; assert patentkit.__version__ == '0.4.1' and PROTOCOL_VERSION == 1; assert 'site-packages' in patentkit.__file__"
+          python -m pip install dist/patentkit-0.5.0-py3-none-any.whl python-docx
+          python -c "import patentkit; from patentkit.assessment import PROTOCOL_VERSION; assert patentkit.__version__ == '0.5.0' and PROTOCOL_VERSION == 1; assert 'site-packages' in patentkit.__file__"
       - name: Kernel assessment and delivery-safety regressions
         run: python -m pytest kernel-build/patentkit-0.1.2/regression_tests -o addopts= -q
       - name: Kernel full suite from the patched tree
@@ -57,9 +58,9 @@ jobs:
           python - <<'PY'
           import hashlib, pathlib, shutil
           dist = pathlib.Path("dist")
-          assets = sorted(dist.glob("patentkit-0.4.1*"))
+          assets = sorted(dist.glob("patentkit-0.5.0*"))
           assert len(assets) == 2
-          (dist / "SHA256SUMS-patentkit-v0.4.1.txt").write_text("".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n" for p in assets), encoding="utf-8")
+          (dist / "SHA256SUMS-patentkit-v0.5.0.txt").write_text("".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n" for p in assets), encoding="utf-8")
           shutil.copy2("release/install-oneclick.cmd", dist)
           PY
       - name: Skill eval manifest is well formed
