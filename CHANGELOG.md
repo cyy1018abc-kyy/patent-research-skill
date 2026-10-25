@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-25 · Skill 3.1.0 / kernel 0.3.0（未变）
+
+Release-engineering and distribution-closeout patch release (no kernel, no rule changes):
+
+- **`tools/bump_version.py`** — the hardcoded skill↔kernel↔release pairing points are now
+  an explicit list: targeted replacement → consistency check → repo-wide residue scan for
+  the old version (with an argued whitelist for historical records). `--check` mode runs in
+  CI on every push, so pairing drift is caught at push time instead of at release time.
+- **`tools/build_kernel_patch.py`** — the manual kernel-patch rebuild (mirror dev tree →
+  scratch diff → fix double prefixes → verify apply-ability) as one command, with two
+  machine gates: the CI-equivalent `git apply --directory` under pinned
+  `core.autocrlf=false`, and a byte-identical applied-tree comparison against the released
+  patch. Used to rebuild and verify the 0.1.2→0.3.0 patch (the released patch is unchanged).
+- **research reference 08 English mirror** (`references.en/08-figures.md`); terminology
+  pairing extended to research 01–08 — both skills' references are now fully bilingual.
+- **Distribution closeout**: desensitized self-test screenshot
+  (`docs/assets/self-test-terminal.png`, rendered by `tools/render_terminal_shot.py` from a
+  real self_test run on the synthetic sample) and marketplace listing copy
+  (`docs/marketplace-listing.md`); two open items on the distribution checklist cleared.
+- `evals/check_terminology.py` pairs research 01–08; CI gains a version-pairing step.
+
+
 ## 2026-10-25 · Skill 3.0.1 / kernel 0.3.0（未变）
 
 Drafting-skill English mirrors (translation-only patch release):

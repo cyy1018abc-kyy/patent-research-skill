@@ -9,9 +9,12 @@
 - ✅ 英文 README（仓库根）+ 中文主版本技能文档（references.en/ 双语）
 - ✅ 触发评测集 evals/（14 例，CI 锚定 description）
 - ✅ 保密守卫（tools/check_no_workspace_data.py + .gitignore 红线）
-- ⬜ 效果示例截图/走查：`docs/example-walkthrough.md` 需补一张真实终端输出的脱敏截图
-  （标注 ⚠️ 数据为合成样例）
+- ✅ 效果示例截图/走查：`docs/assets/self-test-terminal.png`（`tools/render_terminal_shot.py`
+  真实运行 self_test 渲染，脚注标注 ⚠️ 数据为合成样例；内嵌于 `docs/example-walkthrough.md`）
+- ✅ 市场上架文案底稿：`docs/marketplace-listing.md`（skillhub.cn/ClawHub 中文文案 +
+  agentskills.io 英文短文案，含诚实边界话术）
 - ⬜ LICENSE/作者信息核对（Apache-2.0 已有；市场要求署名时补充）
+- ⬜ 实际提交上架（对外动作，等所有者在市场侧注册/确认后执行；材料已备齐）
 
 ## 目标市场与要求
 
