@@ -13,7 +13,7 @@ description: >
   「附图标记对不上」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 3.0.1
+  version: 3.1.0
 ---
 
 # 专利调研

@@ -10,5 +10,5 @@ mirror them for bilingual users and terminology cross-checking
 - `glossary.md` is intentionally NOT mirrored: it is itself the zh⇄en mapping (one shared
   copy per skill, byte-identical, CI-enforced)
 
-Translation status: complete for the drafting skill since 3.0.1. On the research side,
-`research/references.en/` mirrors 01–07 (08 is still Chinese-first).
+Translation status: complete for the drafting skill since 3.0.1, and for the research
+skill's references 01–08 since 3.1.0 (`research/references.en/`).

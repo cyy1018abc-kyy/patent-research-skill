@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """中英术语一致性校验（CI 步骤；多技能版）。
 
-v3.0.0 布局：research/references（中文主版本 01–08+glossary）、
-drafting/references（00,09–13+glossary）、research/references.en（英文镜像 01–07）。
+v3.1.0 布局：research/references（中文主版本 01–08+glossary）、
+drafting/references（00,09–13+glossary）、research/references.en（英文镜像 01–08）、
+drafting/references.en（英文镜像 00,09–13）。
 
 校验三层：
-1. **配对完整**：01–07 在 research 中文与英文镜像两侧都存在（08+ 与 drafting 目前
-   中文先行，README 已声明）；
+1. **配对完整**：research 01–08 与 drafting 00/09–13 在中文与英文镜像两侧都存在；
 2. **术语锚定**：核心术语中文在中文文档（两技能合计）出现、英文在英文镜像出现；
 3. **glossary 同步**：research 与 drafting 各自携带的 glossary.md 必须**逐字节一致**
    （单技能包自包含的代价是复制一份，CI 防漂移）。
@@ -25,12 +25,12 @@ EN_RESEARCH = ROOT / "research" / "references.en"
 EN_DRAFTING = ROOT / "drafting" / "references.en"
 
 #: 中文主文件名前缀（两侧镜像齐备的部分）
-PAIRED_RESEARCH = [f"0{i}-" for i in range(1, 8)]   # 01–07
+PAIRED_RESEARCH = [f"0{i}-" for i in range(1, 9)]   # 01–08
 PAIRED_DRAFTING = ["00-", "09-", "10-", "11-", "12-", "13-"]
 
 #: 核心锚定术语：中文须在中文文档（两技能）出现，英文 token 须在英文镜像出现。
-#: 只收录两版真实共用的核心术语；2.5.0+ 新增概念（账本/地图/改稿闭环/附图标记等）
-#: 目前中文先行，翻译完成后加入本表。
+#: 只收录两版真实共用的核心术语；3.1.0 起两技能 references 已全部双语，新增概念
+#: 落文档时同时补进本表。
 GLOBAL_ANCHORS = [
     ("验收门", "acceptance gate"),
     ("证据账本", "evidence ledger"),
@@ -125,7 +125,7 @@ def main() -> int:
         for p in problems[:30]:
             print(f"  · {p}")
         return 1
-    print("✅ 术语一致性通过：research 01–07 与 drafting 00/09–13 中英配对完整，锚定术语在用，glossary 双份逐字节一致")
+    print("✅ 术语一致性通过：research 01–08 与 drafting 00/09–13 中英配对完整，锚定术语在用，glossary 双份逐字节一致")
     return 0
 
 

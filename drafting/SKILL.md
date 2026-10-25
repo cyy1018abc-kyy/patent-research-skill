@@ -12,7 +12,7 @@ description: >
   「这个数值能写吗」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 3.0.1
+  version: 3.1.0
 ---
 
 # 专利撰写（底稿）
