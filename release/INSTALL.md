@@ -8,8 +8,8 @@
 
 ## Getting the installation package
 
-- Skill package zip: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.0.0> →
-  `patent-research-skill-v3.0.0.zip`
+- Skill package zip: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.0.1> →
+  `patent-research-skill-v3.0.1.zip`
 - Kernel wheel / sdist: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.3.0>
 - Verification: `SHA256SUMS-*.txt` on the same page; on Windows you can check with `Get-FileHash <file> -Algorithm SHA256`.
 
@@ -97,7 +97,7 @@ python -m patentkit validate --root /path/to/workspace --strict
 
 Migration preserves source grades, records legacy judgment identity as unknown, and
 does not create human confirmations. Prior gate counts may decrease. See the
-[release notes](https://github.com/cyy1018abc-kyy/patent-research-skill/blob/main/release/notes/skill-v3.0.0.md).
+[release notes](https://github.com/cyy1018abc-kyy/patent-research-skill/blob/main/release/notes/skill-v3.0.1.md).
 
 ## Uninstalling
 

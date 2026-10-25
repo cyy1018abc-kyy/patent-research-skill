@@ -21,16 +21,26 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ZH_RESEARCH = ROOT / "research" / "references"
 ZH_DRAFTING = ROOT / "drafting" / "references"
-EN = ROOT / "research" / "references.en"
+EN_RESEARCH = ROOT / "research" / "references.en"
+EN_DRAFTING = ROOT / "drafting" / "references.en"
 
-#: 中文主文件名（research 侧 01–07 有英文镜像）
-PAIRED = [f"0{i}-" for i in range(1, 8)]
+#: 中文主文件名前缀（两侧镜像齐备的部分）
+PAIRED_RESEARCH = [f"0{i}-" for i in range(1, 8)]   # 01–07
+PAIRED_DRAFTING = ["00-", "09-", "10-", "11-", "12-", "13-"]
 
 #: 核心锚定术语：中文须在中文文档（两技能）出现，英文 token 须在英文镜像出现。
 #: 只收录两版真实共用的核心术语；2.5.0+ 新增概念（账本/地图/改稿闭环/附图标记等）
 #: 目前中文先行，翻译完成后加入本表。
 GLOBAL_ANCHORS = [
     ("验收门", "acceptance gate"),
+    ("证据账本", "evidence ledger"),
+    ("改稿闭环", "revision loop"),
+    ("政策雷达", "Policy radar"),
+    ("审查意见", "office action"),
+    ("答复底稿", "response draft"),
+    ("交底书", "disclosure"),
+    ("实施例示例", "illustrative example"),
+    ("零披露原子", "zero-disclosure atom"),
     ("证据等级", "evidence level"),
     ("人工确认", "human confirmation"),
     ("指纹", "fingerprint"),
@@ -43,6 +53,9 @@ GLOBAL_ANCHORS = [
     ("实施例", "embodiment"),
     ("有益效果", "beneficial effect"),
     ("工作区", "workspace"),
+    ("期限台账", "deadline"),
+    ("附图标记", "figure-mark"),
+    ("数值声明溯源", "A/B/C"),
 ]
 
 
@@ -64,14 +77,20 @@ def main() -> int:
 
     zh_files = sorted(ZH_RESEARCH.glob("*.md")) + sorted(ZH_DRAFTING.glob("*.md"))
     zh_all = "\n".join(p.read_text(encoding="utf-8") for p in zh_files)
-    en_all = "\n".join(p.read_text(encoding="utf-8") for p in sorted(EN.glob("*.md")))
+    en_all = "\n".join(p.read_text(encoding="utf-8")
+                        for p in sorted(EN_RESEARCH.glob("*.md")) + sorted(EN_DRAFTING.glob("*.md")))
 
-    # 1. 配对完整（按前缀 01-…07-）
-    for prefix in PAIRED:
+    # 1. 配对完整（research 01–07；drafting 00/09–13）
+    for prefix in PAIRED_RESEARCH:
         if not any(p.name.startswith(prefix) for p in ZH_RESEARCH.glob("*.md")):
             problems.append(f"中文主版本缺失：research/references/{prefix}*.md")
-        if not any(p.name.startswith(prefix) for p in EN.glob("*.md")):
+        if not any(p.name.startswith(prefix) for p in EN_RESEARCH.glob("*.md")):
             problems.append(f"英文镜像缺失：research/references.en/{prefix}*.md")
+    for prefix in PAIRED_DRAFTING:
+        if not any(p.name.startswith(prefix) for p in ZH_DRAFTING.glob("*.md")):
+            problems.append(f"中文主版本缺失：drafting/references/{prefix}*.md")
+        if not any(p.name.startswith(prefix) for p in EN_DRAFTING.glob("*.md")):
+            problems.append(f"英文镜像缺失：drafting/references.en/{prefix}*.md")
 
     # 2. 术语锚定
     for zh_term, en_term in GLOBAL_ANCHORS:
@@ -106,7 +125,7 @@ def main() -> int:
         for p in problems[:30]:
             print(f"  · {p}")
         return 1
-    print("✅ 术语一致性通过：01–07 中英配对完整，锚定术语在用，glossary 双份逐字节一致")
+    print("✅ 术语一致性通过：research 01–07 与 drafting 00/09–13 中英配对完整，锚定术语在用，glossary 双份逐字节一致")
     return 0
 
 
