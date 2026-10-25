@@ -44,7 +44,23 @@ def _allowed(rel: Path) -> bool:
     return rel.parts[0] in ALLOWED_PREFIXES or rel.parts[0].startswith(".")
 
 
+def _pin_utf8_stdio() -> None:
+    """cp1252 控制台打印 ✅/⚠️ 会 UnicodeEncodeError（CI Windows runner 实测）；与内核
+    paths.configure_stdio 同理，入口处钉 UTF-8。"""
+    import sys
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
+
 def main() -> int:
+    _pin_utf8_stdio()
+
     problems: list[str] = []
 
     # 1. 工作区标记出现在仓库根/技能源码

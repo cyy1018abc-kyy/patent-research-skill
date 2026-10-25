@@ -27,7 +27,23 @@ MIN_CASES = 10
 RESULT_FORMAT_FIELDS = {"结论", "证据等级", "判定状态", "门禁状态", "未验证标注"}
 
 
+def _pin_utf8_stdio() -> None:
+    """cp1252 控制台打印 ✅/⚠️ 会 UnicodeEncodeError（CI Windows runner 实测）；与内核
+    paths.configure_stdio 同理，入口处钉 UTF-8。"""
+    import sys
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
+
 def main() -> int:
+    _pin_utf8_stdio()
+
     path = ROOT / "evals" / "evals.json"
     data = json.loads(path.read_text(encoding="utf-8"))
     skill_text = SKILL.read_text(encoding="utf-8")
