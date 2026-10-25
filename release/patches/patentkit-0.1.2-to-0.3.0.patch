@@ -1,3 +1,549 @@
+diff --git a/b/.pytest_cache/.gitignore b/.pytest_cache/.gitignore
+new file mode 100644
+index 0000000..bc1a1f6
+--- /dev/null
++++ b/.pytest_cache/.gitignore
+@@ -0,0 +1,2 @@
++# Created by pytest automatically.
++*
+diff --git a/b/.pytest_cache/CACHEDIR.TAG b/.pytest_cache/CACHEDIR.TAG
+new file mode 100644
+index 0000000..fce15ad
+--- /dev/null
++++ b/.pytest_cache/CACHEDIR.TAG
+@@ -0,0 +1,4 @@
++Signature: 8a477f597d28d172789f06886806bc55
++# This file is a cache directory tag created by pytest.
++# For information about cache directory tags, see:
++#	https://bford.info/cachedir/spec.html
+diff --git a/b/.pytest_cache/README.md b/.pytest_cache/README.md
+new file mode 100644
+index 0000000..b89018c
+--- /dev/null
++++ b/.pytest_cache/README.md
+@@ -0,0 +1,8 @@
++# pytest cache directory #
++
++This directory contains data from the pytest's cache plugin,
++which provides the `--lf` and `--ff` options, as well as the `cache` fixture.
++
++**Do not** commit this to version control.
++
++See [the docs](https://docs.pytest.org/en/stable/how-to/cache.html) for more information.
+diff --git a/b/.pytest_cache/v/cache/nodeids b/.pytest_cache/v/cache/nodeids
+new file mode 100644
+index 0000000..2650b97
+--- /dev/null
++++ b/.pytest_cache/v/cache/nodeids
+@@ -0,0 +1,507 @@
++[
++  "regression_tests/test_assessment.py::test_actual_batch_confirmation_and_history",
++  "regression_tests/test_assessment.py::test_ai_cannot_overwrite_confirmed_ai_decision",
++  "regression_tests/test_assessment.py::test_ai_cannot_overwrite_human_exclusion",
++  "regression_tests/test_assessment.py::test_asserted_source_is_not_promoted_by_human_confirmation",
++  "regression_tests/test_assessment.py::test_bad_assessment_does_not_write[invented_quote]",
++  "regression_tests/test_assessment.py::test_bad_assessment_does_not_write[missing_means]",
++  "regression_tests/test_assessment.py::test_bad_assessment_does_not_write[missing_score]",
++  "regression_tests/test_assessment.py::test_bad_assessment_does_not_write[outside_workspace]",
++  "regression_tests/test_assessment.py::test_bad_assessment_does_not_write[unknown_axis]",
++  "regression_tests/test_assessment.py::test_cli_json_export_assess_confirm_and_scripts",
++  "regression_tests/test_assessment.py::test_confirm_batch_is_fail_closed_and_rejects_duplicates",
++  "regression_tests/test_assessment.py::test_cross_target_and_empty_batches_do_not_write",
++  "regression_tests/test_assessment.py::test_failed_write_rolls_back_all_candidates",
++  "regression_tests/test_assessment.py::test_grounded_ai_counts_axis_but_not_near_prior_art",
++  "regression_tests/test_assessment.py::test_human_confirmation_enables_gs03",
++  "regression_tests/test_assessment.py::test_legacy_csv_cannot_implicitly_confirm_near_prior_art",
++  "regression_tests/test_assessment.py::test_legacy_csv_edit_preserves_history_and_cannot_reconfirm",
++  "regression_tests/test_assessment.py::test_legacy_role_and_scores_do_not_imply_review",
++  "regression_tests/test_assessment.py::test_migration_preserves_source_and_does_not_invent_confirmation",
++  "regression_tests/test_assessment.py::test_repeating_same_assessment_and_confirmation_is_idempotent",
++  "regression_tests/test_assessment.py::test_schema_accepts_new_records_and_validation_reports_stale",
++  "regression_tests/test_assessment.py::test_schema_invalid_edit_fails_before_write[changes0]",
++  "regression_tests/test_assessment.py::test_schema_invalid_edit_fails_before_write[changes1]",
++  "regression_tests/test_assessment.py::test_schema_invalid_edit_fails_before_write[changes2]",
++  "regression_tests/test_assessment.py::test_substantive_edit_invalidates_confirmation[relevance_means-2]",
++  "regression_tests/test_assessment.py::test_substantive_edit_invalidates_confirmation[review_note-\\u65b0\\u7684\\u5224\\u5b9a\\u7406\\u7531]",
++  "regression_tests/test_assessment.py::test_substantive_edit_invalidates_confirmation[role-pool]",
++  "regression_tests/test_assessment.py::test_substantive_edit_invalidates_confirmation[tags-value3]",
++  "regression_tests/test_assessment.py::test_supporting_passage_change_invalidates_confirmation",
++  "regression_tests/test_assessment.py::test_text_line_citation_and_invalid_pointer",
++  "regression_tests/test_assessment.py::test_unrelated_metadata_edit_keeps_confirmation",
++  "regression_tests/test_delivery_safety.py::test_deadlines_refuse_to_compute_without_base_date",
++  "regression_tests/test_delivery_safety.py::test_export_docx_numbers_come_from_the_workspace",
++  "regression_tests/test_delivery_safety.py::test_map_and_ledger_are_read_only_views",
++  "regression_tests/test_delivery_safety.py::test_v031_unsourced_number_fails_closed",
++  "regression_tests/test_delivery_safety.py::test_v032_grade_b_must_cite_known_candidate",
++  "regression_tests/test_delivery_safety.py::test_v033_figure_mark_mismatch_is_warn_never_error",
++  "regression_tests/test_delivery_safety.py::test_v034_conclusion_cannot_cite_invented_evidence",
++  "tests/test_api.py::test_attest_status_mode",
++  "tests/test_api.py::test_attest_without_registry_fails_gracefully",
++  "tests/test_api.py::test_bibsync_dry_run_writes_nothing",
++  "tests/test_api.py::test_candidates_filter_and_sort",
++  "tests/test_api.py::test_candidates_limit",
++  "tests/test_api.py::test_doctor_ok",
++  "tests/test_api.py::test_doctor_reports_bad_workspace",
++  "tests/test_api.py::test_gates_shape",
++  "tests/test_api.py::test_index_dry_run",
++  "tests/test_api.py::test_list_references_nonempty",
++  "tests/test_api.py::test_read_reference_unknown_name",
++  "tests/test_api.py::test_read_reference_works",
++  "tests/test_api.py::test_runs_shape",
++  "tests/test_api.py::test_search_plan_accepts_qualified_axis",
++  "tests/test_api.py::test_search_plan_all_axes",
++  "tests/test_api.py::test_search_plan_backcompat_single_log_key",
++  "tests/test_api.py::test_search_plan_cnipa_falls_back_to_cn_when_not_executed",
++  "tests/test_api.py::test_search_plan_cnipa_returns_field_form",
++  "tests/test_api.py::test_search_plan_cross_axis_gives_composed_tags",
++  "tests/test_api.py::test_search_plan_db_prefers_executed_query",
++  "tests/test_api.py::test_search_plan_logs_empty_when_none_recorded",
++  "tests/test_api.py::test_search_plan_missing_library",
++  "tests/test_api.py::test_search_plan_single_axis",
++  "tests/test_api.py::test_search_plan_supports_multiple_logs_per_axis",
++  "tests/test_api.py::test_search_plan_unknown_axis_lists_available",
++  "tests/test_api.py::test_status_aggregates_and_hints",
++  "tests/test_api.py::test_status_hint_flags_default_relevance",
++  "tests/test_api.py::test_status_no_hint_when_relevance_reviewed",
++  "tests/test_api.py::test_targets_shape",
++  "tests/test_api.py::test_validate_returns_dict_not_print",
++  "tests/test_api.py::test_validate_strict_promotes_warnings",
++  "tests/test_api.py::test_workspace_explicit",
++  "tests/test_api.py::test_workspace_hints_when_axis_id_passed",
++  "tests/test_api.py::test_workspace_rejects_non_workspace",
++  "tests/test_api.py::test_workspace_via_fallback_without_marker",
++  "tests/test_api.py::test_workspace_via_marker",
++  "tests/test_attest.py::test_attested_candidate_passes_validate",
++  "tests/test_attest.py::test_attested_reaches_middle_column_only",
++  "tests/test_attest.py::test_binds_missing_sha256",
++  "tests/test_attest.py::test_candidate_attest_dry_run",
++  "tests/test_attest.py::test_candidate_attest_missing_file",
++  "tests/test_attest.py::test_candidate_attest_sets_fields",
++  "tests/test_attest.py::test_candidate_requires_path",
++  "tests/test_attest.py::test_candidate_unknown_id",
++  "tests/test_attest.py::test_detects_drift_and_check_fails",
++  "tests/test_attest.py::test_dry_run_writes_nothing",
++  "tests/test_attest.py::test_json_output",
++  "tests/test_attest.py::test_missing_registry_fails",
++  "tests/test_attest.py::test_no_drift_passes_check",
++  "tests/test_attest.py::test_refresh_rebinds_after_drift",
++  "tests/test_attest.py::test_unreachable_path_keeps_existing_binding",
++  "tests/test_backfill.py::test_apply_cache_is_idempotent",
++  "tests/test_backfill.py::test_apply_from_cache_materialises_without_network",
++  "tests/test_backfill.py::test_cli_dry_run_does_not_touch_network",
++  "tests/test_backfill.py::test_cli_from_cache_needs_artifact",
++  "tests/test_backfill.py::test_extract_from_abstract_section",
++  "tests/test_backfill.py::test_extract_from_meta_description",
++  "tests/test_backfill.py::test_extract_returns_empty_when_absent",
++  "tests/test_backfill.py::test_extract_unescapes_html_entities",
++  "tests/test_backfill.py::test_gid_candidates_pads_us_application_numbers",
++  "tests/test_backfill.py::test_gid_candidates_single_form_for_other_shapes",
++  "tests/test_backfill.py::test_gid_normalization[CN122452445A-CN122452445A]",
++  "tests/test_backfill.py::test_gid_normalization[EP4672386A1-EP4672386A1]",
++  "tests/test_backfill.py::test_gid_normalization[JP 2002-204905 A-JP2002204905A]",
++  "tests/test_backfill.py::test_gid_normalization[US 1234567 B2-US1234567B2]",
++  "tests/test_backfill.py::test_gid_normalization[cn/102945979/a-CN102945979A]",
++  "tests/test_backfill.py::test_patent_url_shape",
++  "tests/test_backfill.py::test_run_fetch_dry_run_writes_nothing",
++  "tests/test_backfill.py::test_run_fetch_resumes_from_cache",
++  "tests/test_backfill.py::test_run_fetch_resumes_when_artifact_exists_but_candidate_not_written",
++  "tests/test_backfill.py::test_run_fetch_saves_artifact_incrementally",
++  "tests/test_backfill.py::test_run_fetch_saves_even_when_exception_raised",
++  "tests/test_backfill.py::test_run_fetch_stops_after_consecutive_failures",
++  "tests/test_backfill.py::test_run_fetch_writes_abstract_raw_not_summary_zh",
++  "tests/test_backfill.py::test_run_fetch_writes_replayable_artifact",
++  "tests/test_backfill.py::test_targets_only_picks_candidates_without_any_abstract",
++  "tests/test_backfill.py::test_targets_respects_limit",
++  "tests/test_backfill.py::test_targets_skips_already_backfilled",
++  "tests/test_baseline.py::test_axes_are_scoped_per_target",
++  "tests/test_baseline.py::test_axis_label",
++  "tests/test_baseline.py::test_happy_path_zero_findings",
++  "tests/test_baseline.py::test_missing_terminology_is_fatal",
++  "tests/test_baseline.py::test_registry_loads",
++  "tests/test_baseline.py::test_registry_normalizes_db",
++  "tests/test_baseline.py::test_registry_rejects_bare_axis_id",
++  "tests/test_baseline.py::test_split_and_qualify_axis_id",
++  "tests/test_bibsync.py::test_apply_appends_entry",
++  "tests/test_bibsync.py::test_candidate_without_key_reported",
++  "tests/test_bibsync.py::test_corporate_author_double_braces",
++  "tests/test_bibsync.py::test_dry_run_writes_nothing",
++  "tests/test_bibsync.py::test_generated_entries_make_validate_clean",
++  "tests/test_bibsync.py::test_idempotent",
++  "tests/test_bibsync.py::test_multiple_authors_joined",
++  "tests/test_bibsync.py::test_no_change_when_all_present",
++  "tests/test_bibsync.py::test_paper_uses_doi_when_doi_like",
++  "tests/test_bibsync.py::test_reports_missing_key",
++  "tests/test_bibsync.py::test_special_chars_escaped",
++  "tests/test_bibsync.py::test_target_filter",
++  "tests/test_bibsync.py::test_template_keys_not_counted_as_existing",
++  "tests/test_cli_help.py::test_all_commands_is_union",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[attest]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[backfill-doi]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[backfill]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[bibsync]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[check]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[deadlines]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[doctor]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[export-docx]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[fetch-cnipa]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[fetch-crossref]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[figures]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[gates]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[index]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[ingest]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[init]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[layout]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[ledger]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[map]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[mcp]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[migrate]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[provenance]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[report]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[review]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[search-plan]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[status]",
++  "tests/test_cli_help.py::test_every_command_is_dispatchable[validate]",
++  "tests/test_cli_help.py::test_help_documents_workspace_flags",
++  "tests/test_cli_help.py::test_help_lists_every_passthrough_command",
++  "tests/test_cli_help.py::test_help_lists_every_special_command",
++  "tests/test_cli_help.py::test_help_mentions_workspace_first",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[equals---root-doctor]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[equals---root-search-plan]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[equals---root-status]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[equals---workspace-doctor]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[equals---workspace-search-plan]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[equals---workspace-status]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[space---root-doctor]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[space---root-search-plan]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[space---root-status]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[space---workspace-doctor]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[space---workspace-search-plan]",
++  "tests/test_cli_help.py::test_workspace_commands_accept_both_ws_flags[space---workspace-status]",
++  "tests/test_cnipa.py::test_artifact_names_handles_odd_axis",
++  "tests/test_cnipa.py::test_artifact_names_strip_qualified_axis",
++  "tests/test_cnipa.py::test_artifact_names_with_seq",
++  "tests/test_cnipa.py::test_build_argv_complete_flag",
++  "tests/test_cnipa.py::test_build_argv_maps_fields",
++  "tests/test_cnipa.py::test_build_argv_omits_empty_fields",
++  "tests/test_cnipa.py::test_build_log_declares_incompleteness",
++  "tests/test_cnipa.py::test_build_log_no_mismatch_warning_when_consistent",
++  "tests/test_cnipa.py::test_build_log_omits_incomplete_error_when_complete",
++  "tests/test_cnipa.py::test_build_log_records_effective_pages_and_warns_on_mismatch",
++  "tests/test_cnipa.py::test_effective_pages_derived_from_hits_not_claim",
++  "tests/test_cnipa.py::test_effective_pages_zero_when_no_hits",
++  "tests/test_cnipa.py::test_explicit_index_keeps_filename_aligned",
++  "tests/test_cnipa.py::test_find_tool_env_override",
++  "tests/test_cnipa.py::test_find_tool_explicit",
++  "tests/test_cnipa.py::test_find_tool_missing_gives_actionable",
++  "tests/test_cnipa.py::test_hit_total_falls_back_to_pages",
++  "tests/test_cnipa.py::test_hit_total_last_resort_is_captured",
++  "tests/test_cnipa.py::test_index_zero_falls_back_to_position",
++  "tests/test_cnipa.py::test_ingest_parses_cnipa_raw",
++  "tests/test_cnipa.py::test_ingest_year_extraction_handles_dotted_dates",
++  "tests/test_cnipa.py::test_no_mismatch_when_pages_match",
++  "tests/test_cnipa.py::test_page_size_falls_back_to_three",
++  "tests/test_cnipa.py::test_parse_markers_bad_json_raises",
++  "tests/test_cnipa.py::test_parse_markers_full",
++  "tests/test_cnipa.py::test_parse_markers_only_needs_json_line",
++  "tests/test_cnipa.py::test_parse_markers_without_json_raises_actionable",
++  "tests/test_cnipa.py::test_read_raw_dispatches_by_content_not_suffix",
++  "tests/test_cnipa.py::test_run_batch_accumulates_distinct_docs",
++  "tests/test_cnipa.py::test_run_batch_injects_query_fields",
++  "tests/test_cnipa.py::test_run_batch_recovers_after_single_failure",
++  "tests/test_cnipa.py::test_run_batch_stops_after_consecutive_failures",
++  "tests/test_cnipa.py::test_run_batch_writes_one_log_per_subquery",
++  "tests/test_cnipa.py::test_seq_disambiguates_same_axis_same_hits",
++  "tests/test_cnipa.py::test_subquery_display",
++  "tests/test_cnipa.py::test_write_artifacts_creates_both_files",
++  "tests/test_cnipa.py::test_write_artifacts_refuses_to_overwrite",
++  "tests/test_crossref.py::test_build_url_includes_type_filter_and_select",
++  "tests/test_crossref.py::test_build_url_offset_for_paging",
++  "tests/test_crossref.py::test_crossref_log_declares_incomplete",
++  "tests/test_crossref.py::test_crossref_registered_in_db_enum",
++  "tests/test_crossref.py::test_parse_crossref_handles_missing_optional_fields",
++  "tests/test_crossref.py::test_parse_crossref_json",
++  "tests/test_crossref.py::test_parse_crossref_rejects_wrong_shape",
++  "tests/test_crossref.py::test_read_raw_cnipa_still_wins_on_hits",
++  "tests/test_crossref.py::test_read_raw_dispatches_crossref_by_shape",
++  "tests/test_crossref.py::test_select_fields_exclude_illegal_ones",
++  "tests/test_gates.py::test_asserted_fills_only_bottom_column",
++  "tests/test_gates.py::test_attested_only_reaches_middle_column",
++  "tests/test_gates.py::test_bare_fixture_only_gs05_passes",
++  "tests/test_gates.py::test_columns_are_monotonic",
++  "tests/test_gates.py::test_compute_all_explicit_target",
++  "tests/test_gates.py::test_gates_filter_by_target",
++  "tests/test_gates.py::test_gates_unregistered_target_yields_empty",
++  "tests/test_gates.py::test_gs01_excluded_patent_not_counted",
++  "tests/test_gates.py::test_gs01_excludes_excluded_role",
++  "tests/test_gates.py::test_gs02_excludes_excluded_role",
++  "tests/test_gates.py::test_gs02_per_axis_detail",
++  "tests/test_gates.py::test_gs02_relevance_threshold",
++  "tests/test_gates.py::test_gs03_counts_near_prior_art",
++  "tests/test_gates.py::test_gs03_counts_role_not_novelty_check",
++  "tests/test_gates.py::test_gs04_requires_family_and_cited_by_arrays",
++  "tests/test_gates.py::test_gs05_fails_when_raw_missing",
++  "tests/test_gates.py::test_gs05_fails_when_retrospective",
++  "tests/test_gates.py::test_logs_filtered_by_target",
++  "tests/test_gates.py::test_render_markdown_has_fences",
++  "tests/test_gates.py::test_verified_candidate_fills_strict_column",
++  "tests/test_gates.py::test_write_tracker_appends_then_replaces",
++  "tests/test_index.py::test_excludes_any_dot_directory",
++  "tests/test_index.py::test_excludes_code_dirs",
++  "tests/test_index.py::test_excludes_egg_info",
++  "tests/test_index.py::test_excludes_pytest_cache",
++  "tests/test_index.py::test_frontmatter_is_parsed",
++  "tests/test_index.py::test_includes_content_dirs",
++  "tests/test_index.py::test_render_has_fences",
++  "tests/test_index.py::test_should_skip_helper",
++  "tests/test_index.py::test_write_appends_then_replaces",
++  "tests/test_index.py::test_write_preserves_outside_content",
++  "tests/test_ingest.py::test_apply_creates_candidates",
++  "tests/test_ingest.py::test_apply_then_validate_only_bib_errors",
++  "tests/test_ingest.py::test_bib_entries_make_validate_clean",
++  "tests/test_ingest.py::test_cross_axis_tags_allowed",
++  "tests/test_ingest.py::test_csv_autodetect",
++  "tests/test_ingest.py::test_csv_chinese_headers",
++  "tests/test_ingest.py::test_csv_unmappable_headers_refuses",
++  "tests/test_ingest.py::test_dedup_against_existing_candidate",
++  "tests/test_ingest.py::test_dedup_within_batch",
++  "tests/test_ingest.py::test_detect_columns_chinese",
++  "tests/test_ingest.py::test_detect_columns_english",
++  "tests/test_ingest.py::test_dry_run_writes_nothing",
++  "tests/test_ingest.py::test_evidence_ref_file_exists",
++  "tests/test_ingest.py::test_find_header_row_fallback",
++  "tests/test_ingest.py::test_header_row_detected_after_preamble",
++  "tests/test_ingest.py::test_make_bibtex_key",
++  "tests/test_ingest.py::test_map_override",
++  "tests/test_ingest.py::test_missing_raw_hints",
++  "tests/test_ingest.py::test_multiline_applicants_split",
++  "tests/test_ingest.py::test_multipage_raw_is_collected",
++  "tests/test_ingest.py::test_multivalue_doc_number_splits_into_family",
++  "tests/test_ingest.py::test_next_id_skips_used",
++  "tests/test_ingest.py::test_norm_doc_and_year",
++  "tests/test_ingest.py::test_source_db_derived_from_log",
++  "tests/test_ingest.py::test_unregistered_tag_refused",
++  "tests/test_ingest.py::test_unsupported_format",
++  "tests/test_init.py::test_init_creates_expected_files",
++  "tests/test_init.py::test_init_creates_raw_dir",
++  "tests/test_init.py::test_init_force_overwrites",
++  "tests/test_init.py::test_init_refuses_nonempty_dir",
++  "tests/test_init.py::test_init_result_passes_validate",
++  "tests/test_init.py::test_init_substitutes_tokens",
++  "tests/test_init.py::test_init_terminology_parses_and_has_required_sections",
++  "tests/test_init.py::test_init_workspace_yml_parses",
++  "tests/test_init.py::test_template_dir_exists",
++  "tests/test_init.py::test_template_dir_ships_inside_the_package",
++  "tests/test_init.py::test_template_files_are_declared_as_package_data",
++  "tests/test_init.py::test_template_has_no_leftover_project_data",
++  "tests/test_migrate.py::test_all_legacy_logs_have_explicit_target",
++  "tests/test_migrate.py::test_apply_is_idempotent_on_tags",
++  "tests/test_migrate.py::test_apply_migrates_candidate",
++  "tests/test_migrate.py::test_apply_migrates_log",
++  "tests/test_migrate.py::test_apply_preserves_unknown_fields",
++  "tests/test_migrate.py::test_apply_updates_schema",
++  "tests/test_migrate.py::test_dry_run_reports_planned_changes",
++  "tests/test_migrate.py::test_dry_run_writes_nothing",
++  "tests/test_migrate.py::test_explicit_role_proposal_overrides_stale_value",
++  "tests/test_migrate.py::test_explicit_target_proposal_overrides_stale_value",
++  "tests/test_migrate.py::test_idempotent",
++  "tests/test_migrate.py::test_legacy_does_not_pollute_other_target",
++  "tests/test_migrate.py::test_post_migration_gates_count_excluded_as_zero",
++  "tests/test_migrate.py::test_post_migration_validate_is_clean",
++  "tests/test_migrate.py::test_proposal_tables_cover_known_candidates",
++  "tests/test_migrate.py::test_propose_role_archives_p001",
++  "tests/test_migrate.py::test_propose_role_archives_p002",
++  "tests/test_migrate.py::test_propose_role_falls_back_to_pool",
++  "tests/test_migrate.py::test_propose_target_defaults_to_active",
++  "tests/test_migrate.py::test_propose_target_is_explicit",
++  "tests/test_migrate.py::test_qualify_tags_only_touches_bare_ids",
++  "tests/test_migrate.py::test_unlisted_candidate_keeps_explicit_target",
++  "tests/test_migrate.py::test_unlisted_log_defaults_to_active_target",
++  "tests/test_model.py::test_attested_does_not_require_file_to_exist",
++  "tests/test_model.py::test_attested_ok",
++  "tests/test_model.py::test_attested_requires_sha256",
++  "tests/test_model.py::test_explicit_role_wins",
++  "tests/test_model.py::test_invalid_value_is_asserted",
++  "tests/test_model.py::test_level_rank_order",
++  "tests/test_model.py::test_log_defaults_to_retrospective",
++  "tests/test_model.py::test_log_is_replayable_requires_live_and_raw",
++  "tests/test_model.py::test_missing_field_is_asserted",
++  "tests/test_model.py::test_reaches_is_monotonic",
++  "tests/test_model.py::test_role_defaults_to_pool",
++  "tests/test_model.py::test_role_inferred_from_runs",
++  "tests/test_model.py::test_sha256_file",
++  "tests/test_model.py::test_sha256_missing_file",
++  "tests/test_model.py::test_verified_downgrades_when_file_empty",
++  "tests/test_model.py::test_verified_downgrades_when_file_missing",
++  "tests/test_model.py::test_verified_with_existing_ref",
++  "tests/test_model.py::test_verified_without_ref_is_asserted",
++  "tests/test_new_features.py::test_add_months_clamps_to_month_end",
++  "tests/test_new_features.py::test_deadlines_compute_and_fail_closed",
++  "tests/test_new_features.py::test_export_docx_carries_workspace_numbers",
++  "tests/test_new_features.py::test_figure_marks_bidirectional_check",
++  "tests/test_new_features.py::test_figures_render_svg_is_deterministic_and_offline",
++  "tests/test_new_features.py::test_layout_overview_and_thin_data_refusal",
++  "tests/test_new_features.py::test_ledger_rows_and_render",
++  "tests/test_new_features.py::test_map_html_is_self_contained",
++  "tests/test_new_features.py::test_provenance_check_grades",
++  "tests/test_new_features.py::test_scan_finds_units_ranges_and_cjk_counts",
++  "tests/test_new_features.py::test_scan_skeleton_is_fail_closed",
++  "tests/test_new_features.py::test_v034_rejects_conclusions_citing_unknown_evidence",
++  "tests/test_new_features.py::test_validate_integrates_provenance_rules",
++  "tests/test_new_features.py::test_validate_reports_v033_as_warning_only",
++  "tests/test_paths.py::test_cli_outside_workspace_gives_actionable_error",
++  "tests/test_paths.py::test_cli_works_outside_via_env_var",
++  "tests/test_paths.py::test_env_var_pointing_nowhere_is_reported",
++  "tests/test_paths.py::test_env_var_takes_priority_over_cwd",
++  "tests/test_paths.py::test_env_var_wins_from_anywhere",
++  "tests/test_paths.py::test_error_message_is_actionable",
++  "tests/test_paths.py::test_find_root_keeps_legacy_silent_fallback",
++  "tests/test_paths.py::test_find_workspace_raises_when_not_in_workspace",
++  "tests/test_paths.py::test_finds_marker_upward",
++  "tests/test_paths.py::test_legacy_fallback_still_works",
++  "tests/test_paths.py::test_marker_takes_priority_over_legacy_markers",
++  "tests/test_paths.py::test_partial_markers_are_not_a_workspace",
++  "tests/test_paths.py::test_workspace_or_exit_exits_two",
++  "tests/test_review.py::test_abstract_for_falls_back_to_candidate",
++  "tests/test_review.py::test_abstract_for_prefers_abstract_raw_over_summary_zh",
++  "tests/test_review.py::test_abstract_for_prefers_raw_full_text",
++  "tests/test_review.py::test_abstract_for_raw_beats_abstract_raw",
++  "tests/test_review.py::test_apply_accepts_legacy_column_names",
++  "tests/test_review.py::test_apply_composes_relevance_as_min_of_two_dimensions",
++  "tests/test_review.py::test_apply_does_not_touch_other_fields",
++  "tests/test_review.py::test_apply_dry_run_writes_nothing",
++  "tests/test_review.py::test_apply_is_idempotent",
++  "tests/test_review.py::test_apply_is_idempotent_for_reviewed_at",
++  "tests/test_review.py::test_apply_keeps_key_order",
++  "tests/test_review.py::test_apply_min_rule_symmetric",
++  "tests/test_review.py::test_apply_rejects_non_numeric_relevance",
++  "tests/test_review.py::test_apply_rejects_out_of_range_relevance",
++  "tests/test_review.py::test_apply_rejects_unregistered_novelty",
++  "tests/test_review.py::test_apply_rejects_unregistered_role",
++  "tests/test_review.py::test_apply_reports_unknown_candidate_id",
++  "tests/test_review.py::test_apply_sets_relevance",
++  "tests/test_review.py::test_apply_sets_reviewed_at_even_for_judged_as_three",
++  "tests/test_review.py::test_apply_single_dimension_falls_back_to_that_dimension",
++  "tests/test_review.py::test_empty_judge_row_is_skipped_never_reset",
++  "tests/test_review.py::test_error_in_late_row_writes_nothing_at_all",
++  "tests/test_review.py::test_export_is_roundtrippable",
++  "tests/test_review.py::test_export_unreviewed_uses_reviewed_at",
++  "tests/test_review.py::test_harvest_abstracts_from_raw",
++  "tests/test_review.py::test_harvest_abstracts_ignores_non_cnipa_json",
++  "tests/test_review.py::test_is_reviewed_false_when_default_three",
++  "tests/test_review.py::test_is_reviewed_legacy_fallback",
++  "tests/test_review.py::test_is_reviewed_true_when_reviewed_at_present",
++  "tests/test_review.py::test_progress_cli_through_api",
++  "tests/test_review.py::test_progress_counts_unjudged_as_three",
++  "tests/test_review.py::test_progress_reports_judged_as_three",
++  "tests/test_review.py::test_relevance_levels_defined_in_glossary",
++  "tests/test_review.py::test_role_string_is_not_migrated_to_means",
++  "tests/test_review.py::test_select_filters_by_axis",
++  "tests/test_review.py::test_select_limit",
++  "tests/test_review.py::test_select_unreviewed_only",
++  "tests/test_review.py::test_select_with_abstract",
++  "tests/test_review.py::test_write_worksheet_has_bom_and_columns",
++  "tests/test_runs.py::test_core_doc_strips_kind_code[10.1016/j.apenergy.2025.126187-101016JAPENERGY2025126187]",
++  "tests/test_runs.py::test_core_doc_strips_kind_code[CN123456789A-CN123456789]",
++  "tests/test_runs.py::test_core_doc_strips_kind_code[FR 09 00836 A-FR0900836]",
++  "tests/test_runs.py::test_core_doc_strips_kind_code[RU 2360332 C2-RU2360332]",
++  "tests/test_runs.py::test_core_doc_strips_kind_code[US 1234567-US1234567]",
++  "tests/test_runs.py::test_core_doc_strips_kind_code[US 8,282,045 B2-US8282045]",
++  "tests/test_runs.py::test_id_regex_finds_candidate_ids",
++  "tests/test_runs.py::test_infer_excludes_untouched",
++  "tests/test_runs.py::test_infer_includes_matching_candidate",
++  "tests/test_runs.py::test_load_runs_extracts_doc_numbers",
++  "tests/test_runs.py::test_matches_doc_does_not_confuse_similar_numbers",
++  "tests/test_runs.py::test_matches_doc_exact",
++  "tests/test_runs.py::test_matches_doc_negative",
++  "tests/test_runs.py::test_matches_doc_positive_with_kind_code",
++  "tests/test_runs.py::test_matches_doc_rejects_short_tokens",
++  "tests/test_runs.py::test_matches_doc_tolerates_kind_code_suffix",
++  "tests/test_runs.py::test_matches_doc_tolerates_missing_kind_code",
++  "tests/test_runs.py::test_mentions_id",
++  "tests/test_runs.py::test_normalize_doc[10.1016/j.apenergy.2025.126187-101016JAPENERGY2025126187]",
++  "tests/test_runs.py::test_normalize_doc[CN123456789A-CN123456789A]",
++  "tests/test_runs.py::test_normalize_doc[FR 09 00836 A-FR0900836A]",
++  "tests/test_runs.py::test_normalize_doc[FR 09 00836-FR0900836]",
++  "tests/test_runs.py::test_normalize_doc[RU 2360332 C2-RU2360332C2]",
++  "tests/test_runs.py::test_normalize_doc[US 8,282,045 B2-US8282045B2]",
++  "tests/test_runs.py::test_run_with_returns_path",
++  "tests/test_topics.py::test_concepts_cover_all_eight_groups",
++  "tests/test_topics.py::test_empty_text_returns_zero",
++  "tests/test_topics.py::test_expanded_keywords_hit_their_group[\\u5f02\\u5e38-Safety interlock/degradation]",
++  "tests/test_topics.py::test_expanded_keywords_hit_their_group[\\u6c34\\u7ba1\\u7406-Gas-liquid separation/drainage]",
++  "tests/test_topics.py::test_expanded_keywords_hit_their_group[\\u6cc4\\u9732-Safety interlock/degradation]",
++  "tests/test_topics.py::test_expanded_keywords_hit_their_group[\\u6e17\\u900f-Inert gas]",
++  "tests/test_topics.py::test_expanded_keywords_hit_their_group[\\u963b\\u6297-Gas-liquid separation/drainage]",
++  "tests/test_topics.py::test_hit_groups_counts_distinct_concepts",
++  "tests/test_topics.py::test_hit_groups_english_text",
++  "tests/test_topics.py::test_hit_groups_multiple_concepts",
++  "tests/test_topics.py::test_strip_markup_keeps_mathematical_text_out_of_matching",
++  "tests/test_topics.py::test_strip_markup_removes_latex_and_markdown",
++  "tests/test_topics.py::test_unknown_target_returns_zero",
++  "tests/test_validate.py::test_duplicate_check_works_for_cjk_titles",
++  "tests/test_validate.py::test_pdf_path_null_is_valid",
++  "tests/test_validate.py::test_v001_additional_properties",
++  "tests/test_validate.py::test_v001_schema_violation",
++  "tests/test_validate.py::test_v001_unparsable_json",
++  "tests/test_validate.py::test_v002_bad_id_format",
++  "tests/test_validate.py::test_v002_duplicate_id",
++  "tests/test_validate.py::test_v003_missing_source_log",
++  "tests/test_validate.py::test_v004_bibtex_key_missing",
++  "tests/test_validate.py::test_v004_template_key_is_not_valid",
++  "tests/test_validate.py::test_v005_ignores_template_bib",
++  "tests/test_validate.py::test_v005_marker_based_template",
++  "tests/test_validate.py::test_v005_orphan_bib_entry",
++  "tests/test_validate.py::test_v006_bad_log_filename",
++  "tests/test_validate.py::test_v007_accepts_subquery_sequence_suffix",
++  "tests/test_validate.py::test_v007_plain_axis_still_ok",
++  "tests/test_validate.py::test_v007_query_id_mismatch",
++  "tests/test_validate.py::test_v007_rejects_non_numeric_suffix",
++  "tests/test_validate.py::test_v007_rejects_wrong_axis_with_suffix",
++  "tests/test_validate.py::test_v008_hit_count_mismatch",
++  "tests/test_validate.py::test_v009_live_without_raw",
++  "tests/test_validate.py::test_v010_db_mismatch",
++  "tests/test_validate.py::test_v011_unknown_axis_tag",
++  "tests/test_validate.py::test_v011_unregistered_qualified_tag",
++  "tests/test_validate.py::test_v012_run_references_unknown_id",
++  "tests/test_validate.py::test_v013_verified_with_missing_file",
++  "tests/test_validate.py::test_v013_verified_without_ref",
++  "tests/test_validate.py::test_v014_same_doc_number_is_error",
++  "tests/test_validate.py::test_v015_bad_timestamp",
++  "tests/test_validate.py::test_v015_logged_at_without_tz",
++  "tests/test_validate.py::test_v016_future_time_window",
++  "tests/test_validate.py::test_v017_blocking_conflicts_with_run",
++  "tests/test_validate.py::test_v017_not_triggered_for_partial",
++  "tests/test_validate.py::test_v018_near_prior_art_not_in_runs",
++  "tests/test_validate.py::test_v018_satisfied_when_in_runs",
++  "tests/test_validate.py::test_v019_missing_evidence_level",
++  "tests/test_validate.py::test_v019_missing_role",
++  "tests/test_validate.py::test_v020_missing_capture_mode",
++  "tests/test_validate.py::test_v021_attested_without_sha256",
++  "tests/test_validate.py::test_v022_stray_json_in_log_dir",
++  "tests/test_validate.py::test_v023_bare_axis_tag",
++  "tests/test_validate.py::test_v024_missing_target",
++  "tests/test_validate.py::test_v024_unregistered_target",
++  "tests/test_validate.py::test_v024_valid_target_is_clean",
++  "tests/test_validate.py::test_v025_consistent_target_is_clean",
++  "tests/test_validate.py::test_v025_tag_target_mismatch",
++  "tests/test_validate.py::test_v026_complete_export_is_clean",
++  "tests/test_validate.py::test_v026_declared_partial_is_info_not_warn",
++  "tests/test_validate.py::test_v026_ignores_retrospective_logs",
++  "tests/test_validate.py::test_v026_incomplete_export_warns",
++  "tests/test_validate.py::test_v026_multipage_summed",
++  "tests/test_validate.py::test_v026_skips_unparseable_raw",
++  "tests/test_validate.py::test_v026_undeclared_partial_is_warn",
++  "tests/test_validate.py::test_v027_accepts_valid_registry",
++  "tests/test_validate.py::test_v027_rejects_bad_sha256",
++  "tests/test_validate.py::test_v027_rejects_missing_drafts",
++  "tests/test_validate.py::test_v027_silent_when_absent",
++  "tests/test_validate.py::test_v028_family_like_duplicate_is_info_only",
++  "tests/test_validate.py::test_v028_needs_same_applicant_and_year",
++  "tests/test_version.py::test_installed_metadata_matches_package_version",
++  "tests/test_version.py::test_pyproject_does_not_hardcode_version",
++  "tests/test_version.py::test_pyproject_reads_version_from_package",
++  "tests/test_version.py::test_release_builder_uses_package_version",
++  "tests/test_version.py::test_version_is_valid_semver"
++]
+\ No newline at end of file
 diff --git a/MANIFEST.in b/MANIFEST.in
 index a8f7d8b..f83e745 100644
 --- a/MANIFEST.in
@@ -511,8 +1057,36 @@ index 0000000..ce1d5a8
 +        updates.append((path, old, new))
 +    commit_batch(updates, apply)
 +    return {"ok": True, "changed": len(updates), "written": len(updates) if apply else 0}
+diff --git a/patentkit/attest.py b/patentkit/attest.py
+index d4b16ba..d41d556 100644
+--- a/patentkit/attest.py
++++ b/patentkit/attest.py
+@@ -285,6 +285,9 @@ def build_parser() -> argparse.ArgumentParser:
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
+     args = build_parser().parse_args(argv)
+     root = (args.root or workspace_or_exit()).resolve()
+ 
+diff --git a/patentkit/bibsync.py b/patentkit/bibsync.py
+index 39cfa92..866f9f3 100644
+--- a/patentkit/bibsync.py
++++ b/patentkit/bibsync.py
+@@ -192,6 +192,9 @@ def build_parser() -> argparse.ArgumentParser:
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
+     return run(build_parser().parse_args(argv))
+ 
+ 
 diff --git a/patentkit/cli.py b/patentkit/cli.py
-index eb0b47f..9107cd5 100644
+index eb0b47f..f920d88 100644
 --- a/patentkit/cli.py
 +++ b/patentkit/cli.py
 @@ -15,6 +15,11 @@ import sys
@@ -590,12 +1164,22 @@ index eb0b47f..9107cd5 100644
  }
  
  #: Subcommands with dedicated handling (not pass-through).
+@@ -228,6 +253,9 @@ def _ws_arg(argv: list[str]) -> str | None:
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
+     argv = list(sys.argv[1:] if argv is None else argv)
+ 
+     if not argv or argv[0] in {"-h", "--help", "help"}:
 diff --git a/b/patentkit/deadlines.py b/patentkit/deadlines.py
 new file mode 100644
-index 0000000..d6950f3
+index 0000000..b6c9389
 --- /dev/null
 +++ b/patentkit/deadlines.py
-@@ -0,0 +1,181 @@
+@@ -0,0 +1,184 @@
 +"""Statutory-deadline ledger: a local tracker, never a legal adviser.
 +
 +Why this module exists
@@ -754,6 +1338,9 @@ index 0000000..d6950f3
 +
 +
 +def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
 +    args = build_parser().parse_args(argv)
 +    root = (args.root or workspace_or_exit()).resolve()
 +
@@ -779,10 +1366,10 @@ index 0000000..d6950f3
 +    raise SystemExit(main())
 diff --git a/b/patentkit/export.py b/patentkit/export.py
 new file mode 100644
-index 0000000..f737e03
+index 0000000..9fd0166
 --- /dev/null
 +++ b/patentkit/export.py
-@@ -0,0 +1,217 @@
+@@ -0,0 +1,220 @@
 +"""Export the novelty-search report as a .docx deliverable (kernel 0.3.0).
 +
 +Why this module exists
@@ -971,6 +1558,9 @@ index 0000000..f737e03
 +
 +
 +def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
 +    args = build_parser().parse_args(argv)
 +    root = (args.root or workspace_or_exit()).resolve()
 +
@@ -1002,10 +1592,10 @@ index 0000000..f737e03
 +    raise SystemExit(main())
 diff --git a/b/patentkit/figures.py b/patentkit/figures.py
 new file mode 100644
-index 0000000..c5bce94
+index 0000000..dc873d2
 --- /dev/null
 +++ b/patentkit/figures.py
-@@ -0,0 +1,257 @@
+@@ -0,0 +1,260 @@
 +"""Figure marks: bidirectional consistency between figure specs and the manuscript.
 +
 +Why this module exists
@@ -1229,6 +1819,9 @@ index 0000000..c5bce94
 +
 +
 +def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
 +    args = build_parser().parse_args(argv)
 +
 +    if args.cmd == "check":
@@ -1264,7 +1857,7 @@ index 0000000..c5bce94
 +if __name__ == "__main__":  # pragma: no cover
 +    raise SystemExit(main())
 diff --git a/patentkit/gates.py b/patentkit/gates.py
-index 6803642..c7d0742 100644
+index 6803642..dd1ef34 100644
 --- a/patentkit/gates.py
 +++ b/patentkit/gates.py
 @@ -35,6 +35,7 @@ from .model import (
@@ -1311,12 +1904,50 @@ index 6803642..c7d0742 100644
      )
  
  
+@@ -479,6 +480,9 @@ def build_parser() -> argparse.ArgumentParser:
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
+     args = build_parser().parse_args(argv)
+     root = (args.root or workspace_or_exit()).resolve()
+ 
+diff --git a/patentkit/index.py b/patentkit/index.py
+index 828e3ef..e88b801 100644
+--- a/patentkit/index.py
++++ b/patentkit/index.py
+@@ -190,6 +190,9 @@ def build_parser() -> argparse.ArgumentParser:
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
+     args = build_parser().parse_args(argv)
+     root = (args.root or workspace_or_exit()).resolve()
+     docs = collect(root)
+diff --git a/patentkit/ingest.py b/patentkit/ingest.py
+index 060342b..465db22 100644
+--- a/patentkit/ingest.py
++++ b/patentkit/ingest.py
+@@ -692,6 +692,9 @@ def build_parser() -> argparse.ArgumentParser:
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
+     return run(build_parser().parse_args(argv))
+ 
+ 
 diff --git a/b/patentkit/layout.py b/patentkit/layout.py
 new file mode 100644
-index 0000000..4af4a91
+index 0000000..e23c186
 --- /dev/null
 +++ b/patentkit/layout.py
-@@ -0,0 +1,126 @@
+@@ -0,0 +1,129 @@
 +"""Cross-target layout view: the "1+N" portfolio at a glance.
 +
 +Why this module exists
@@ -1425,6 +2056,9 @@ index 0000000..4af4a91
 +
 +
 +def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
 +    args = build_parser().parse_args(argv)
 +    root = (args.root or workspace_or_exit()).resolve()
 +    try:
@@ -1445,10 +2079,10 @@ index 0000000..4af4a91
 +    raise SystemExit(main())
 diff --git a/b/patentkit/ledger.py b/patentkit/ledger.py
 new file mode 100644
-index 0000000..8ec27a4
+index 0000000..ca87d66
 --- /dev/null
 +++ b/patentkit/ledger.py
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,106 @@
 +"""The evidence ledger: every judgment-citable fact in one auditable table.
 +
 +Why this module exists
@@ -1531,6 +2165,9 @@ index 0000000..8ec27a4
 +
 +
 +def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
 +    args = build_parser().parse_args(argv)
 +    root = (args.root or workspace_or_exit()).resolve()
 +    try:
@@ -1554,10 +2191,10 @@ index 0000000..8ec27a4
 +    raise SystemExit(main())
 diff --git a/b/patentkit/map.py b/patentkit/map.py
 new file mode 100644
-index 0000000..8cca4ec
+index 0000000..1cedf41
 --- /dev/null
 +++ b/patentkit/map.py
-@@ -0,0 +1,156 @@
+@@ -0,0 +1,159 @@
 +"""Static local HTML overview of the comparison state ("patent map", baseline).
 +
 +Why this module exists
@@ -1688,6 +2325,9 @@ index 0000000..8cca4ec
 +
 +
 +def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
 +    args = build_parser().parse_args(argv)
 +    root = (args.root or workspace_or_exit()).resolve()
 +    try:
@@ -1736,12 +2376,45 @@ index 07d1ed1..419e82b 100644
  """
  
  
+diff --git a/patentkit/paths.py b/patentkit/paths.py
+index bf9f85c..f8a399b 100644
+--- a/patentkit/paths.py
++++ b/patentkit/paths.py
+@@ -40,6 +40,28 @@ ROOT_MARKERS = (
+ )
+ 
+ 
++def configure_stdio() -> None:
++    """Pin stdout/stderr to UTF-8 (errors="replace") for CLI entry points.
++
++    Windows consoles encode with the OEM/ANSI code page (cp1252/GBK); printing table symbols
++    like `>=`'s real glyph or CJK text then raises UnicodeEncodeError and kills the command
++    (seen on GitHub Actions windows runners: review progress -> cp1252 -> crash). The skill
++    scripts solve this in scripts/_env.py; the kernel must not rely on callers doing it.
++    Importing the package must NOT mutate global streams — call this only inside main() entry
++    points. Streams replaced by capture (pytest capsys, StringIO) are skipped via getattr.
++    """
++    import sys as _sys
++
++    for stream in (_sys.stdout, _sys.stderr):
++        reconfigure = getattr(stream, "reconfigure", None)
++        if reconfigure is None:
++            continue
++        try:
++            reconfigure(encoding="utf-8", errors="replace")
++        except (ValueError, OSError):  # pragma: no cover - closed/odd streams
++            pass
++
++
+ class WorkspaceNotFound(RuntimeError):
+     """No workspace found by searching upward from the starting directory. The message includes actionable fixes."""
+ 
 diff --git a/b/patentkit/provenance.py b/patentkit/provenance.py
 new file mode 100644
-index 0000000..22ae4fe
+index 0000000..9f13c8d
 --- /dev/null
 +++ b/patentkit/provenance.py
-@@ -0,0 +1,261 @@
+@@ -0,0 +1,264 @@
 +"""Numerical-claim provenance: every number in a manuscript must trace to a source.
 +
 +Why this module exists
@@ -1968,6 +2641,9 @@ index 0000000..22ae4fe
 +
 +
 +def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
 +    args = build_parser().parse_args(argv)
 +
 +    if args.cmd == "scan":
@@ -2004,7 +2680,7 @@ index 0000000..22ae4fe
 +if __name__ == "__main__":  # pragma: no cover
 +    raise SystemExit(main())
 diff --git a/patentkit/report.py b/patentkit/report.py
-index a55ef69..6815cae 100644
+index a55ef69..198d2ed 100644
 --- a/patentkit/report.py
 +++ b/patentkit/report.py
 @@ -17,6 +17,7 @@ from .model import Candidate, Role, load_candidates
@@ -2040,8 +2716,18 @@ index a55ef69..6815cae 100644
      lines.append("")
  
      # §3 Matrix
+@@ -169,6 +170,9 @@ def build_parser() -> argparse.ArgumentParser:
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
+     args = build_parser().parse_args(argv)
+     root = (args.root or workspace_or_exit()).resolve()
+ 
 diff --git a/patentkit/review.py b/patentkit/review.py
-index 2cd6016..a8cebe2 100644
+index 2cd6016..cd81ea2 100644
 --- a/patentkit/review.py
 +++ b/patentkit/review.py
 @@ -39,6 +39,7 @@ from .model import Candidate, load_candidates, read_json, resolve_ref
@@ -2256,6 +2942,16 @@ index 2cd6016..a8cebe2 100644
          print("Export the unjudged ones: python -m patentkit review export --unreviewed --with-abstract ...")
          return 0
  
+@@ -683,6 +743,9 @@ def run(args: argparse.Namespace) -> int:
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
+     return run(build_parser().parse_args(argv))
+ 
+ 
 diff --git a/patentkit/templates/workspace/00_methodology/glossary.yml b/patentkit/templates/workspace/00_methodology/glossary.yml
 index 08fe393..21892e8 100644
 --- a/patentkit/templates/workspace/00_methodology/glossary.yml
@@ -2385,7 +3081,7 @@ index 69278af..67509ed 100644
    },
    "additionalProperties": false
 diff --git a/patentkit/validate.py b/patentkit/validate.py
-index dc30ad3..9b7f0d5 100644
+index dc30ad3..3f473c6 100644
 --- a/patentkit/validate.py
 +++ b/patentkit/validate.py
 @@ -30,6 +30,10 @@ V024 warn   pending migration: missing target field (filter key of the v2 multi-
@@ -2517,6 +3213,16 @@ index dc30ad3..9b7f0d5 100644
  def summarize(findings: Iterable[Finding]) -> dict[str, Any]:
      findings = list(findings)
      errors = [f for f in findings if f.level == "error"]
+@@ -855,6 +946,9 @@ def build_parser() -> argparse.ArgumentParser:
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
++    from .paths import configure_stdio
++
++    configure_stdio()
+     args = build_parser().parse_args(argv)
+     root = (args.root or workspace_or_exit()).resolve()
+ 
 diff --git a/patentkit.egg-info/PKG-INFO b/a/patentkit.egg-info/PKG-INFO
 deleted file mode 100644
 index 8cc0f35..0000000
