@@ -1,6 +1,6 @@
-# patent-research-skill 安装与使用（技能包）
+# patent-research 技能：安装与使用（检索/查新/证据链）
 
-> **这是什么**：可独立分发的「专利调研」技能包——**方法论**（`SKILL.md` + `references/`）
+> **这是什么**：可独立分发的「专利调研」技能（v3.0.0 起与 `patent-drafting` 拆分为两个技能、同一发布包安装）。——**方法论**（`SKILL.md` + `references/`）
 > + **可复现操作**（`scripts/` 薄封装 + `patentkit` 内核）。任何能读写本地文件、执行本地命令的
 > 客户端（Codex CLI / Codex 桌面 / Claude Code / Cursor / Cline…）都能直接用。
 >

@@ -1,4 +1,5 @@
-"""在隔离目录验收正式安装包、安装器和旧工作区迁移。"""
+"""在隔离目录验收正式安装包（v3.0.0 起为双产物：全量包 + drafting 单技能包）、
+安装器和旧工作区迁移。"""
 
 import hashlib
 import importlib.util
@@ -23,13 +24,17 @@ class ReleaseAcceptance(unittest.TestCase):
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory(prefix="patent-release-test-")
         cls.root = Path(cls.temp.name)
-        cls.result = builder.build(cls.root / "dist", "2026-10-23T00:00:00+00:00")
-        cls.final_zip = ROOT / "dist/patent-research-skill-v2.5.0.zip"
-        if not cls.final_zip.is_file():
-            raise AssertionError("Build the final installation ZIP in dist before acceptance")
+        cls.result = builder.build(cls.root / "dist", "2026-10-25T00:00:00+00:00")
+        cls.full_zip = ROOT / "dist/patent-research-skill-v3.0.0.zip"
+        cls.drafting_zip = ROOT / "dist/patent-drafting-skill-v3.0.0.zip"
+        if not cls.full_zip.is_file() or not cls.drafting_zip.is_file():
+            raise AssertionError("Build both release ZIPs in dist before acceptance (full + drafting)")
         cls.package = cls.root / "package"
-        with zipfile.ZipFile(cls.final_zip) as archive:
+        with zipfile.ZipFile(cls.full_zip) as archive:
             archive.extractall(cls.package)
+        cls.drafting_package = cls.root / "drafting_package"
+        with zipfile.ZipFile(cls.drafting_zip) as archive:
+            archive.extractall(cls.drafting_package)
 
     @classmethod
     def tearDownClass(cls):
@@ -39,25 +44,39 @@ class ReleaseAcceptance(unittest.TestCase):
         env = os.environ.copy()
         env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
         env["PYTHONIOENCODING"] = "utf-8"
-        result = subprocess.run(args[0] if len(args) == 1 else args, cwd=self.package, env=env, capture_output=True, text=True, encoding="utf-8", timeout=120)
+        result = subprocess.run(args[0] if len(args) == 1 else args, cwd=self.package, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
         return result
 
     def test_package_hashes_layout_and_reproducibility(self):
-        with zipfile.ZipFile(self.final_zip) as archive:
-            names = {name for name in archive.namelist() if not name.endswith("/")}
-            manifest = json.loads(archive.read("manifest.json"))
-            self.assertEqual(names - {"manifest.json"}, {item["path"] for item in manifest["files"]})
-            for item in manifest["files"]:
-                data = archive.read(item["path"])
-                self.assertEqual(hashlib.sha256(data).hexdigest(), item["sha256"])
-                self.assertEqual(len(data), item["size"])
-            self.assertIn("patent-research/SKILL.md", names)
-            self.assertIn("samples/sample_workspace/workspace.yml", names)
-            self.assertFalse(any("__pycache__" in name or name.endswith(".pyc") for name in names))
-            self.assertEqual(manifest["compat"]["assessment_protocol"], 1)
-        second = builder.build(self.root / "repeat", "2026-10-23T00:00:00+00:00")
-        self.assertEqual(self.result["sha256"], second["sha256"])
+        for package_zip in (self.full_zip, self.drafting_zip):
+            with zipfile.ZipFile(package_zip) as archive:
+                names = {name for name in archive.namelist() if not name.endswith("/")}
+                manifest = json.loads(archive.read("manifest.json"))
+                self.assertEqual(names - {"manifest.json"}, {item["path"] for item in manifest["files"]})
+                for item in manifest["files"]:
+                    data = archive.read(item["path"])
+                    self.assertEqual(hashlib.sha256(data).hexdigest(), item["sha256"])
+                    self.assertEqual(len(data), item["size"])
+                self.assertEqual(manifest["schema_version"], 2)
+                self.assertEqual(manifest["compat"]["assessment_protocol"], 1)
+        full_names = zipfile.ZipFile(self.full_zip).namelist()
+        self.assertIn("patent-research/SKILL.md", full_names)
+        self.assertIn("patent-drafting/SKILL.md", full_names)
+        drafting_names = zipfile.ZipFile(self.drafting_zip).namelist()
+        self.assertIn("patent-drafting/SKILL.md", drafting_names)
+        self.assertNotIn("patent-research/SKILL.md", drafting_names)
+        full_manifest = json.loads(zipfile.ZipFile(self.full_zip).read("manifest.json"))
+        self.assertEqual([s["name"] for s in full_manifest["skills"]],
+                         ["patent-research", "patent-drafting"])
+        self.assertTrue(full_manifest["contents"]["samples_included"])
+        single_manifest = json.loads(zipfile.ZipFile(self.drafting_zip).read("manifest.json"))
+        self.assertEqual([s["name"] for s in single_manifest["skills"]], ["patent-drafting"])
+        self.assertFalse(single_manifest["contents"]["samples_included"])
+        self.assertFalse(any("__pycache__" in n or n.endswith(".pyc") for n in full_names))
+        second = builder.build(self.root / "repeat", "2026-10-25T00:00:00+00:00")
+        self.assertEqual(self.result["zips"]["full"]["sha256"], second["zips"]["full"]["sha256"])
+        self.assertEqual(self.result["zips"]["drafting"]["sha256"], second["zips"]["drafting"]["sha256"])
 
     def test_sample_and_expected_gate_failure(self):
         scripts = self.package / "patent-research/scripts"
@@ -68,7 +87,7 @@ class ReleaseAcceptance(unittest.TestCase):
         gates = self.run_command(sys.executable, str(scripts / "gates.py"), "--root", str(sample), "--json", expected=1)
         self.assertFalse(json.loads(gates.stdout)["all_pass"])
 
-    def test_powershell_dry_run_install_upgrade_uninstall(self):
+    def test_powershell_installs_both_skills(self):
         shell = shutil.which("pwsh") or shutil.which("powershell")
         if not shell:
             self.skipTest("PowerShell is covered by the Windows CI runner")
@@ -78,22 +97,37 @@ class ReleaseAcceptance(unittest.TestCase):
         self.assertFalse(dest.exists())
         self.run_command(*command)
         self.assertTrue((dest / "patent-research/SKILL.md").is_file())
+        self.assertTrue((dest / "patent-drafting/SKILL.md").is_file())
         self.run_command(*command, expected=1)
         self.run_command(*command, "-Force")
         self.run_command(*command, "-Uninstall")
         self.assertFalse((dest / "patent-research").exists())
+        self.assertFalse((dest / "patent-drafting").exists())
 
     @unittest.skipIf(os.name == "nt", "POSIX installation is covered by the Linux CI runner")
-    def test_bash_dry_run_install_upgrade_uninstall(self):
+    def test_bash_installs_both_skills(self):
         dest = self.root / "bash-skills"
         command = ("bash", str(self.package / "install.sh"), "--dest", str(dest))
         self.run_command(*command, "--dry-run")
         self.assertFalse(dest.exists())
         self.run_command(*command)
         self.assertTrue((dest / "patent-research/SKILL.md").is_file())
+        self.assertTrue((dest / "patent-drafting/SKILL.md").is_file())
         self.run_command(*command, expected=1)
         self.run_command(*command, "--force")
         self.run_command(*command, "--uninstall")
+        self.assertFalse((dest / "patent-research").exists())
+        self.assertFalse((dest / "patent-drafting").exists())
+
+    def test_drafting_single_package_installs_standalone(self):
+        """单技能包（无样例）也能独立安装：自检降级为 SKILL.md 就位检查。"""
+        shell = shutil.which("pwsh") or shutil.which("powershell")
+        if not shell:
+            self.skipTest("PowerShell is covered by the Windows CI runner")
+        dest = self.root / "drafting-only-skills"
+        command = (shell, "-NoProfile", "-File", str(self.drafting_package / "install.ps1"), "-Dest", str(dest))
+        self.run_command(*command)
+        self.assertTrue((dest / "patent-drafting/SKILL.md").is_file())
         self.assertFalse((dest / "patent-research").exists())
 
     def test_legacy_migration_then_installed_wrappers(self):
@@ -132,13 +166,14 @@ class ReleaseAcceptance(unittest.TestCase):
         bundle = self.root / "oneclick-bundle"
         bundle.mkdir()
         shutil.copy2(wheel, bundle)
-        shutil.copy2(self.final_zip, bundle)
+        shutil.copy2(self.full_zip, bundle)
         installer = bundle / "install-oneclick.cmd"
         shutil.copy2(self.package / installer.name, installer)
         dest = self.root / "oneclick-skills"
         command = f'"{os.environ["COMSPEC"]}" /d /s /c ""{installer}" --quiet --dest "{dest}""'
         self.run_command(command)
         self.assertTrue((dest / "patent-research/SKILL.md").is_file())
+        self.assertTrue((dest / "patent-drafting/SKILL.md").is_file())
 
 
 if __name__ == "__main__":

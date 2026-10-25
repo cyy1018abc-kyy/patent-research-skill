@@ -44,4 +44,4 @@ The extracted directory retains its upstream `0.1.2` name; the patched package d
 version `0.3.0`. CI repeats the download, checksum verification, patch application and
 regression tests. No real patent data is needed. CI builds the wheel/sdist and the
 official installation ZIP, runs Windows/Linux acceptance, and publishes the paired
-Releases after merge to main. See `../notes/skill-v2.5.0.md` for installation and migration.
+Releases after merge to main. See `../notes/skill-v3.0.0.md` for installation and migration.

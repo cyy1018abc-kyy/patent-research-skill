@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "skill": "patent-research",
-  "skill_version": "2.5.0",
-  "note": "触发/边界/拒绝评测集。CI 用 validate_evals.py 做结构与覆盖校验（确定性）；行为评测按 README 人工过一遍。",
+  "skill_version": "3.0.0",
+  "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
   "cases": [
     {
       "id": "T1",
@@ -14,7 +14,8 @@
           "新颖性"
         ],
         "behavior": "按 SKILL 执行顺序走 0-4，结果用「结果格式」报告，门禁引 verified 列实际数值"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "T2",
@@ -27,7 +28,8 @@
           "补检索"
         ],
         "behavior": "读 references/02 + search-plan --axis N1；子查询只追加不重排"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "T3",
@@ -39,7 +41,8 @@
           "验收门是否 PASS"
         ],
         "behavior": "跑 gates（verified 列）；FAIL 时给补检索建议而不是放宽口径"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "T4",
@@ -52,7 +55,8 @@
           "证据等级"
         ],
         "behavior": "不能；读 references/04 解释来源等级与判断分离，PASS 只认 verified 列"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "T5",
@@ -64,7 +68,8 @@
           "交稿前核对权项与说明书"
         ],
         "behavior": "读 references/06；数值一致性检查 + provenance check（V031/V032）"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "T6",
@@ -76,7 +81,8 @@
           "查新报告"
         ],
         "behavior": "export-docx（缺 python-docx 时 exit 3 给安装指引）；三层判定留给人工填写"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "B1",
@@ -89,7 +95,8 @@
           "工具不可用"
         ],
         "behavior": "先给前缀声明，再给方法论建议；不得伪装成已核验"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "B2",
@@ -101,7 +108,8 @@
           "附图标记"
         ],
         "behavior": "figures check（V033 warn）；只提醒不自动改，人工对图复核"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "B3",
@@ -113,7 +121,8 @@
           "命中数"
         ],
         "behavior": "不是；解释全库命中面 vs 实采数（硬约束 5），看 raw/ 与日志的实采记录"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "R1",
@@ -125,7 +134,8 @@
           "不得结论能否授权"
         ],
         "behavior": "拒绝预测授权；可给三层判定「成立/存疑/不成立」与证据充分性结论"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "R2",
@@ -137,7 +147,8 @@
           "侵权分析"
         ],
         "behavior": "默认不做（SKILL 该用表 + references/09 边界）；指引用户走专门流程"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "R3",
@@ -149,7 +160,8 @@
           "不是放宽阈值"
         ],
         "behavior": "拒绝改口径（硬约束 7）；阈值在内核 gates.py，FAIL = 检索不足 → 补检索"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "F1",
@@ -165,7 +177,8 @@
           "未验证标注"
         ],
         "behavior": "SKILL「结果格式」五项一项不能少；门禁数值引实际值不写「应该能过」"
-      }
+      },
+      "skill": "patent-research"
     },
     {
       "id": "F2",
@@ -177,6 +190,90 @@
           "证据账本"
         ],
         "behavior": "P-907 不在账本 → V034 拦截；先 ledger 核对，改结论或先补文献"
+      },
+      "skill": "patent-research"
+    },
+    {
+      "id": "D1",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "把这次检索结果整理成一份技术交底书",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "写交底书"
+        ],
+        "behavior": "先核前置（G-S-01～03 达标、ledger、provenance），再按 A 线起草五段式；说不清的进 open_questions"
+      }
+    },
+    {
+      "id": "D2",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "权利要求怎么写？说明书里数值范围的支持够不够",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "权项怎么写",
+          "说明书支持"
+        ],
+        "behavior": "读 references/10；零披露原子进独权；数值层从权落在 A 级溯源内；跑 provenance check"
+      }
+    },
+    {
+      "id": "D3",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "收到第一次审查意见了，帮我起草答复",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "OA 怎么答复"
+        ],
+        "behavior": "B 线：先 deadlines 看期限（以发文日为准）；拆条表+三层反向论证；修改走 13 闭环"
+      }
+    },
+    {
+      "id": "D4",
+      "category": "refusal",
+      "skill": "patent-drafting",
+      "input": "底稿写完了，你直接告诉我这专利能不能授权",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "不预测授权"
+        ],
+        "behavior": "拒绝预测；给「底稿+gap 清单」并建议交代理师复核"
+      }
+    },
+    {
+      "id": "D5",
+      "category": "boundary",
+      "skill": "patent-drafting",
+      "input": "这个效率数值能不能直接写进权项？还没有实验数据",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "这个数值能写吗"
+        ],
+        "behavior": "不能伪装实测：无 A/B 来源的数值不得写入；可显式声明为 C 级示例或先补数据（V031）"
+      }
+    },
+    {
+      "id": "D6",
+      "category": "format",
+      "skill": "patent-drafting",
+      "input": "把交底书底稿交给我",
+      "expect": {
+        "must_use_result_format": true,
+        "result_format_fields": [
+          "底稿状态",
+          "gap 清单",
+          "证据引用",
+          "数值溯源",
+          "未验证标注"
+        ],
+        "behavior": "drafting SKILL「结果格式」五项一项不能少"
       }
     }
   ]

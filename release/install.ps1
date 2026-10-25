@@ -1,12 +1,13 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Install / uninstall patent-research-skill (bundled with the release package).
+  Install / uninstall the patent skills bundled with the release package (multi-skill).
 
 .DESCRIPTION
-  Copies `patent-research/` from the release package into the local AI client's skills directory;
-  the default directory name = the `name` in `SKILL.md` (clients identify the skill by it).
-  After installation it automatically runs a self-check using the package's `samples/sample_workspace/` (requires patentkit to be installed).
+  按 manifest.json 的 skills 列表，把每个技能目录（patent-research/、patent-drafting/…）
+  复制到本地 AI 客户端的技能目录；目录名 = SKILL.md 的 name。
+  安装后自动用包内 samples/sample_workspace/ 自检（需要 patentkit；单技能包无样例时
+  自检降级为「SKILL.md 就位」检查）。
 
   Exit codes: 0 success; 1 failure (self-check failed / target already exists, etc.); 2 release package structure incomplete.
 
@@ -20,7 +21,7 @@
 
 .EXAMPLE
   pwsh -File .\install.ps1 -Dest <skills-root>
-  Install into a custom skills root (creates patent-research\ under it).
+  Install into a custom skills root (creates patent-research\ and patent-drafting\ under it).
 
 .EXAMPLE
   pwsh -File .\install.ps1 -Uninstall -Client both
@@ -63,20 +64,17 @@ try {
     Fail "failed to parse manifest.json: $($_.Exception.Message)" 2
 }
 
-$skillName = [string]$manifest.skill.name
-$skillVersion = [string]$manifest.skill.version
-$installDirName = [string]$manifest.skill.install_dir
-if (-not $skillName -or -not $installDirName) {
-    Fail "manifest.json is missing skill.name / skill.install_dir" 2
+if ($manifest.schema_version -ne 2 -or -not $manifest.skills -or $manifest.skills.Count -lt 1) {
+    Fail "manifest.json must be schema 2 with a non-empty skills list" 2
 }
-if ($installDirName -ne $skillName) {
-    Fail "manifest is self-contradictory: install_dir ($installDirName) must equal name ($skillName)" 2
+$skillDirs = @()
+foreach ($entry in $manifest.skills) {
+    if ([string]$entry.install_dir -ne [string]$entry.name -or @('patent-research', 'patent-drafting') -notcontains [string]$entry.name) {
+        Fail "unsupported skill entry in manifest.json: $($entry.name)" 2
+    }
+    $skillDirs += [string]$entry.name
 }
-if ($installDirName -ne 'patent-research') {
-    Fail "unsupported skill directory in manifest.json" 2
-}
-
-$payload = Join-Path $PackageRoot $installDirName
+$skillVersion = [string]$manifest.skills[0].version
 
 # Skills root: -Dest takes precedence; otherwise use the client default selected by -Client
 if ($Dest -ne '') {
@@ -92,8 +90,8 @@ if ($Dest -ne '') {
 $sampleRoot = Join-Path $PackageRoot "samples/sample_workspace"
 $mode = if ($Uninstall) { 'Uninstall' } else { 'Install' }
 Write-Host ""
-Write-Host "patent-research-skill v$skillVersion  ·  $mode"
-Write-Host "Skill name : $skillName (the install directory name must match)"
+Write-Host "patent-research-skill v$skillVersion  ·  $mode (multi-skill)"
+Write-Host "Skills     : $($skillDirs -join '  ')"
 Write-Host "Targets    : $($roots -join '  ;  ')"
 if ($DryRun) { Write-Host "Mode       : DRY-RUN (no files are changed)" }
 Write-Host ""
@@ -101,29 +99,34 @@ Write-Host ""
 if ($Uninstall) {
     $removed = 0
     foreach ($root in $roots) {
-        $target = Join-Path $root $installDirName
-        if (-not (Test-Path -LiteralPath $target)) {
-            Note "not installed: $target"
-            continue
+        foreach ($dir in $skillDirs) {
+            $target = Join-Path $root $dir
+            if (-not (Test-Path -LiteralPath $target)) {
+                Note "not installed: $target"
+                continue
+            }
+            if ($DryRun) {
+                Note "[dry-run] would delete: $target"
+                continue
+            }
+            Remove-Item -LiteralPath $target -Recurse -Force
+            Write-Host "✅ Uninstalled: $target"
+            $removed++
         }
-        if ($DryRun) {
-            Note "[dry-run] would delete: $target"
-            continue
-        }
-        Remove-Item -LiteralPath $target -Recurse -Force
-        Write-Host "✅ Uninstalled: $target"
-        $removed++
     }
     if ($DryRun) { Note "dry-run finished: no files deleted" }
     elseif ($removed -eq 0) { Note "no installed skill package found (try a different -Client / -Dest)" }
     exit 0
 }
 
-if (-not (Test-Path -LiteralPath $payload -PathType Container)) {
-    Fail "release package is missing the payload directory: $installDirName (the zip may not have been fully extracted)" 2
+foreach ($dir in $skillDirs) {
+    $payload = Join-Path $PackageRoot $dir
+    if (-not (Test-Path -LiteralPath $payload -PathType Container)) {
+        Fail "release package is missing the payload directory: $dir (the zip may not have been fully extracted)" 2
+    }
 }
 
-$installedTargets = @()
+$python = $null
 if (-not $DryRun -and -not $NoSelfCheck) {
     $python = Get-Command python -ErrorAction SilentlyContinue
     if (-not $python) { $python = Get-Command python3 -ErrorAction SilentlyContinue }
@@ -131,29 +134,34 @@ if (-not $DryRun -and -not $NoSelfCheck) {
     & $python.Source '-c' 'import sys; from patentkit.assessment import PROTOCOL_VERSION; assert sys.version_info >= (3, 11) and PROTOCOL_VERSION == 1' | Out-Null
     if ($LASTEXITCODE -ne 0) { Fail "Install the patentkit 0.3.0 wheel before replacing the skill" }
 }
+
+$installedAny = @()
 foreach ($root in $roots) {
-    $target = Join-Path $root $installDirName
+    foreach ($dir in $skillDirs) {
+        $payload = Join-Path $PackageRoot $dir
+        $target = Join-Path $root $dir
 
-    if (Test-Path -LiteralPath $target) {
-        if (-not $Force) {
-            Fail "target already exists: $target`n  Upgrade: run -Uninstall first and then install; or add -Force to overwrite it."
+        if (Test-Path -LiteralPath $target) {
+            if (-not $Force) {
+                Fail "target already exists: $target`n  Upgrade: run -Uninstall first and then install; or add -Force to overwrite it."
+            }
+            if ($DryRun) {
+                Note "[dry-run] would overwrite: $target"
+            } else {
+                Remove-Item -LiteralPath $target -Recurse -Force
+            }
         }
+
         if ($DryRun) {
-            Note "[dry-run] would overwrite: $target"
-        } else {
-            Remove-Item -LiteralPath $target -Recurse -Force
+            Note "[dry-run] would copy: $payload  ->  $target"
+            continue
         }
-    }
 
-    if ($DryRun) {
-        Note "[dry-run] would copy: $payload  ->  $target"
-        continue
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        Copy-Item -Path (Join-Path $payload '*') -Destination $target -Recurse -Force
+        Write-Host "✅ Installed: $target"
+        $installedAny += $target
     }
-
-    New-Item -ItemType Directory -Force -Path $target | Out-Null
-    Copy-Item -Path (Join-Path $payload '*') -Destination $target -Recurse -Force
-    Write-Host "✅ Installed: $target"
-    $installedTargets += $target
 }
 
 if ($DryRun) {
@@ -162,24 +170,31 @@ if ($DryRun) {
 }
 
 if (-not $NoSelfCheck) {
-    $probe = $installedTargets[0]
-    $statusScript = Join-Path $probe 'scripts/status.py'
     Write-Host ""
-    Write-Host "Self-check (using the package's sample workspace; no real data touched)..."
+    Write-Host "Self-check (no real data touched)..."
     if (Test-Path -LiteralPath $sampleRoot) {
+        $probe = Join-Path $roots[0] 'patent-research'
+        $statusScript = Join-Path $probe 'scripts/status.py'
         & $python.Source $statusScript --root $sampleRoot --json | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Fail "self-check failed (exit $LASTEXITCODE). Install the matching patentkit 0.3.0 wheel and retry"
+        }
+        Write-Host "✅ Self-check passed: status.py located the sample workspace and computed the status"
     } else {
-        Fail "sample workspace is missing from the release package" 2
+        # 单技能包（无样例）：退化为就位检查
+        foreach ($dir in $skillDirs) {
+            if (-not (Test-Path -LiteralPath (Join-Path $roots[0] "$dir/SKILL.md")) ) {
+                Fail "self-check failed: $(Join-Path $roots[0] "$dir/SKILL.md") missing"
+            }
+        }
+        Write-Host "✅ Self-check passed: SKILL.md in place for $($skillDirs -join ' ') (no sample workspace in this package)"
     }
-    if ($LASTEXITCODE -ne 0) {
-        Fail "self-check failed (exit $LASTEXITCODE). Install the matching patentkit 0.3.0 wheel and retry"
-    }
-    Write-Host "✅ Self-check passed: the scripts can locate the workspace and compute the status"
 }
 
 Write-Host ""
 Write-Host "Next steps:"
-Write-Host "  1) In the client, say 'run a patent novelty check' or 'show the workspace status'"
-Write-Host "  2) No workspace yet? python -m patentkit init <dir> --target TGT-0002 --title <title>"
-Write-Host "  3) With a real workspace, the skill uses PATENTKIT_WORKSPACE or walks up from the current directory to find workspace.yml"
+Write-Host "  1) In the client, say 'run a patent novelty check' or 'show the workspace status' (patent-research)"
+Write-Host "  2) Drafting/OA work: 'draft a disclosure from the search results' (patent-drafting)"
+Write-Host "  3) No workspace yet? python -m patentkit init <dir> --target TGT-0002 --title <title>"
+Write-Host "  4) With a real workspace, the skill uses PATENTKIT_WORKSPACE or walks up from the current directory to find workspace.yml"
 exit 0

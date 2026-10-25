@@ -1,15 +1,15 @@
 #!/usr/bin/env python
-"""中英术语一致性校验（CI 步骤）。
+"""中英术语一致性校验（CI 步骤；多技能版）。
 
-references/（中文主版本）与 references.en/（英文镜像）必须逐文件配对；
-本脚本校验两层：
+v3.0.0 布局：research/references（中文主版本 01–08+glossary）、
+drafting/references（00,09–13+glossary）、research/references.en（英文镜像 01–07）。
 
-1. **配对完整**：01–07 每篇在两侧都存在（08+ 目前中文先行，README 已声明）；
-2. **术语锚定**：glossary.md 表里的每个「中文术语」，其对应英文术语必须出现在
-   英文镜像的对应文件里出现至少一次——不是逐句翻译检查（那会成为
-   「测试即文档」反模式），只锚定**术语不漂移**这一件最有价值的事。
-
-用法：python evals/check_terminology.py   （退出 0 一致 / 1 有漂移）
+校验三层：
+1. **配对完整**：01–07 在 research 中文与英文镜像两侧都存在（08+ 与 drafting 目前
+   中文先行，README 已声明）；
+2. **术语锚定**：核心术语中文在中文文档（两技能合计）出现、英文在英文镜像出现；
+3. **glossary 同步**：research 与 drafting 各自携带的 glossary.md 必须**逐字节一致**
+   （单技能包自包含的代价是复制一份，CI 防漂移）。
 """
 
 from __future__ import annotations
@@ -19,23 +19,16 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ZH = ROOT / "patent-research-skill" / "references"
-EN = ROOT / "patent-research-skill" / "references.en"
+ZH_RESEARCH = ROOT / "research" / "references"
+ZH_DRAFTING = ROOT / "drafting" / "references"
+EN = ROOT / "research" / "references.en"
 
-#: 中文主文件名 → 英文镜像文件名（01–07 当前双侧维护）
-PAIRED = {
-    "01-search-framework.md": "01-search-framework.md",
-    "02-query-templates.md": "02-query-templates.md",
-    "03-three-tier-determination.md": "03-three-tier-determination.md",
-    "04-evidence-level-system.md": "04-evidence-level-system.md",
-    "05-acceptance-gates.md": "05-acceptance-gates.md",
-    "06-drafting-and-polishing-rules.md": "06-drafting-and-polishing-rules.md",
-    "07-assessment-protocol.md": "07-assessment-protocol.md",
-}
+#: 中文主文件名（research 侧 01–07 有英文镜像）
+PAIRED = [f"0{i}-" for i in range(1, 8)]
 
-#: 全局锚定术语：中文名必须在中文版出现，英文 token 必须在英文版出现。
-#: 只收录两版当前真实共用的核心术语；2.5.0 新增概念（账本/地图/改稿闭环/附图标记等）
-#: 目前中文先行（见 references.en/README.md），翻译完成后加入本表。
+#: 核心锚定术语：中文须在中文文档（两技能）出现，英文 token 须在英文镜像出现。
+#: 只收录两版真实共用的核心术语；2.5.0+ 新增概念（账本/地图/改稿闭环/附图标记等）
+#: 目前中文先行，翻译完成后加入本表。
 GLOBAL_ANCHORS = [
     ("验收门", "acceptance gate"),
     ("证据等级", "evidence level"),
@@ -54,8 +47,6 @@ GLOBAL_ANCHORS = [
 
 
 def _pin_utf8_stdio() -> None:
-    """cp1252 控制台打印 ✅/⚠️ 会 UnicodeEncodeError（CI Windows runner 实测）；与内核
-    paths.configure_stdio 同理，入口处钉 UTF-8。"""
     import sys
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
@@ -69,26 +60,37 @@ def _pin_utf8_stdio() -> None:
 
 def main() -> int:
     _pin_utf8_stdio()
-
     problems: list[str] = []
 
-    zh_all = "\n".join(p.read_text(encoding="utf-8") for p in sorted(ZH.glob("*.md")))
+    zh_files = sorted(ZH_RESEARCH.glob("*.md")) + sorted(ZH_DRAFTING.glob("*.md"))
+    zh_all = "\n".join(p.read_text(encoding="utf-8") for p in zh_files)
     en_all = "\n".join(p.read_text(encoding="utf-8") for p in sorted(EN.glob("*.md")))
 
-    for zh_name, en_name in PAIRED.items():
-        if not (ZH / zh_name).is_file():
-            problems.append(f"中文主版本缺失：references/{zh_name}")
-        if not (EN / en_name).is_file():
-            problems.append(f"英文镜像缺失：references.en/{en_name}")
+    # 1. 配对完整（按前缀 01-…07-）
+    for prefix in PAIRED:
+        if not any(p.name.startswith(prefix) for p in ZH_RESEARCH.glob("*.md")):
+            problems.append(f"中文主版本缺失：research/references/{prefix}*.md")
+        if not any(p.name.startswith(prefix) for p in EN.glob("*.md")):
+            problems.append(f"英文镜像缺失：research/references.en/{prefix}*.md")
 
+    # 2. 术语锚定
     for zh_term, en_term in GLOBAL_ANCHORS:
         if zh_term not in zh_all:
-            problems.append(f"术语表锚定的中文术语未在中文版出现：{zh_term}")
+            problems.append(f"锚定术语未在中文文档出现：{zh_term}")
         if en_term.split()[0] not in en_all:
-            problems.append(f"术语表锚定的英文术语未在英文版出现：{en_term}")
+            problems.append(f"锚定术语未在英文镜像出现：{en_term}")
 
-    # glossary.md 自身健全性：锚定的中文术语必须在中文版真实使用（防「表里有、文里无」）
-    glossary = (ZH / "glossary.md").read_text(encoding="utf-8")
+    # 3. glossary 双份同步（research 权威，drafting 复制）
+    g_research = ZH_RESEARCH / "glossary.md"
+    g_drafting = ZH_DRAFTING / "glossary.md"
+    if not g_research.is_file() or not g_drafting.is_file():
+        problems.append("glossary.md 必须同时存在于 research 与 drafting 的 references/")
+    elif g_research.read_bytes() != g_drafting.read_bytes():
+        problems.append("research 与 drafting 的 glossary.md 不一致——以 research 为准复制后重试"
+                        "（单技能包自包含；CI 防两份漂移）")
+
+    # 4. glossary 自身健全性：行内中文术语必须在中文文档真实使用
+    glossary = g_research.read_text(encoding="utf-8") if g_research.is_file() else ""
     for line in glossary.splitlines():
         m = re.match(r"^\|\s*([^|]+?)\s*\|", line)
         if not m:
@@ -97,14 +99,14 @@ def main() -> int:
         if not zh_term or zh_term in {"中文", "流程与角色", "工具与交付"}:
             continue
         if zh_term not in zh_all:
-            problems.append(f"glossary 行的中文术语未在中文版使用：{zh_term}")
+            problems.append(f"glossary 行的中文术语未在中文文档使用：{zh_term}")
 
     if problems:
         print(f"术语一致性校验失败（{len(problems)} 项）：")
         for p in problems[:30]:
             print(f"  · {p}")
         return 1
-    print("✅ 术语一致性通过：中英配对完整，glossary 锚定术语两侧均在用")
+    print("✅ 术语一致性通过：01–07 中英配对完整，锚定术语在用，glossary 双份逐字节一致")
     return 0
 
 
