@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-25 · Skill 3.2.0 / kernel 0.4.0
+
+Planning-and-revision kernel release (paired skill bump; assessment protocol unchanged):
+
+- **`patentkit queryplan`** — per-axis search coverage planning: registered vs executed
+  sub-queries, G-S-02 verified buffer (reference-05 criteria), uncovered concept groups with
+  deterministic supplementary-query skeletons; `--apply` appends to the query library
+  append-only (existing indices never renumbered, comments preserved verbatim). `status`
+  hints point here when G-S-02 has not passed.
+- **`patentkit revise`** — the revision loop (drafting reference 13) as code: structured
+  local patches (every find must match exactly once → otherwise refuse with zero writes),
+  patch + ledger + registry re-bind in one transaction, post-round integrity check; an
+  unlogged edit is `revise status` exit 1 and validate V036; 3-round-per-issue escalation.
+- **`patentkit chain`** — evidence-chain panorama (logs → candidates → D-list → runs →
+  conclusions → ledger → gates → revision ledger) as one offline HTML page.
+- Validation rules V035 (ledger structure — error) / V036 (unlogged edit — warn, strict
+  escalates); range now V001–V036.
+- References 02/05 (research) and 13 (drafting) updated in both languages; kernel patch
+  `patentkit-0.1.2-to-0.4.0.patch` rebuilt and verified by `tools/build_kernel_patch.py`.
+- The 3.1.0 release itself was produced with `tools/bump_version.py` + a CI `--check` step;
+  this release dogfooded `--kernel-to` end to end (the residue scan caught nine kernel
+  pairing points the manual checklist never listed — two installers, self_test's
+  REQUIRED_KERNEL, SKILL companion lines, test wheel names).
+
+
 ## 2026-10-25 · Skill 3.1.0 / kernel 0.3.0（未变）
 
 Release-engineering and distribution-closeout patch release (no kernel, no rule changes):

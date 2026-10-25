@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """中英术语一致性校验（CI 步骤；多技能版）。
 
-v3.1.0 布局：research/references（中文主版本 01–08+glossary）、
+当前布局：research/references（中文主版本 01–08+glossary）、
 drafting/references（00,09–13+glossary）、research/references.en（英文镜像 01–08）、
 drafting/references.en（英文镜像 00,09–13）。
 
