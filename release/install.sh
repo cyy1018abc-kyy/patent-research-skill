@@ -84,7 +84,7 @@ done
 [ -n "$PYTHON_BIN" ] || fail "Python ≥ 3.11 is required (no usable python3/python found). Once installed, run pip install patentkit" 1
 
 # skills 列表：每行 "install_dir"；并校验 install_dir == name 且属于受支持集合
-SKILL_ROWS=$("$PYTHON_BIN" - '
+SKILL_ROWS=$("$PYTHON_BIN" -c '
 import json, sys
 data = json.load(open(sys.argv[1], encoding="utf-8"))
 skills = data.get("skills")
