@@ -9,6 +9,17 @@
 > **语言**：自 2.5.0 起运行时文档为**中文主版本**（目标场景是中国专利实践）；
 > 英文镜像存于 `references.en/`（01–08 与 00/09–13 双侧维护）。
 
+## 3.4.0 新增（普查证据口径，内核 0.6.0）
+
+| 能力 | 命令 |
+|---|---|
+| G-S-04 改核验普查记录（census）：查过 + 工件哈希绑定，零命中也算查过；未查/部分/失败不得冒充完整 | `patentkit gates`（判定见 `patentkit/census.py` 与 references/05） |
+| 从归档普查工件回填 family/cited_by 并自动写普查记录；人工评审候选默认跳过（`--force` 留审计） | `patentkit fetch-bigquery --fill <raw> [--apply] [--force]` |
+| 普查费用预估与预算上限（官方 dry-run `total_bytes_processed` 口径） | `patentkit fetch-bigquery --run [--max-cost-usd 5]` |
+| 旧工作区候选 schema 刷新（新增 census 属性，V037 随之生效） | `python -m patentkit migrate` |
+
+（安装后引用闭环为纯检查能力：`tools/check_reference_links.py`，CI 对仓库树与解包双 zip 各跑一遍。）
+
 ## 3.2.0 新增（检索规划与改稿闭环，内核 0.4.0）
 
 | 能力 | 命令 |
@@ -52,7 +63,7 @@ SHA-256 清单，无需手工改名。三步：
 
 1. **装内核**（一次性）：
    ```powershell
-   python -m pip install ./patentkit-0.5.1-py3-none-any.whl
+   python -m pip install ./patentkit-0.6.0-py3-none-any.whl
    # 需要 docx 导出时加可选依赖：
    python -m pip install python-docx
    ```

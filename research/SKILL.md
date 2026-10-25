@@ -13,12 +13,12 @@ description: >
   「附图标记对不上」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 3.3.1
+  version: 3.4.0
 ---
 
 # 专利调研
 
-> **配套**：`patentkit >= 0.5.1`（评估协议 1 的唯一规则实现）+ 本包 `scripts/`（薄封装）
+> **配套**：`patentkit >= 0.6.0`（评估协议 1 的唯一规则实现）+ 本包 `scripts/`（薄封装）
 > + 姊妹技能 `patent-drafting`（v3.0.0 起拆分：交底书/权要/OA 答复走那边）。
 > 没有工具也能按 `references/` 工作，但结论必须标注「⚠️ 未经验证工具校验」。
 
@@ -44,7 +44,7 @@ metadata:
 | 2 | 深度检索 | [`02-检索式模板`](references/02-query-templates.md)，[`07-评估协议`](references/07-assessment-protocol.md) | 导出 JSON → 受支持的 AI/人工评估 → `patentkit review assess ... --apply` | **G-S-02**：每轴 ≥10 篇合格文献，缓冲 ≥+3；两维度都要有原文支持 |
 | 3 | 对比分析 | [`03-三层判定`](references/03-three-tier-determination.md) | AI 推荐 → 人工逐条确认显式 ID 与指纹 → `patentkit review confirm ... --by <人名> --apply` → `patentkit report` | **G-S-03** ≥5 篇有效人工确认；**G-S-04** 同族/被引完整 |
 | 4 | 门禁 | [`05-验收门口径`](references/05-acceptance-gates.md) | `python scripts/gates.py`（或 `patentkit gates`） | 五门 **verified 列**全 PASS，不看 asserted |
-| 5 | 交稿核对 | [`06-撰写与润色规范`](references/06-drafting-and-polishing-rules.md)，[`13-改稿闭环`](references/13-revision-loop.md) | `python scripts/check.py` + `patentkit attest --check` + 数值溯源（V031/V032）+ 附图标记（V033）+ 结论引用（V034） | validate 0 error/warn；稿件 sha256 无漂移；数值每条有 A/B/C 来源 |
+| 5 | 交稿核对 | [`06-撰写与润色规范`](references/06-drafting-and-polishing-rules.md)；多轮改稿闭环（13 号）属姊妹技能 `patent-drafting`，见其 references/13-revision-loop.md | `python scripts/check.py` + `patentkit attest --check` + 数值溯源（V031/V032）+ 附图标记（V033）+ 结论引用（V034） | validate 0 error/warn；稿件 sha256 无漂移；数值每条有 A/B/C 来源 |
 | 6 | 交付物 | [`08-附图规范`](references/08-figures.md)（需要时） | `patentkit export-docx <TGT>`（docx 查新报告）/ `patentkit map <TGT>`（离线 HTML 总览）/ `patentkit ledger`（证据账本） | 交付物数字与工作区一致，无手工转写 |
 
 **撰写类需求转姊妹技能**（v3.0.0 起）：交底书/申请文件底稿、权利要求撰写、OA 答复、

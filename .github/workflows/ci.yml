@@ -38,16 +38,17 @@ jobs:
           with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
               archive.extractall(destination, filter="data")
           PY
-          git apply --directory=kernel-build/patentkit-0.1.2 "$GITHUB_WORKSPACE/release/patches/patentkit-0.1.2-to-0.5.1.patch"
+          git apply --directory=kernel-build/patentkit-0.1.2 "$GITHUB_WORKSPACE/release/patches/patentkit-0.1.2-to-0.6.0.patch"
           test -f kernel-build/patentkit-0.1.2/patentkit/assessment.py
           test -f kernel-build/patentkit-0.1.2/patentkit/provenance.py
           test -f kernel-build/patentkit-0.1.2/patentkit/revise.py
+          test -f kernel-build/patentkit-0.1.2/patentkit/census.py
           test -f kernel-build/patentkit-0.1.2/patentkit/fetch_bigquery.py
       - name: Build and install the actual kernel wheel
         run: |
           python -m build ./kernel-build/patentkit-0.1.2 --outdir dist
-          python -m pip install dist/patentkit-0.5.1-py3-none-any.whl python-docx
-          python -c "import patentkit; from patentkit.assessment import PROTOCOL_VERSION; assert patentkit.__version__ == '0.5.1' and PROTOCOL_VERSION == 1; assert 'site-packages' in patentkit.__file__"
+          python -m pip install dist/patentkit-0.6.0-py3-none-any.whl python-docx
+          python -c "import patentkit; from patentkit.assessment import PROTOCOL_VERSION; assert patentkit.__version__ == '0.6.0' and PROTOCOL_VERSION == 1; assert 'site-packages' in patentkit.__file__"
       - name: Kernel assessment and delivery-safety regressions
         run: python -m pytest kernel-build/patentkit-0.1.2/regression_tests -o addopts= -q
       - name: Kernel full suite from the patched tree
@@ -58,9 +59,9 @@ jobs:
           python - <<'PY'
           import hashlib, pathlib, shutil
           dist = pathlib.Path("dist")
-          assets = sorted(dist.glob("patentkit-0.5.1*"))
+          assets = sorted(dist.glob("patentkit-0.6.0*"))
           assert len(assets) == 2
-          (dist / "SHA256SUMS-patentkit-v0.5.1.txt").write_text("".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n" for p in assets), encoding="utf-8")
+          (dist / "SHA256SUMS-patentkit-v0.6.0.txt").write_text("".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n" for p in assets), encoding="utf-8")
           shutil.copy2("release/install-oneclick.cmd", dist)
           PY
       - name: Skill eval manifest is well formed
@@ -71,6 +72,20 @@ jobs:
         run: python tools/bump_version.py --check
       - name: No real workspace data may enter the distribution
         run: python tools/check_no_workspace_data.py
+      - name: Reference links resolve inside every skill payload (repo tree + unpacked zips)
+        run: |
+          python tools/check_reference_links.py
+          python - <<'PY'
+          import pathlib, subprocess, sys, tempfile, zipfile
+          zips = sorted(pathlib.Path("dist").glob("*-skill-v*.zip"))
+          assert len(zips) == 2, f"expected the full + drafting release zips, got {zips}"
+          for zip_path in zips:
+              with tempfile.TemporaryDirectory() as tmp:
+                  zipfile.ZipFile(zip_path).extractall(tmp)
+                  subprocess.run([sys.executable, "tools/check_reference_links.py",
+                                  "--root", tmp, "--quiet"], check=True)
+          print("packaged payloads checked:", [p.name for p in zips])
+          PY
       - name: Skill protocol and installation acceptance
         run: python -m unittest discover -s tests -v
       - name: Syntax checks

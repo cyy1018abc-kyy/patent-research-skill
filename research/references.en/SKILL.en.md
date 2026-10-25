@@ -13,12 +13,12 @@ description: >
   "can asserted be used as evidence", or "evidence level".
 license: Apache-2.0
 metadata:
-  version: 3.3.1
+  version: 3.4.0
 ---
 
 # Patent Research
 
-> **Companion**: `patentkit >= 0.5.1` with assessment protocol 1 (the single implementation of rules) + this package's `scripts/` (thin wrappers).
+> **Companion**: `patentkit >= 0.6.0` with assessment protocol 1 (the single implementation of rules) + this package's `scripts/` (thin wrappers).
 > **Note**: this file mirrors the authoritative Chinese `../SKILL.md` (Chinese-primary since 2.5.0;
 > since 3.0.0 the drafting/OA references live in the sibling patent-drafting skill,
 > mirrored under `../../drafting/references.en/`).
@@ -35,17 +35,17 @@ metadata:
 
 ## Execution order (follow the sequence; do not skip)
 
-**First read [`references/04-evidence-level-system.md`](references/04-evidence-level-system.md)** — it is the prerequisite for understanding everything else:
+**First read [`references/04-evidence-level-system.md`](04-evidence-level-system.md)** — it is the prerequisite for understanding everything else:
 if you cannot tell "self-report" from "evidence", every later step will produce false PASSes.
 
 | # | Stage | Read | Do | Checkpoint |
 |---|---|---|---|---|
 | 0 | Locate and self-check | — | `python scripts/status.py` (`patentkit status` if scripts are unavailable) | Workspace and `active_target` correct; validation has no error |
-| 1 | Broad search | [`01-search-framework.md`](references/01-search-framework.md) | `patentkit search-plan --axis N1` → `patentkit fetch-cnipa` / `fetch-crossref` → `patentkit ingest --apply` | **G-S-01**: patents ≥200 + literature ≥200 (verified column) |
-| 2 | Deep search | [`02-query-templates.md`](references/02-query-templates.md), [`07-assessment-protocol.md`](references/07-assessment-protocol.md) | Export JSON → supported AI/human assessment → `patentkit review assess ... --apply` | **G-S-02**: ≥10 eligible documents per axis, buffer ≥+3; both dimensions need original-text support |
-| 3 | Comparative analysis | [`03-three-tier-determination.md`](references/03-three-tier-determination.md) | AI recommends → human reviews explicit IDs/fingerprints → `patentkit review confirm ... --by <human> --apply` → report | **G-S-03** ≥5 documents with valid human confirmation; **G-S-04** families/citations complete |
-| 4 | Gate checks | [`05-acceptance-gates.md`](references/05-acceptance-gates.md) | `python scripts/gates.py` (or `patentkit gates`) | All five gates PASS on the **verified column**; asserted does not count |
-| 5 | Hand-off checks | [`06-drafting-and-polishing-rules.md`](references/06-drafting-and-polishing-rules.md) | `python scripts/check.py` + `patentkit attest --check` | validate 0 error/warn; no manuscript sha256 drift |
+| 1 | Broad search | [`01-search-framework.md`](01-search-framework.md) | `patentkit search-plan --axis N1` → `patentkit fetch-cnipa` / `fetch-crossref` → `patentkit ingest --apply` | **G-S-01**: patents ≥200 + literature ≥200 (verified column) |
+| 2 | Deep search | [`02-query-templates.md`](02-query-templates.md), [`07-assessment-protocol.md`](07-assessment-protocol.md) | Export JSON → supported AI/human assessment → `patentkit review assess ... --apply` | **G-S-02**: ≥10 eligible documents per axis, buffer ≥+3; both dimensions need original-text support |
+| 3 | Comparative analysis | [`03-three-tier-determination.md`](03-three-tier-determination.md) | AI recommends → human reviews explicit IDs/fingerprints → `patentkit review confirm ... --by <human> --apply` → report | **G-S-03** ≥5 documents with valid human confirmation; **G-S-04** families/citations complete |
+| 4 | Gate checks | [`05-acceptance-gates.md`](05-acceptance-gates.md) | `python scripts/gates.py` (or `patentkit gates`) | All five gates PASS on the **verified column**; asserted does not count |
+| 5 | Hand-off checks | [`06-drafting-and-polishing-rules.md`](06-drafting-and-polishing-rules.md) | `python scripts/check.py` + `patentkit attest --check` | validate 0 error/warn; no manuscript sha256 drift |
 
 > **Where the scripts are**: `scripts/` lives under the skill's **install directory** (e.g.
 > `~/.claude/skills/patent-research/scripts/` or `~/.agents/skills/patent-research/scripts/`),
@@ -89,14 +89,15 @@ Unverified: none
 
 | File | When to read |
 |---|---|
-| [`04-evidence-level-system.md`](references/04-evidence-level-system.md) | **Read first**; before judging PASS or tagging an evidence level |
-| [`01-search-framework.md`](references/01-search-framework.md) | Building the domain, starting a new project, collection discipline |
-| [`02-query-templates.md`](references/02-query-templates.md) | Constructing queries, rewriting them for each database's syntax |
-| [`03-three-tier-determination.md`](references/03-three-tier-determination.md) | Judging relevance, writing the comparison matrix and three-tier conclusions |
-| [`05-acceptance-gates.md`](references/05-acceptance-gates.md) | A gate fails, the buffer is insufficient, or `validate` reports errors |
-| [`06-drafting-and-polishing-rules.md`](references/06-drafting-and-polishing-rules.md) | Cross-checking claim-specification values/support before hand-off |
-| [`07-assessment-protocol.md`](references/07-assessment-protocol.md) | Assessment imports, explicit batch confirmation, conflicts, fingerprints and migration |
-| 08 figures + glossary | Chinese-first in `../references/` |
+| [`04-evidence-level-system.md`](04-evidence-level-system.md) | **Read first**; before judging PASS or tagging an evidence level |
+| [`01-search-framework.md`](01-search-framework.md) | Building the domain, starting a new project, collection discipline |
+| [`02-query-templates.md`](02-query-templates.md) | Constructing queries, rewriting them for each database's syntax |
+| [`03-three-tier-determination.md`](03-three-tier-determination.md) | Judging relevance, writing the comparison matrix and three-tier conclusions |
+| [`05-acceptance-gates.md`](05-acceptance-gates.md) | A gate fails, the buffer is insufficient, or `validate` reports errors |
+| [`06-drafting-and-polishing-rules.md`](06-drafting-and-polishing-rules.md) | Cross-checking claim-specification values/support before hand-off |
+| [`07-assessment-protocol.md`](07-assessment-protocol.md) | Assessment imports, explicit batch confirmation, conflicts, fingerprints and migration |
+| [`08-figures.md`](08-figures.md) | Figure standards, mark cross-checks (V033), figure–text consistency |
+| [`../references/glossary.md`](../references/glossary.md) | zh⇄en glossary (byte-identical copies across both skills) |
 | 09–13 (disclosure / claims / OA / policy radar / revision loop) | moved to the patent-drafting skill; English mirrors in `../../drafting/references.en/` |
 
 > See this package's [`README.md`](README.md) for `scripts/` and installation instructions. The scripts are only thin wrappers around `patentkit`;

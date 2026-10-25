@@ -25,8 +25,8 @@ class ReleaseAcceptance(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix="patent-release-test-")
         cls.root = Path(cls.temp.name)
         cls.result = builder.build(cls.root / "dist", "2026-10-25T00:00:00+00:00")
-        cls.full_zip = ROOT / "dist/patent-research-skill-v3.3.1.zip"
-        cls.drafting_zip = ROOT / "dist/patent-drafting-skill-v3.3.1.zip"
+        cls.full_zip = ROOT / "dist/patent-research-skill-v3.4.0.zip"
+        cls.drafting_zip = ROOT / "dist/patent-drafting-skill-v3.4.0.zip"
         if not cls.full_zip.is_file() or not cls.drafting_zip.is_file():
             raise AssertionError("Build both release ZIPs in dist before acceptance (full + drafting)")
         cls.package = cls.root / "package"
@@ -77,6 +77,20 @@ class ReleaseAcceptance(unittest.TestCase):
         second = builder.build(self.root / "repeat", "2026-10-25T00:00:00+00:00")
         self.assertEqual(self.result["zips"]["full"]["sha256"], second["zips"]["full"]["sha256"])
         self.assertEqual(self.result["zips"]["drafting"]["sha256"], second["zips"]["drafting"]["sha256"])
+
+    def test_reference_links_resolve_inside_each_installed_payload(self):
+        """安装后的体验验收：解包后的每个正式包里，相对链接都必须在载荷内闭合。
+
+        仓库目录里 `../` 能解析的链接在安装后（单技能目录）是死链；跨技能导航必须
+        走文内的技能交接说明。工具与 CI 同款（tools/check_reference_links.py）。
+        """
+        checker = ROOT / "tools" / "check_reference_links.py"
+        for package in (self.package, self.drafting_package):
+            result = subprocess.run(
+                [sys.executable, str(checker), "--root", str(package), "--quiet"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_sample_and_expected_gate_failure(self):
         scripts = self.package / "patent-research/scripts"
@@ -161,7 +175,7 @@ class ReleaseAcceptance(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "nt", "Windows one-click installer")
     def test_oneclick_installs_the_final_zip_to_an_isolated_directory(self):
-        wheel = ROOT / "dist/patentkit-0.5.1-py3-none-any.whl"
+        wheel = ROOT / "dist/patentkit-0.6.0-py3-none-any.whl"
         self.assertTrue(wheel.is_file(), "Build the kernel wheel in dist before acceptance")
         bundle = self.root / "oneclick-bundle"
         bundle.mkdir()

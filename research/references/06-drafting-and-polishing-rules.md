@@ -25,8 +25,8 @@ python -m patentkit validate --strict
 
 > 忘了 `attest --apply` 时，`attest --check` 会报 sha256 漂移（exit 1）—— 这是好事：
 > 说明「登记表指向的文件」和「实际文件」不一致，审阅者可能正看着旧版。
-> 多轮改稿的完整纪律（补丁→变更日志→重过门，禁止顺手改无关内容）见
-> [13-改稿闭环](13-revision-loop.md)。
+> 多轮改稿的完整纪律（补丁→变更日志→重过门，禁止顺手改无关内容）属姊妹技能
+> `patent-drafting`（本技能只负责其证据侧前置），见其 references/13-revision-loop.md。
 
 ## 数值声明必须溯源（A/B/C）
 
@@ -65,7 +65,7 @@ python -m patentkit provenance check
 2. **每条权项映射到说明书段落**：维护 `07_drafting/specification/support_mapping_table.md`，
    给每个原子标注支持段落。标不出来的原子要么补实施例，要么删。
 3. **无孤立项**：从属权项必须挂在某独立权项下，附加特征不得与被引权项矛盾。
-   撰写方法详见 [10-权利要求撰写](10-claim-drafting.md)。
+   撰写方法详见姊妹技能 `patent-drafting` 的 references/10-claim-drafting.md。
 
 ## 有益效果必须可追溯
 
