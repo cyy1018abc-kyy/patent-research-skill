@@ -22,6 +22,24 @@
 3. 解冻触发条件不变：出现**只能**以 MCP 形态提供的能力（如客户端内嵌 UI 回调）时
    再议，且新增工具必须内置 raw/ 落盘。
 
+### 2026-10-25 复评（kernel 0.5.x 时点，含数据源演练证据）
+
+结论：**继续冻结**，且理由比 0.3.0 时更充分。证据：
+
+| 维度 | 现状 |
+|---|---|
+| 能力面差距 | MCP 12 工具（status/validate/gates/search_plan/candidates/references/doctor/ingest/bibsync/attest/fetch_cnipa/batch），CLI 23 个直通命令 + 5 个专用命令——0.3 以来全部新能力（provenance/figures/deadlines/export-docx/map/layout/ledger/queryplan/revise/chain/fetch-bigquery/backfill-doi/check）**只在 CLI**，没有任何客户端「只能经 MCP」触达 |
+| 证据链纪律 | 新能力全部内嵌 raw/ 工件纪律（fetch-bigquery 契约、OPS ingest、revise 事务）；复制到 MCP 需要逐工具重建 raw/ 落盘，成本实打实、需求为零 |
+| 实测证据 | 2026-10-25 数据源演练证明集成面以 CLI 为准（`--run` 交互确认、OPS XML 落盘 ingest）；金样回归也全部走 CLI/module 入口 |
+| 使用数据 | 无任何 MCP 客户端使用反馈——「用户卡在缺 MCP 工具」这件事没有发生过一次 |
+
+重新评估的触发条件（任一满足才再议）：
+1. 出现**只能**以 MCP 形态提供的能力（如客户端内嵌 UI 回调）；
+2. 目标客户端明确无法执行本地命令、只能挂 MCP server；
+3. 出现真实的 MCP 用户反馈被缺工具阻塞（而非猜测）。
+解冻时的工程要求不变：新增工具必须内置 raw/ 落盘 + 走 `evals/` 话术用例 +
+`tests/test_mcp.py` 锁定工具数与注册表一致。
+
 ## 新数据源的统一验收标准（任何源都要过）
 
 1. 每次查询落 `raw/` 工件（原始响应或导出文件）+ `02_search_logs/*.log.json`；
@@ -67,10 +85,44 @@
   （增量可续），绝不重试风暴；
 - 落盘：同契约第 1/2 条——每页响应即 raw 工件，`complete` 按实际抓取范围声明。
 
+## 实跑前契约演练（2026-10-25，无凭据）
+
+真实联网**没有**跑：本机无 GCP 凭据、无 OPS key，且本机直连 `bigquery.googleapis.com`
+超时被阻——真实 `--run` 必须在 googleapis.com 可达的网络环境执行。除此之外，契约的每一条
+都已在发布版 0.5.0 内核 + 真实 CLI 上逐条演练过（工作区：init → ingest → 演练命令全链）：
+
+| 契约条款 | 演练结果 |
+|---|---|
+| dry-run 默认零写入 | `fetch-bigquery`（文本与 `--json`）跑在真实工作区，前后文件清单逐项一致 |
+| `--run` 双守卫 | 无 `google-cloud-bigquery` → `[FATAL]` exit 2；有库无凭据（桩库注入，不触网）→ `[FATAL]` exit 2 |
+| `--fill` 只补空缺 | 干跑 → `--apply` → 重复 apply 幂等（第二轮 0 写入）；坏工件在 CLI 层 `[FATAL]` exit 2 |
+| OPS XML 可 ingest | exchange-document 落 raw/ → `ingest --raw` → `verified` 候选（zh 标题/摘要优先、申请人入档） |
+| 日志如实/命中分离 | `capture_mode=live`、`complete` 如实；回填后 G-S-04 PASS（verified=1/1） |
+| 规则联动 | 缺 bib 触发 V004、未评估触发 V029、无 run 支撑触发 V018——均如实报出，未被数据源路径绕开 |
+
+演练抓出并已修复两个内核缺陷（回归测试随修复入库）：
+
+1. `check --json` 把 `--json` 透传给 validate 与 gates，输出两个连排 JSON 文档
+   （`json.load` 直接 Extra data）——现合并为单一文档 `{"check": …, "gates": …}`，
+   复合退出码语义不变（validate 阻断码优先，否则 gates 全 PASS→0、其余→2）；
+2. `fetch-bigquery --fill` 遇坏工件抛裸 traceback——现转 `[FATAL]` + exit 2。
+
+### 凭据到位当天（runbook）
+
+1. `pip install google-cloud-bigquery`；`GOOGLE_APPLICATION_CREDENTIALS` 指向服务账号 JSON；
+2. **复核 SQL 列名**：对照当时 `patents-public-data.patents.publications` schema
+   （dry-run 输出里带完整 SQL，骨架性质见上节）；
+3. `python -m patentkit fetch-bigquery --run`——先出 bytes_billed 费用预估，确认后才执行、
+   结果自动落 `raw/*.jsonl` + 同名 `.log.json`；
+4. `fetch-bigquery --fill <raw> --apply` → `check`（V 系列与 G-S-04 复核）；
+5. 按契约在 `docs/policy-log.md` 登记接入事件。OPS 首检索同法：key 走环境变量，
+   结果 XML 落 `02_search_logs/raw/` → `ingest --raw` → 登记；403/429 即停，已完成部分落盘。
+
 ## 待办（有真实任务时）
 
 - [x] BigQuery 同族/引证普查脚本骨架（G-S-04 专用）+ 费用预估模板 → `fetch-bigquery`
 - [x] OPS 注册与限速策略文档（本页）
 - [x] `read_raw` 支持 OPS XML 导出格式
+- [x] 无凭据契约演练（2026-10-25，见「实跑前契约演练」节；两个内核缺陷已修）
 - [ ] 真实 GCP 凭据下的首次 `--run`（按契约登记 policy-log）
 - [ ] 真实 OPS key 下的首次检索（按契约登记 policy-log）

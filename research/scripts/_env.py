@@ -136,10 +136,10 @@ def require_patentkit(*, as_json: bool = False) -> None:
             raise ImportError("unsupported assessment protocol")
     except ImportError:
         _die(
-            "This skill requires patentkit >= 0.5.0 with assessment protocol 1",
+            "This skill requires patentkit >= 0.5.1 with assessment protocol 1",
             EXIT_DEPENDENCY,
             as_json=as_json,
-            hints=("Install the matching patentkit-0.5.0 wheel; old kernels cannot enforce human confirmation for G-S-03",),
+            hints=("Install the matching patentkit-0.5.1 wheel; old kernels cannot enforce human confirmation for G-S-03",),
         )
     _REQUIRED = True
 
