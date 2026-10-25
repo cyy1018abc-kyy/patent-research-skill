@@ -7,5 +7,6 @@ directory are the English edition kept for bilingual users and terminology cross
 
 - `SKILL.en.md` — mirror of the (Chinese) `../SKILL.md`
 - `01-…07-*.md` — mirrors of the (Chinese) `../references/01…07`
-- Documents 08 and `glossary.md` stay here (research side); 09–13 moved to the patent-drafting
-  skill (v3.0.0) and are Chinese-first. Translation is tracked in the upgrade checklist. When translating, keep `glossary.md` term-for-term consistent.
+- Reference 08 is still Chinese-first (tracked in the upgrade checklist). Documents 00 and
+09–13 moved to the patent-drafting skill (v3.0.0) and are mirrored in English under
+`../../drafting/references.en/` since 3.0.1. When translating, keep `glossary.md` term-for-term consistent.

@@ -13,13 +13,15 @@ description: >
   "can asserted be used as evidence", or "evidence level".
 license: Apache-2.0
 metadata:
-  version: 2.5.0
+  version: 3.0.1
 ---
 
 # Patent Research
 
 > **Companion**: `patentkit >= 0.3.0` with assessment protocol 1 (the single implementation of rules) + this package's `scripts/` (thin wrappers).
-> **Note**: this file mirrors the authoritative Chinese `../SKILL.md` (Chinese-primary since 2.5.0).
+> **Note**: this file mirrors the authoritative Chinese `../SKILL.md` (Chinese-primary since 2.5.0;
+> since 3.0.0 the drafting/OA references live in the sibling patent-drafting skill,
+> mirrored under `../../drafting/references.en/`).
 > You can still work from `references/` without the tools, but conclusions must be marked "⚠️ Unverified by tool checks".
 
 ## When to use
@@ -94,7 +96,8 @@ Unverified: none
 | [`05-acceptance-gates.md`](references/05-acceptance-gates.md) | A gate fails, the buffer is insufficient, or `validate` reports errors |
 | [`06-drafting-and-polishing-rules.md`](references/06-drafting-and-polishing-rules.md) | Cross-checking claim-specification values/support before hand-off |
 | [`07-assessment-protocol.md`](references/07-assessment-protocol.md) | Assessment imports, explicit batch confirmation, conflicts, fingerprints and migration |
-| 08–13 + glossary (figures / disclosure / claims / OA / policy radar / revision loop / zh⇄en glossary) | Chinese-first in `../references/`; translation tracked in the upgrade checklist |
+| 08 figures + glossary | Chinese-first in `../references/` |
+| 09–13 (disclosure / claims / OA / policy radar / revision loop) | moved to the patent-drafting skill; English mirrors in `../../drafting/references.en/` |
 
 > See this package's [`README.md`](README.md) for `scripts/` and installation instructions. The scripts are only thin wrappers around `patentkit`;
 > the rules are not implemented in them. If `patentkit` is not installed, the scripts print installation guidance (exit 3).

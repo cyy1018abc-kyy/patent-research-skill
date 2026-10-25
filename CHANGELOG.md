@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-25 · Skill 3.0.1 / kernel 0.3.0（未变）
+
+Drafting-skill English mirrors (translation-only patch release):
+
+- `drafting/references.en/`: SKILL.en.md + 00-prerequisites + 09–13 — the complete English
+  mirror of the patent-drafting skill; terminology consistent with the shared glossary.
+- `research/references.en/`: SKILL.en.md refreshed to the 3.x split layout; README notes
+  where each mirror lives (research 08 stays Chinese-first for now).
+- `evals/check_terminology.py`: drafting zh↔en pairing (00, 09–13) enforced; shared anchor
+  list extended to the drafting vocabulary (evidence ledger / revision loop / policy radar /
+  office action / response draft / disclosure / illustrative example / figure-mark …).
+- Kernel unchanged at 0.3.0; no workspace migration; skill versions paired at 3.0.1.
+
+
 ## 2026-10-25 · Skill 3.0.0 / kernel 0.3.0（未变）
 
 Multi-skill matrix split, per the accepted decisions in `docs/skill-matrix-plan.md`

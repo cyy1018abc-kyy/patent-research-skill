@@ -75,7 +75,7 @@ if not defined WHEEL (
     echo     Please put patentkit-0.3.0-py3-none-any.whl in the same folder as this file.
     goto :fail
 )
-for %%f in ("patent-research-skill-v3.0.0.zip") do if exist "%%~ff" set "SKILLZIP=%%~ff"
+for %%f in ("patent-research-skill-v3.0.1.zip") do if exist "%%~ff" set "SKILLZIP=%%~ff"
 if not defined SKILLZIP (
     echo [X] There is no patent-research-skill-v*.zip skill package in the current folder.
     echo     Please put the skill package zip in the same folder as this file.
