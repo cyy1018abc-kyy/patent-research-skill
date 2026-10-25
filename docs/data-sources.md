@@ -30,8 +30,47 @@
 4. 在 `docs/policy-log.md` 登记（如涉及官方口径变化）；
 5. 走一遍 `evals/` 的 B3 用例（命中数 ≠ 实采数）确认话术不误导。
 
+## 数据源接入契约（0.5.0 固化）
+
+上表五条验收标准是**任何**新数据源进入主线的前置条件，以下为工程落点——
+新增源 = 新增一个满足本契约的模块，而不是在旧模块里开洞：
+
+1. **raw 工件先于一切**：每次查询的原始响应/导出文件落 `02_search_logs/raw/`，
+   没有工件的数据最高只能算 `attested`，不可能 `verified`（这是模型层的判定，
+   不是文档约定）；
+2. **日志如实声明**：`02_search_logs/*.log.json` 记 `capture_mode=live`、
+   `result.complete` 如实（部分命中必须写 false）、命中数与实采数分开；
+3. **可 ingest**：`read_raw` 支持该源格式（现有分发：JSON 按内容识别 CNIPA /
+   Crossref / Google Patents，`.csv/.tsv` 表格，`.xml` OPS 导出），新格式加
+   `parse_*` 函数 + 夹具测试；
+4. **dry-run 默认**：联网形态默认拒绝或需要显式凭据（例：`fetch-bigquery --run`
+   无 `GOOGLE_APPLICATION_CREDENTIALS` 直接退出），凭据与配额永远归真实任务；
+5. **登记与评测**：涉及口径变化进 `policy-log.md`；话术过 `evals/` 用例。
+
+### 已就位的半成品（0.5.0）
+
+- **`fetch-bigquery`（G-S-04 专用普查）**：默认 dry-run（普查对象清单 + SQL 骨架 +
+  费用模板，零写入）；`--run` 需 `google-cloud-bigquery` + GCP 凭据，先 dry-run 查询
+  取 bytes_billed 出费用预估、确认后执行并按契约落 raw+log；`--fill <raw> [--apply]`
+  从已归档普查工件回填候选的 family/cited_by（只补空缺、不覆盖人工数据，离线可测）。
+  SQL 基于 `patents-public-data.patents.publications` 公开形态，**真实 `--run` 前
+  必须对照当时 schema 复核列名**——这是骨架的性质，不是缺陷。
+- **OPS XML ingest**：`read_raw` 支持 `.xml`（OPS exchange-document 导出，
+  namespace 前缀无关、按 localname 匹配；zh 优先取标题/摘要）。OPS 的结果 XML
+  落 raw/ 后即可 ingest 成 verified 候选。
+
+### OPS 注册与限速策略（有真实任务时执行）
+
+- 注册：Espacenet OPS 门户申请开发者账号与 key；**配额与限流阈值以门户当时公告为准**
+  （本仓库不硬编码可能过期的数字），key 走环境变量，不入库；
+- 限速：默认串行 + 指数退避，收到 403/429 一律停下落盘已完成部分再退出
+  （增量可续），绝不重试风暴；
+- 落盘：同契约第 1/2 条——每页响应即 raw 工件，`complete` 按实际抓取范围声明。
+
 ## 待办（有真实任务时）
 
-- [ ] BigQuery 同族/引证普查脚本（G-S-04 专用），按量费用预估模板
-- [ ] OPS 注册与限速策略文档
-- [ ] `read_raw` 支持 OPS XML 导出格式
+- [x] BigQuery 同族/引证普查脚本骨架（G-S-04 专用）+ 费用预估模板 → `fetch-bigquery`
+- [x] OPS 注册与限速策略文档（本页）
+- [x] `read_raw` 支持 OPS XML 导出格式
+- [ ] 真实 GCP 凭据下的首次 `--run`（按契约登记 policy-log）
+- [ ] 真实 OPS key 下的首次检索（按契约登记 policy-log）

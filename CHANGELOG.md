@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-25 · Skill 3.3.0 / kernel 0.5.0
+
+Data-source presets + formalized access contract (no rule changes; nothing connected):
+
+- **`patentkit fetch-bigquery`** — G-S-04 census skeleton: dry-run by default (targets,
+  skeleton SQL with a re-validate-against-current-schema marker, cost template);
+  `--run` requires google-cloud-bigquery + GCP credentials (dry-run query first for
+  bytes-billed → cost estimate → confirmation → archive raw+log per contract);
+  `--fill <raw> [--apply]` backfills family/cited_by from the archived artifact
+  (empty arrays only, offline-testable).
+- **OPS XML ingest** — `read_raw` accepts `.xml` (OPS exchange-document exports,
+  localname-based namespace-agnostic parsing, zh-first titles/abstracts).
+- **Access contract** formalized in `docs/data-sources.md` (raw-first, honest logs,
+  ingestable formats, dry-run default / explicit credentials, registration + evals)
+  plus the OPS registration & rate-limit strategy (quota figures deferred to the
+  official portal, never hard-coded).
+- CI sentinel adds `fetch_bigquery.py`; the unsupported-format error now lists the
+  OPS-capable `.xml`. Suite: 540 passed / 9 skipped (dev tree).
+
+
 ## 2026-10-25 · Skill 3.2.1 / kernel 0.4.1
 
 Golden end-to-end regression release (no rule or CLI changes):

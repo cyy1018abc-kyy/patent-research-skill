@@ -8,9 +8,9 @@
 
 ## Getting the installation package
 
-- Skill package zip: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.2.1> →
-  `patent-research-skill-v3.2.1.zip`
-- Kernel wheel / sdist: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.4.1>
+- Skill package zip: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.3.0> →
+  `patent-research-skill-v3.3.0.zip`
+- Kernel wheel / sdist: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.5.0>
 - Verification: `SHA256SUMS-*.txt` on the same page; on Windows you can check with `Get-FileHash <file> -Algorithm SHA256`.
 
 ## Prerequisites
@@ -18,10 +18,10 @@
 | Dependency | Requirement | Check |
 |---|---|---|
 | Python | ≥ 3.11 | `python --version` |
-| patentkit | >= 0.4.1, assessment protocol 1 | `python -m patentkit doctor` |
+| patentkit | >= 0.5.0, assessment protocol 1 | `python -m patentkit doctor` |
 
 ```powershell
-python -m pip install ./patentkit-0.4.1-py3-none-any.whl
+python -m pip install ./patentkit-0.5.0-py3-none-any.whl
 ```
 
 > You can install the skill package without the core, but the scripts will exit with code 3 and tell you to install `patentkit` first.
@@ -81,7 +81,7 @@ pwsh -File .\install.ps1 -DryRun
 pwsh -File .\install.ps1 -Client both -Force
 
 # 3) Upgrade the kernel (if the release notes require it)
-python -m pip install --upgrade ./patentkit-0.4.1-py3-none-any.whl
+python -m pip install --upgrade ./patentkit-0.5.0-py3-none-any.whl
 ```
 
 > Before upgrading, check `skill.version` and `compat.patentkit` in `manifest.json`;
@@ -97,7 +97,7 @@ python -m patentkit validate --root /path/to/workspace --strict
 
 Migration preserves source grades, records legacy judgment identity as unknown, and
 does not create human confirmations. Prior gate counts may decrease. See the
-[release notes](https://github.com/cyy1018abc-kyy/patent-research-skill/blob/main/release/notes/skill-v3.2.1.md).
+[release notes](https://github.com/cyy1018abc-kyy/patent-research-skill/blob/main/release/notes/skill-v3.3.0.md).
 
 ## Uninstalling
 
