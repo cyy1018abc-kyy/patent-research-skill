@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 INSTALL_FILES = ("install.ps1", "install.sh", "install-oneclick.cmd", "INSTALL.md", "install-guide-for-colleagues.md")
 #: 源码目录 → 载荷目录名（= SKILL.md 的 name；目录名必须与之对应）
 SKILL_DIRS = ("research", "drafting")
-KERNEL_VERSION = "0.4.0"
+KERNEL_VERSION = "0.4.1"
 #: 单技能包只发 drafting（research 单装没有意义：drafting 依赖它，全量包已含）
 SINGLE_SKILLS = ("drafting",)
 
