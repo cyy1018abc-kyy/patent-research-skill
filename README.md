@@ -9,7 +9,7 @@ the release builder, and release notes.
 **No real project data, patent drafts, target IDs, or candidate IDs are included**;
 the sample workspace is synthetic (`TGT-0002`).
 
-## Skill 3.3.0 / kernel 0.5.0 — multi-skill matrix + drafting English mirrors
+## Skill 3.3.1 / kernel 0.5.1 — multi-skill matrix + drafting English mirrors
 
 Per the accepted skill-matrix decision (2026-10-25, see
 [docs/skill-matrix-plan.md](docs/skill-matrix-plan.md)): the single skill is split into two
@@ -26,7 +26,7 @@ Two headline changes over 2.4.0:
    edition lives on as `references.en/` and is kept term-consistent by
    `evals/check_terminology.py`. A bilingual glossary (`references/glossary.md`) pins the
    terminology both ways.
-2. **Delivery-safety layer (kernel 0.5.0).** `export-docx` (workspace-verbatim .docx search
+2. **Delivery-safety layer (kernel 0.5.1).** `export-docx` (workspace-verbatim .docx search
    report), `map` (offline self-contained HTML overview), `layout` (read-only 1+N portfolio
    view), `ledger` (evidence ledger; V034 rejects conclusions citing IDs outside it),
    `provenance` (numerical-claim A/B/C registry; V031/V032 fail closed), `figures`
@@ -47,12 +47,12 @@ Windows/Linux with Python 3.11/3.12 before publishing.
 
 ## Download & install
 
-Download the paired [Skill 3.3.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.3.0) and [patentkit 0.5.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.5.0) releases:
+Download the paired [Skill 3.3.1](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.3.1) and [patentkit 0.5.1](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.5.1) releases:
 
 | Asset | Purpose |
 |---|---|
-| `patent-research-skill-v3.3.0.zip` | Full package: installs **both** skills (patent-research + patent-drafting) | Skill installation package (with installers + synthetic sample workspace) |
-| `patentkit-0.5.0-py3-none-any.whl` | Matching kernel, assessment protocol 1 + delivery-safety layer |
+| `patent-research-skill-v3.3.1.zip` | Full package: installs **both** skills (patent-research + patent-drafting) | Skill installation package (with installers + synthetic sample workspace) |
+| `patentkit-0.5.1-py3-none-any.whl` | Matching kernel, assessment protocol 1 + delivery-safety layer |
 | `install-oneclick.cmd` | Windows installer, also included in the ZIP |
 | `INSTALL-colleagues.md` | One-page install guide (repo source: `release/install-guide-for-colleagues.md`) |
 
@@ -64,14 +64,14 @@ same folder, then double-click `install-oneclick.cmd`.
 ### Manual (any platform)
 
 ```powershell
-python -m pip install ./patentkit-0.5.0-py3-none-any.whl
-Expand-Archive ./patent-research-skill-v3.3.0.zip -DestinationPath ./pkg
+python -m pip install ./patentkit-0.5.1-py3-none-any.whl
+Expand-Archive ./patent-research-skill-v3.3.1.zip -DestinationPath ./pkg
 pwsh -File ./pkg/install.ps1 -Client both -Force
 ```
 
 ```bash
 python3 -m pip install ./patentkit-0.2.0-py3-none-any.whl
-unzip patent-research-skill-v3.3.0.zip -d pkg
+unzip patent-research-skill-v3.3.1.zip -d pkg
 chmod +x pkg/install.sh && ./pkg/install.sh --client both --force
 ```
 
@@ -95,7 +95,7 @@ docs/                    design memos (skill matrix, data sources, scope decisio
 ## Build a release package
 
 ```bash
-python -m pip install ./patentkit-0.5.0-py3-none-any.whl
+python -m pip install ./patentkit-0.5.1-py3-none-any.whl
 python tools/build_skill_release.py --out dist --built-at 2026-10-23T00:00:00+00:00 --json
 python -m unittest discover -s tests -v
 ```
@@ -103,14 +103,14 @@ python -m unittest discover -s tests -v
 ## Requirements
 
 - Python >= 3.11 (required by the skill scripts)
-- Skill 3.3.0: `patentkit` >= 0.5.0, assessment protocol 1 (docx export needs the optional `python-docx`)
+- Skill 3.3.1: `patentkit` >= 0.5.1, assessment protocol 1 (docx export needs the optional `python-docx`)
 - Codex CLI >= 0.161 (the desktop app bundles a newer runtime, no upgrade needed)
 
 ## Language
 
 Since 2.5.0 the distributable skill runtime is **Chinese-primary**: `SKILL.md`, `references/`
 (including the new 08–13 and `glossary.md`) and assets. The English edition is mirrored under
-`references.en/` (research 01–08 and drafting 00/09–13 maintained on both sides since 3.3.0). Script and
+`references.en/` (research 01–08 and drafting 00/09–13 maintained on both sides since 3.3.1). Script and
 kernel messages, installers, and release notes remain English (engineering layer).
 Implementation plans and verification notes under `docs/` use Chinese.
 
@@ -132,4 +132,4 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 
 ## Version
 
-Skill version: **3.3.0** (patent-research + patent-drafting), companion kernel: **0.5.0**. See [CHANGELOG.md](CHANGELOG.md).
+Skill version: **3.3.1** (patent-research + patent-drafting), companion kernel: **0.5.1**. See [CHANGELOG.md](CHANGELOG.md).

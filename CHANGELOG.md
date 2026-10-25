@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-25 · Skill 3.3.1 / kernel 0.5.1
+
+Data-source contract rehearsal + drafting golden regression (patch level; no rule changes):
+
+- **Contract rehearsal recorded in `docs/data-sources.md`** — every offline contract path
+  exercised on the released kernel + real CLI (dry-run zero-write, `--run` dual guards,
+  `--fill` idempotent backfill, OPS XML end-to-end ingest, V-series firing as designed);
+  credential-day runbook added. Real network run still pending credentials: no GCP/OPS
+  credentials on this machine, `bigquery.googleapis.com` blocked (timeout),
+  `ops.epo.org` reachable (403 without key, as expected).
+- **Drafting golden regression** — `test_golden_pipeline_drafting.py`: 10 snapshots over
+  provenance scan/check, figures check/draw (SVG), deadlines list/check,
+  revise apply/status/close and the merged `check --json`, on the shared golden fixture
+  (+ `09_deadlines/` ledger with a deliberately incomplete entry, + grade-B provenance
+  entry NUM-003), with a run-twice determinism test.
+- **MCP re-assessment** — stays frozen with evidence: 12 MCP tools vs 23 passthrough + 5
+  dedicated CLI commands, no MCP-only capability exists, three re-trigger conditions
+  documented in `docs/data-sources.md`.
+- Three kernel CLI fixes, each with a regression test: `check --json` now emits a single
+  merged `{"check", "gates"}` JSON document (was two concatenated documents; composite
+  exit-code semantics unchanged); `fetch-bigquery --fill` reports malformed artifacts as
+  `[FATAL]`/exit 2 (was a bare traceback); `deadlines --root` accepted in both argument
+  positions (`list --root X` used to be an argparse error).
+- Suite: 539 passed / 2 skipped (dev tree, Windows), both golden pipelines green.
+
 ## 2026-10-25 · Skill 3.3.0 / kernel 0.5.0
 
 Data-source presets + formalized access contract (no rule changes; nothing connected):
