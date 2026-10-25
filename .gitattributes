@@ -6,5 +6,7 @@
 *.sh text eol=lf
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
+# raw 工件（普查 JSONL 等）是被哈希绑定的证据：任何平台检出/应用补丁都必须字节保真。
+*.jsonl -text
 # 补丁空白上下文属于格式内容，原始行尾必须保留以匹配源文件。
 release/patches/*.patch -text whitespace=-blank-at-eol

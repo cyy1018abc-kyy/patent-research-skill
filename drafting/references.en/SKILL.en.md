@@ -16,12 +16,12 @@ description: >
   "can this number be written in".
 license: Apache-2.0
 metadata:
-  version: 3.3.1
+  version: 3.4.0
 ---
 
 # Patent Drafting (draft-grade)
 
-> **Companions**: `patentkit >= 0.5.1` (the single implementation of the rules) and the
+> **Companions**: `patentkit >= 0.6.0` (the single implementation of the rules) and the
 > sibling skill `patent-research` (evidence chain and acceptance gates).
 > **Position**: convert the search results into deliverable drafts — disclosure, claims /
 > specification skeleton, OA response. The output is always "draft + gap list"; it is not
@@ -48,7 +48,7 @@ metadata:
 3. the numerical-claim provenance registry exists (`patentkit provenance scan`).
 
 A self-contained summary of the preconditions is in
-[`references/00-prerequisites.md`](references/00-prerequisites.md).
+[`references/00-prerequisites.md`](00-prerequisites.md).
 
 ## Execution order (per line, on demand; do not expand everything)
 
@@ -56,23 +56,23 @@ A self-contained summary of the preconditions is in
 
 | # | Step | Read | Do |
 |---|---|---|---|
-| A1 | Reconcile | [00](references/00-prerequisites.md) | `patentkit ledger`: the background cites ledger IDs only (V034 discipline) |
-| A2 | Skeleton | [09](references/09-disclosure-drafting.md) | five-part drafting; unclear points go to open_questions, **no fabrication** |
-| A3 | Claims | [10](references/10-claim-drafting.md) | zero-disclosure atoms into the independent claim; numerical layers inside grade-A provenance |
-| A4 | Self-check | [10](references/10-claim-drafting.md) | `patentkit provenance check` + per-atom support mapping table |
+| A1 | Reconcile | [00](00-prerequisites.md) | `patentkit ledger`: the background cites ledger IDs only (V034 discipline) |
+| A2 | Skeleton | [09](09-disclosure-drafting.md) | five-part drafting; unclear points go to open_questions, **no fabrication** |
+| A3 | Claims | [10](10-claim-drafting.md) | zero-disclosure atoms into the independent claim; numerical layers inside grade-A provenance |
+| A4 | Self-check | [10](10-claim-drafting.md) | `patentkit provenance check` + per-atom support mapping table |
 
 ### Line B: OA response
 
 | # | Step | Read | Do |
 |---|---|---|---|
-| B1 | Deadlines | [11](references/11-oa-response.md) | `patentkit deadlines list` (official mailing date prevails) |
-| B2 | Split clauses | [11](references/11-oa-response.md) | one row per objection; examiner's documents enter the candidates first |
-| B3 | Back-link | [11](references/11-oa-response.md) | feature chart reusing the matrix format; arguments via the three-tier determination in reverse |
-| B4 | Amendments | [13](references/13-revision-loop.md) | any claim amendment follows the loop: patch → log → attest → re-run gates |
+| B1 | Deadlines | [11](11-oa-response.md) | `patentkit deadlines list` (official mailing date prevails) |
+| B2 | Split clauses | [11](11-oa-response.md) | one row per objection; examiner's documents enter the candidates first |
+| B3 | Back-link | [11](11-oa-response.md) | feature chart reusing the matrix format; arguments via the three-tier determination in reverse |
+| B4 | Amendments | [13](13-revision-loop.md) | any claim amendment follows the loop: patch → log → attest → re-run gates |
 
 ### Line C: policy practice (sweep at start / before hand-off)
 
-Read [12](references/12-policy-radar.md); log practice changes in `docs/policy-log.md`;
+Read [12](12-policy-radar.md); log practice changes in `docs/policy-log.md`;
 the hand-off may not proceed with "pending" rows uncleared.
 
 ## Hard constraints (must not be violated)
@@ -110,13 +110,13 @@ the hand-off may not proceed with "pending" rows uncleared.
 
 | File | When to read |
 |---|---|
-| [`00-prerequisites.md`](references/00-prerequisites.md) | **Read first**; self-contained summary of evidence levels / gates / judgment eligibility |
-| [`09-disclosure-drafting.md`](references/09-disclosure-drafting.md) | five-part disclosure, Reg. 20–23 mapping, application-document list |
-| [`10-claim-drafting.md`](references/10-claim-drafting.md) | independent/dependent layering, numerical-range self-check, support mapping |
-| [`11-oa-response.md`](references/11-oa-response.md) | OA clause table, three-tier reverse argumentation, response structure |
-| [`12-policy-radar.md`](references/12-policy-radar.md) | tracking examination-practice / form / drawing-requirement changes |
-| [`13-revision-loop.md`](references/13-revision-loop.md) | multi-round revision: patch → log → re-run gates |
-| [`glossary.md`](references/glossary.md) | zh⇄en glossary (shared with patent-research; CI keeps the copies identical) |
+| [`00-prerequisites.md`](00-prerequisites.md) | **Read first**; self-contained summary of evidence levels / gates / judgment eligibility |
+| [`09-disclosure-drafting.md`](09-disclosure-drafting.md) | five-part disclosure, Reg. 20–23 mapping, application-document list |
+| [`10-claim-drafting.md`](10-claim-drafting.md) | independent/dependent layering, numerical-range self-check, support mapping |
+| [`11-oa-response.md`](11-oa-response.md) | OA clause table, three-tier reverse argumentation, response structure |
+| [`12-policy-radar.md`](12-policy-radar.md) | tracking examination-practice / form / drawing-requirement changes |
+| [`13-revision-loop.md`](13-revision-loop.md) | multi-round revision: patch → log → re-run gates |
+| [`glossary.md`](../references/glossary.md) | zh⇄en glossary (shared with patent-research; CI keeps the copies identical) |
 
 > Commands go straight through `python -m patentkit <subcommand>` (provenance / figures /
 > deadlines / attest / ledger / gates / validate); this skill ships no script wrappers —

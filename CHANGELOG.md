@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-10-25 · Skill 3.4.0 / kernel 0.6.0
+
+Census-evidence gate rework + data-source chain fixes + installed-reference closure
+(from the review's P0 trio, "普查证据与安装引用一致性"):
+
+- **G-S-04 verifies census evidence, not array shapes** — new kernel module
+  `patentkit/census.py`: each subject (`near_prior_art`/`family`) needs a valid census
+  record per dimension (doc number, source, query id, time, status, raw artifact +
+  sha256). Zero hits count as complete; not-queried / `partial` / `failed` /
+  missing-or-modified artifact do not. Records are written by `fetch-bigquery --fill`
+  from the archived artifact (one row per queried doc, zero hits included) or by hand
+  per reference 05. The gate report gains a per-object failure detail list.
+- **validate V037** — a census record that exists but is broken (missing fields /
+  artifact deleted or modified / doc mismatch / status contradicting the artifact) is an
+  error; honest `partial`/`failed` stays a gate matter. Candidate schema gains the
+  managed `census` property (template + `migrate`).
+- **fetch-bigquery chain fixes**: dry-run pre-check and execution share the same SQL and
+  `query_parameters`; the cited-by subquery returns the *citing* document number; archive
+  names carry date/target/run-time and refuse silent overwrite; `--fill` requires the
+  artifact inside workspace `02_search_logs/`, cross-checks the bound log's target,
+  touches only the passed target, skips human-reviewed candidates unless `--force`
+  (audited to `02_search_logs/backfill_audit.jsonl`), stays idempotent, and keeps human
+  values on conflict; cost estimates use dry-run `total_bytes_processed` with a
+  `--max-cost-usd` budget cap (default 5).
+- **backfill (abstracts) review guard**: candidates with human review traces are skipped
+  by default (`--force` overrides, audited to the same file).
+- **Installed-reference closure**: 66 broken relative links fixed across both skill
+  payloads (cross-skill links replaced with the documented skill handoff; both English
+  mirrors re-pointed at their sibling files); new `tools/check_reference_links.py` runs
+  in CI on the repo tree and on both unpacked release zips, with unittest coverage.
+- Golden pipeline gains a census artifact + fill stages (fill → reviewed-skip → force +
+  audit). Kernel docs: reference 05 rewritten for both languages; `docs/data-sources.md`
+  contract updated. Deferred: revise↔conclusions linkage (its reserved V037 number is
+  now used by the census rule; the linkage rule will take V038).
+
+Suite: 511 passed / 9 skipped (dev tree, Windows) + 44 regression tests (both golden
+pipelines); skill repo 14 unittests; pairing/evals/terminology/guards/link closure all
+green.
+
 ## 2026-10-25 · Skill 3.3.1 / kernel 0.5.1
 
 Data-source contract rehearsal + drafting golden regression (patch level; no rule changes):

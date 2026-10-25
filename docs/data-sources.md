@@ -65,14 +65,23 @@
    无 `GOOGLE_APPLICATION_CREDENTIALS` 直接退出），凭据与配额永远归真实任务；
 5. **登记与评测**：涉及口径变化进 `policy-log.md`；话术过 `evals/` 用例。
 
-### 已就位的半成品（0.5.0）
+### 已就位的半成品（0.5.0 预置；0.6.0 按普查证据口径修正）
 
 - **`fetch-bigquery`（G-S-04 专用普查）**：默认 dry-run（普查对象清单 + SQL 骨架 +
-  费用模板，零写入）；`--run` 需 `google-cloud-bigquery` + GCP 凭据，先 dry-run 查询
-  取 bytes_billed 出费用预估、确认后执行并按契约落 raw+log；`--fill <raw> [--apply]`
-  从已归档普查工件回填候选的 family/cited_by（只补空缺、不覆盖人工数据，离线可测）。
+  费用模板，零写入）；`--run` 需 `google-cloud-bigquery` + GCP 凭据，先以**同一份
+  SQL + 同一组参数**跑 dry-run（预检与执行的请求完全一致），按 dry-run 返回的
+  `total_bytes_processed` 出费用预估，超过 `--max-cost-usd`（默认 5）直接拒绝；
+  确认后执行，**每个普查对象落一行**（零命中也是一行，带 `found` 标记），归档名
+  带日期/目标/运行时刻/行数（`bigquery_<date>_<target>_<HHMMSS>_GS04_<rows>.jsonl`），
+  已存在的工件一律拒绝覆盖；`--fill <raw> [--apply]` 从**工作区
+  `02_search_logs/` 内**的已归档普查工件回填候选的 family/cited_by，并**同源写入
+  G-S-04 普查记录**（census，见 research 参考文档 05）——工件与登记日志核对
+  target（跨目标回填直接拒绝），只回填传入 target 的候选，有人工评审痕迹的候选
+  默认跳过（`--force` 越过并追加 `02_search_logs/backfill_audit.jsonl` 审计），
+  普查只补空缺、不覆盖人工数据，重复运行幂等。
   SQL 基于 `patents-public-data.patents.publications` 公开形态，**真实 `--run` 前
-  必须对照当时 schema 复核列名**——这是骨架的性质，不是缺陷。
+  必须对照当时 schema 复核列名**——这是骨架的性质，不是缺陷。0.6.0 修正：被引
+  子查询返回的是**引用方**（citing）的文献号（旧版投影回被引方，量不出引用它的文献）。
 - **OPS XML ingest**：`read_raw` 支持 `.xml`（OPS exchange-document 导出，
   namespace 前缀无关、按 localname 匹配；zh 优先取标题/摘要）。OPS 的结果 XML
   落 raw/ 后即可 ingest 成 verified 候选。
@@ -112,9 +121,11 @@
 1. `pip install google-cloud-bigquery`；`GOOGLE_APPLICATION_CREDENTIALS` 指向服务账号 JSON；
 2. **复核 SQL 列名**：对照当时 `patents-public-data.patents.publications` schema
    （dry-run 输出里带完整 SQL，骨架性质见上节）；
-3. `python -m patentkit fetch-bigquery --run`——先出 bytes_billed 费用预估，确认后才执行、
-   结果自动落 `raw/*.jsonl` + 同名 `.log.json`；
-4. `fetch-bigquery --fill <raw> --apply` → `check`（V 系列与 G-S-04 复核）；
+3. `python -m patentkit fetch-bigquery --run`——先出 bytes_processed 费用预估
+   （超 `--max-cost-usd` 会拒绝），确认后才执行、结果自动落
+   `raw/bigquery_<date>_<target>_<HHMMSS>_GS04_<rows>.jsonl` + 配套 `.log.json`；
+4. `fetch-bigquery --fill <raw> --apply` → `gates`（G-S-04 现在核验普查记录）与
+   `check`（V 系列复核；记录损坏走 V037）；
 5. 按契约在 `docs/policy-log.md` 登记接入事件。OPS 首检索同法：key 走环境变量，
    结果 XML 落 `02_search_logs/raw/` → `ingest --raw` → 登记；403/429 即停，已完成部分落盘。
 
