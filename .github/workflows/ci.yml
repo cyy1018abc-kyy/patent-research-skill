@@ -71,7 +71,7 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Syntax checks
         run: |
-          python -m compileall -q patent-research-skill/scripts tools
+          python -m compileall -q research/scripts tools evals
           bash -n release/install.sh
           bash -n tools/publish_release.sh
           git diff --check

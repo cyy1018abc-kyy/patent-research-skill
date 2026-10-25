@@ -13,12 +13,13 @@ description: >
   「附图标记对不上」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 2.5.0
+  version: 3.0.0
 ---
 
 # 专利调研
 
-> **配套**：`patentkit >= 0.3.0`（评估协议 1 的唯一规则实现）+ 本包 `scripts/`（薄封装）。
+> **配套**：`patentkit >= 0.3.0`（评估协议 1 的唯一规则实现）+ 本包 `scripts/`（薄封装）
+> + 姊妹技能 `patent-drafting`（v3.0.0 起拆分：交底书/权要/OA 答复走那边）。
 > 没有工具也能按 `references/` 工作，但结论必须标注「⚠️ 未经验证工具校验」。
 
 ## 何时触发
@@ -46,10 +47,8 @@ metadata:
 | 5 | 交稿核对 | [`06-撰写与润色规范`](references/06-drafting-and-polishing-rules.md)，[`13-改稿闭环`](references/13-revision-loop.md) | `python scripts/check.py` + `patentkit attest --check` + 数值溯源（V031/V032）+ 附图标记（V033）+ 结论引用（V034） | validate 0 error/warn；稿件 sha256 无漂移；数值每条有 A/B/C 来源 |
 | 6 | 交付物 | [`08-附图规范`](references/08-figures.md)（需要时） | `patentkit export-docx <TGT>`（docx 查新报告）/ `patentkit map <TGT>`（离线 HTML 总览）/ `patentkit ledger`（证据账本） | 交付物数字与工作区一致，无手工转写 |
 
-**按需加载的扩展场景**（不进主流程，主流程未过门之前不要展开）：
-交底书/申请文件底稿 → [`09-交底与申请文件`](references/09-disclosure-drafting.md)、
-[`10-权利要求撰写`](references/10-claim-drafting.md)；审查意见答复骨架 → [`11-OA 答复`](references/11-oa-response.md)；
-政策口径追踪 → [`12-政策雷达`](references/12-policy-radar.md)；
+**撰写类需求转姊妹技能**（v3.0.0 起）：交底书/申请文件底稿、权利要求撰写、OA 答复、
+多轮改稿闭环 → 技能 `patent-drafting`（本技能只负责其前置：门禁、账本、溯源就绪）。
 多目标组合 → `patentkit layout`；提交后期限 → `patentkit deadlines`（以官方发文为准）。
 
 > **脚本在哪**：`scripts/` 在本技能**安装目录**下（如
@@ -109,12 +108,11 @@ metadata:
 | [`06-撰写与润色规范.md`](references/06-drafting-and-polishing-rules.md) | 交稿前权项-说明书数值/支持核对 |
 | [`07-评估协议.md`](references/07-assessment-protocol.md) | 评估导入、显式批量确认、冲突、指纹与迁移 |
 | [`08-附图规范.md`](references/08-figures.md) | 画图/附图标记核对（V033）、图与正文一致性 |
-| [`09-交底与申请文件.md`](references/09-disclosure-drafting.md) | 从检索成果转交底书/申请文件底稿（含边界声明） |
-| [`10-权利要求撰写.md`](references/10-claim-drafting.md) | 权要层次、支持性、数值范围自检 |
-| [`11-OA 答复.md`](references/11-oa-response.md) | 收到审查意见后的拆条-回链-答复骨架 |
-| [`12-政策雷达.md`](references/12-policy-radar.md) | 审查口径/书式变化对流程的影响追踪 |
-| [`13-改稿闭环.md`](references/13-revision-loop.md) | 多轮改稿：补丁→变更日志→重过门，禁止顺手改 |
 | [`glossary.md`](references/glossary.md) | 中英术语对照（与英文版 references.en/ 保持一致） |
+
+> 交底书/权要/OA 答复/改稿闭环的方法论（09–13 号文档）自 v3.0.0 起随姊妹技能
+> `patent-drafting` 分发；本技能的交稿核对（第 5 阶段）只覆盖证据侧的
+> 数值溯源/附图标记/结论引用校验。
 
 > 本包 [`README.md`](README.md) 有 `scripts/` 用法与安装说明。脚本只是 `patentkit` 的薄封装，
 > 规则不在脚本里。未安装 `patentkit` 时脚本会打印安装指引（exit 3）。

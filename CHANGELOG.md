@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-10-25 · Skill 3.0.0 / kernel 0.3.0（未变）
+
+Multi-skill matrix split, per the accepted decisions in `docs/skill-matrix-plan.md`
+(plan C / proceed now / OA merged into drafting → two skills to start).
+
+- **Two skills from one repo**: `research/` (patent-research: 检索/查新/证据链/门禁/交付物,
+  references 01–08 + glossary) and `drafting/` (patent-drafting: 交底书/权利要求/OA 答复/
+  改稿闭环, references 00,09–13 + glossary). Versions are paired (both 3.0.0).
+- **Dual products**: the full zip installs both skills; a standalone
+  `patent-drafting-skill-v3.0.0.zip` installs drafting alone (no sample workspace;
+  installer self-check degrades to a SKILL.md presence check).
+- **Installers are multi-skill**: driven by `manifest.json` schema 2 (`skills` list);
+  install/upgrade/uninstall enumerate every payload directory.
+- **drafting is script-free by design**: it calls `python -m patentkit <cmd>` directly —
+  rules stay in the kernel, no second entry point. Its `references/00-prerequisites.md`
+  carries a self-contained summary of the research-side discipline.
+- **Shared assets stay in sync by CI**: the glossary copies in research/ and drafting/
+  must be byte-identical (`evals/check_terminology.py`); evals grew to 20 cases with a
+  `skill` field per case and per-skill trigger anchoring.
+- research/SKILL.md now hands drafting/OA requests to the sibling skill; hard constraints
+  9/10 (ledger-only citations, A/B/C provenance) apply to both skills.
+- Kernel unchanged at 0.3.0 (patch untouched); workspaces need no migration.
+
+
 ## 2026-10-25 · Skill 2.5.0 / kernel 0.3.0
 
 Consolidated release of the upgrade checklist (P0+P1+P2 of

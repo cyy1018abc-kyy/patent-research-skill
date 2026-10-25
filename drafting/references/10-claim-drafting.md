@@ -4,7 +4,7 @@
 
 ## 独权：把「零披露原子」写进前序之后
 
-三层判定（[03](03-three-tier-determination.md)）第二层找出的**零披露原子**——任何 D 列
+三层判定（见 [00 前置纪律](00-prerequisites.md)）第二层找出的**零披露原子**——任何 D 列
 组合都拼不出的特征——是独权的核心。写法：
 
 - 前序部分：与最接近 D1 共有的特征（背景技术对应）；
@@ -24,7 +24,7 @@
 
 | 检查 | 工具 |
 |---|---|
-| 权项数值 ⊆ 说明书披露范围 | `claims/numerical_consistency_check.md`（见 [06](06-drafting-and-polishing-rules.md)） |
+| 权项数值 ⊆ 说明书披露范围 | `claims/numerical_consistency_check.md`（见 [00 前置纪律](00-prerequisites.md)；核对面板在 research 技能 06 号文档） |
 | 每个数值有 A/B/C 来源 | `patentkit provenance check`（V031/V032） |
 | C 级（示例值）显式声明 | 溯源登记的 note 字段 |
 

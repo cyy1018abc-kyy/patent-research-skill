@@ -1,0 +1,9 @@
+# Desktop（Codex / ChatGPT App）显示与调用元数据。
+# 触发由 SKILL.md 的 description 决定；本文件只影响桌面 UI 展示与 @ 默认提示词。
+interface:
+  display_name: "专利撰写 Patent Drafting"
+  short_description: "交底书 / 权利要求 / OA 答复底稿与改稿闭环 / disclosure, claims & OA response drafts"
+  default_prompt: "使用 patent-drafting 技能：先确认检索侧门禁达标（patent-research 的证据链），再按分线执行顺序起草；产出底稿+gap 清单，不预测授权 (use the patent-drafting skill: confirm the research-side gates first, then draft along the execution lines; deliver drafts plus a gap list, never grant predictions)."
+  brand_color: "#7C3AED"
+policy:
+  allow_implicit_invocation: true

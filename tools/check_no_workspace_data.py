@@ -23,7 +23,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL_SRC = ROOT / "patent-research-skill"
+#: v3.0.0 多技能布局：技能源码目录
+SKILL_DIRS = (ROOT / "research", ROOT / "drafting")
 
 #: 允许出现工作区形态内容的路径前缀（模板/样例/构建产物）
 ALLOWED_PREFIXES = (
@@ -64,12 +65,12 @@ def main() -> int:
     problems: list[str] = []
 
     # 1. 工作区标记出现在仓库根/技能源码
-    for p in (ROOT / "workspace.yml", SKILL_SRC / "workspace.yml"):
+    for p in [ROOT / "workspace.yml", *[d / "workspace.yml" for d in SKILL_DIRS]]:
         if p.is_file():
             problems.append(f"工作区标记泄漏：{p.relative_to(ROOT)}")
 
     # 2/4. 真实工作区数据目录形态
-    for base in (ROOT, SKILL_SRC):
+    for base in (ROOT, *SKILL_DIRS):
         for child in base.iterdir():
             if not child.is_dir() or child.name.startswith("."):
                 continue

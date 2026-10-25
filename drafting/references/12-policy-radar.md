@@ -8,9 +8,9 @@
 
 | 源 | 看什么 | 影响哪里 |
 |---|---|---|
-| 国知局「审查指南」修订公告 | 创造性判断口径、计算机程序/算法类权利要求形态 | [03](03-three-tier-determination.md) 三层判定、[10](10-claim-drafting.md) 权项形态 |
+| 国知局「审查指南」修订公告 | 创造性判断口径、计算机程序/算法类权利要求形态 | [00](00-prerequisites.md) 三层判定摘要、[10](10-claim-drafting.md) 权项形态 |
 | 国知局表格/书式页面 | 请求书/摘要/费用减免书式版本 | [09](09-disclosure-drafting.md) 申请文件清单 |
-| cponline 上传要求 | 附图分辨率/格式/大小限制 | [08](08-figures.md) 附图规格 |
+| cponline 上传要求 | 附图分辨率/格式/大小限制 | `patentkit figures`（完整规格在 research 技能 08 号文档） |
 | 专利法/实施细则修订 | 期限（申请费/实审/OA 答复）、宽限期 | `patentkit deadlines` 的 PRESETS 与 [11](11-oa-response.md) |
 | 非正常申请认定口径 | 权项堆叠、同日申请策略 | [09](09-disclosure-drafting.md) 的 1+N 布局建议（`patentkit layout`） |
 

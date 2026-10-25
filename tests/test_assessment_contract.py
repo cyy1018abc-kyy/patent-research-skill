@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location("skill_env", ROOT / "patent-research-skill/scripts/_env.py")
+spec = importlib.util.spec_from_file_location("skill_env", ROOT / "research/scripts/_env.py")
 env = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(env)
 
@@ -51,11 +51,11 @@ class AssessmentContract(unittest.TestCase):
         self.assertEqual(caught.exception.code, 3)
 
     def test_skill_and_sample_keep_source_and_judgment_separate(self):
-        skill = (ROOT / "patent-research-skill/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("version: 2.5.0", skill)
+        skill = (ROOT / "research/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("version: 3.0.0", skill)
         self.assertIn("07-assessment-protocol.md", skill)
         self.assertNotIn("conclusion is downgraded to `asserted`", skill)
-        sample = json.loads((ROOT / "patent-research-skill/assets/sample_data/candidates_example.json").read_text(encoding="utf-8"))
+        sample = json.loads((ROOT / "research/assets/sample_data/candidates_example.json").read_text(encoding="utf-8"))
         self.assertEqual(sample["assessment"]["actor"], "unknown")
         self.assertIsNone(sample["human_confirmation"])
 

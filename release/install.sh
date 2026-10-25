@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Install / uninstall patent-research-skill (bundled with the release package).
+# Install / uninstall the patent skills bundled with the release package (multi-skill).
 #
-# Copies `patent-research/` from the release package into the local AI client's skills directory;
-# the directory name = the `name` in SKILL.md (clients identify the skill by it).
-# After installation it self-checks against the package's `samples/sample_workspace/` by default (requires patentkit installed).
+# 按 manifest.json 的 skills 列表，把每个技能目录（patent-research/、patent-drafting/…）
+# 复制到本地 AI 客户端的技能目录；目录名 = SKILL.md 的 name（客户端按它识别技能）。
+# 安装后默认对包内 samples/sample_workspace/ 自检（需要 patentkit；单技能包无样例时，
+# 自检降级为「SKILL.md 就位」检查）。
 #
 # Exit codes: 0 success; 1 failure (self-check failed / target already exists, etc.); 2 release package structure incomplete.
 #
@@ -13,7 +14,7 @@
 #   ./install.sh --dest /opt/skills       # custom skills root
 #   ./install.sh --dry-run                # print only, write no files
 #   ./install.sh --uninstall --client both
-#   ./install.sh --force                  # overwrite an existing older version
+#   ./install.sh --force                  # overwrite existing older versions
 #   ./install.sh --no-self-check          # skip the self-check (for debugging)
 
 set -u
@@ -26,7 +27,7 @@ NO_SELF_CHECK=0
 FORCE=0
 
 usage() {
-    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 fail() {
@@ -82,24 +83,21 @@ for cand in python3 python; do
 done
 [ -n "$PYTHON_BIN" ] || fail "Python ≥ 3.11 is required (no usable python3/python found). Once installed, run pip install patentkit" 1
 
-read_manifest() {
-    "$PYTHON_BIN" -c '
+# skills 列表：每行 "install_dir"；并校验 install_dir == name 且属于受支持集合
+SKILL_ROWS=$("$PYTHON_BIN" - '
 import json, sys
-value = json.load(open(sys.argv[1], encoding="utf-8"))
-for key in sys.argv[2].split("."):
-    value = value[key]
-print(value)
-' "$MANIFEST" "$1"
-}
-
-SKILL_NAME=$(read_manifest "skill.name" 2>/dev/null) || fail "failed to parse manifest.json" 2
-SKILL_VERSION=$(read_manifest "skill.version" 2>/dev/null) || fail "failed to parse manifest.json" 2
-INSTALL_DIR_NAME=$(read_manifest "skill.install_dir" 2>/dev/null) || fail "failed to parse manifest.json" 2
-[ -n "$SKILL_NAME" ] && [ -n "$INSTALL_DIR_NAME" ] || fail "manifest.json is missing skill.name / skill.install_dir" 2
-[ "$INSTALL_DIR_NAME" = "$SKILL_NAME" ] || fail "manifest is self-contradictory: install_dir must equal name" 2
-[ "$INSTALL_DIR_NAME" = "patent-research" ] || fail "unsupported skill directory in manifest.json" 2
-
-PAYLOAD="$PKG_ROOT/$INSTALL_DIR_NAME"
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+skills = data.get("skills")
+if data.get("schema_version") != 2 or not isinstance(skills, list) or not skills:
+    raise SystemExit("manifest.json must be schema 2 with a non-empty skills list")
+for s in skills:
+    if s.get("install_dir") != s.get("name") or s["name"] not in {"patent-research", "patent-drafting"}:
+        raise SystemExit(f"unsupported skill entry: {s}")
+print(" ".join(s["name"] for s in skills))
+print(skills[0]["version"])
+' "$MANIFEST" 2>&1) || fail "failed to parse manifest.json: $SKILL_ROWS" 2
+SKILL_DIRS=$(printf '%s\n' "$SKILL_ROWS" | sed -n 1p)
+SKILL_VERSION=$(printf '%s\n' "$SKILL_ROWS" | sed -n 2p)
 SAMPLE_ROOT="$PKG_ROOT/samples/sample_workspace"
 
 if [ -n "$DEST" ]; then
@@ -115,8 +113,8 @@ fi
 MODE="Install"
 [ "$UNINSTALL" -eq 1 ] && MODE="Uninstall"
 echo ""
-echo "patent-research-skill v$SKILL_VERSION  ·  $MODE"
-echo "Skill name : $SKILL_NAME (the install directory name must match)"
+echo "patent-research-skill v$SKILL_VERSION  ·  $MODE（multi-skill）"
+echo "Skills     : $SKILL_DIRS"
 echo "Targets    : ${ROOTS[*]}"
 [ "$DRY_RUN" -eq 1 ] && echo "Mode       : DRY-RUN (no files are changed)"
 echo ""
@@ -124,18 +122,20 @@ echo ""
 if [ "$UNINSTALL" -eq 1 ]; then
     removed=0
     for root in "${ROOTS[@]}"; do
-        target="$root/$INSTALL_DIR_NAME"
-        if [ ! -e "$target" ]; then
-            note "not installed: $target"
-            continue
-        fi
-        if [ "$DRY_RUN" -eq 1 ]; then
-            note "[dry-run] would delete: $target"
-            continue
-        fi
-        rm -rf "$target"
-        echo "✅ Uninstalled: $target"
-        removed=$((removed + 1))
+        for dir in $SKILL_DIRS; do
+            target="$root/$dir"
+            if [ ! -e "$target" ]; then
+                note "not installed: $target"
+                continue
+            fi
+            if [ "$DRY_RUN" -eq 1 ]; then
+                note "[dry-run] would delete: $target"
+                continue
+            fi
+            rm -rf "$target"
+            echo "✅ Uninstalled: $target"
+            removed=$((removed + 1))
+        done
     done
     if [ "$DRY_RUN" -eq 1 ]; then
         note "dry-run finished: no files deleted"
@@ -145,35 +145,40 @@ if [ "$UNINSTALL" -eq 1 ]; then
     exit 0
 fi
 
-[ -d "$PAYLOAD" ] || fail "release package is missing the payload directory: $INSTALL_DIR_NAME (the zip may not have been fully extracted)" 2
+for dir in $SKILL_DIRS; do
+    [ -d "$PKG_ROOT/$dir" ] || fail "release package is missing the payload directory: $dir (the zip may not have been fully extracted)" 2
+done
 
 if [ "$DRY_RUN" -eq 0 ] && [ "$NO_SELF_CHECK" -eq 0 ]; then
     "$PYTHON_BIN" -c 'from patentkit.assessment import PROTOCOL_VERSION; assert PROTOCOL_VERSION == 1' || fail "Install the patentkit 0.3.0 wheel before replacing the skill"
 fi
 
 for root in "${ROOTS[@]}"; do
-    target="$root/$INSTALL_DIR_NAME"
+    for dir in $SKILL_DIRS; do
+        payload="$PKG_ROOT/$dir"
+        target="$root/$dir"
 
-    if [ -e "$target" ]; then
-        if [ "$FORCE" -ne 1 ]; then
-            fail "target already exists: $target
+        if [ -e "$target" ]; then
+            if [ "$FORCE" -ne 1 ]; then
+                fail "target already exists: $target
   Upgrade: run --uninstall first and then install; or add --force to overwrite it."
+            fi
+            if [ "$DRY_RUN" -eq 1 ]; then
+                note "[dry-run] would overwrite: $target"
+            else
+                rm -rf "$target"
+            fi
         fi
+
         if [ "$DRY_RUN" -eq 1 ]; then
-            note "[dry-run] would overwrite: $target"
-        else
-            rm -rf "$target"
+            note "[dry-run] would copy: $payload  ->  $target"
+            continue
         fi
-    fi
 
-    if [ "$DRY_RUN" -eq 1 ]; then
-        note "[dry-run] would copy: $PAYLOAD  ->  $target"
-        continue
-    fi
-
-    mkdir -p "$root"
-    cp -R "$PAYLOAD" "$target"
-    echo "✅ Installed: $target"
+        mkdir -p "$root"
+        cp -R "$payload" "$target"
+        echo "✅ Installed: $target"
+    done
 done
 
 if [ "$DRY_RUN" -eq 1 ]; then
@@ -182,23 +187,26 @@ if [ "$DRY_RUN" -eq 1 ]; then
 fi
 
 if [ "$NO_SELF_CHECK" -ne 1 ]; then
-    PROBE="${ROOTS[0]}/$INSTALL_DIR_NAME"
     echo ""
-    echo "Self-check (using the package's sample workspace; no real data touched)..."
+    echo "Self-check (no real data touched)..."
     if [ -d "$SAMPLE_ROOT" ]; then
-        "$PYTHON_BIN" "$PROBE/scripts/status.py" --root "$SAMPLE_ROOT" --json >/dev/null
+        probe="${ROOTS[0]}/patent-research"
+        "$PYTHON_BIN" "$probe/scripts/status.py" --root "$SAMPLE_ROOT" --json >/dev/null ||
+            fail "self-check failed. Install the matching patentkit 0.3.0 wheel and retry"
+        echo "✅ Self-check passed: status.py located the sample workspace and computed the status"
     else
-        fail "sample workspace is missing from the release package" 2
+        # 单技能包（无样例）：退化为就位检查
+        for dir in $SKILL_DIRS; do
+            [ -f "${ROOTS[0]}/$dir/SKILL.md" ] || fail "self-check failed: ${ROOTS[0]}/$dir/SKILL.md missing"
+        done
+        echo "✅ Self-check passed: SKILL.md in place for $SKILL_DIRS (no sample workspace in this package)"
     fi
-    if [ $? -ne 0 ]; then
-        fail "self-check failed. Install the matching patentkit 0.3.0 wheel and retry"
-    fi
-    echo "✅ Self-check passed: the scripts can locate the workspace and compute the status"
 fi
 
 echo ""
 echo "Next steps:"
-echo "  1) In the client, say 'run a patent novelty check' or 'show the workspace status'"
-echo "  2) No workspace yet? python -m patentkit init <dir> --target TGT-0002 --title <title>"
-echo "  3) With a real workspace, the skill uses PATENTKIT_WORKSPACE or walks up from the current directory to find workspace.yml"
+echo "  1) In the client, say 'run a patent novelty check' or 'show the workspace status' (patent-research)"
+echo "  2) Drafting/OA work: 'draft a disclosure from the search results' (patent-drafting)"
+echo "  3) No workspace yet? python -m patentkit init <dir> --target TGT-0002 --title <title>"
+echo "  4) With a real workspace, the skill uses PATENTKIT_WORKSPACE or walks up from the current directory to find workspace.yml"
 exit 0
