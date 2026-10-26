@@ -25,8 +25,8 @@ class ReleaseAcceptance(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix="patent-release-test-")
         cls.root = Path(cls.temp.name)
         cls.result = builder.build(cls.root / "dist", "2026-10-25T00:00:00+00:00")
-        cls.full_zip = ROOT / "dist/patent-research-skill-v3.4.0.zip"
-        cls.drafting_zip = ROOT / "dist/patent-drafting-skill-v3.4.0.zip"
+        cls.full_zip = ROOT / "dist/patent-research-skill-v3.5.0.zip"
+        cls.drafting_zip = ROOT / "dist/patent-drafting-skill-v3.5.0.zip"
         if not cls.full_zip.is_file() or not cls.drafting_zip.is_file():
             raise AssertionError("Build both release ZIPs in dist before acceptance (full + drafting)")
         cls.package = cls.root / "package"
@@ -63,12 +63,14 @@ class ReleaseAcceptance(unittest.TestCase):
         full_names = zipfile.ZipFile(self.full_zip).namelist()
         self.assertIn("patent-research/SKILL.md", full_names)
         self.assertIn("patent-drafting/SKILL.md", full_names)
+        self.assertIn("patent-discovery/SKILL.md", full_names)
         drafting_names = zipfile.ZipFile(self.drafting_zip).namelist()
         self.assertIn("patent-drafting/SKILL.md", drafting_names)
         self.assertNotIn("patent-research/SKILL.md", drafting_names)
+        self.assertNotIn("patent-discovery/SKILL.md", drafting_names)
         full_manifest = json.loads(zipfile.ZipFile(self.full_zip).read("manifest.json"))
         self.assertEqual([s["name"] for s in full_manifest["skills"]],
-                         ["patent-research", "patent-drafting"])
+                         ["patent-research", "patent-drafting", "patent-discovery"])
         self.assertTrue(full_manifest["contents"]["samples_included"])
         single_manifest = json.loads(zipfile.ZipFile(self.drafting_zip).read("manifest.json"))
         self.assertEqual([s["name"] for s in single_manifest["skills"]], ["patent-drafting"])
@@ -112,11 +114,13 @@ class ReleaseAcceptance(unittest.TestCase):
         self.run_command(*command)
         self.assertTrue((dest / "patent-research/SKILL.md").is_file())
         self.assertTrue((dest / "patent-drafting/SKILL.md").is_file())
+        self.assertTrue((dest / "patent-discovery/SKILL.md").is_file())
         self.run_command(*command, expected=1)
         self.run_command(*command, "-Force")
         self.run_command(*command, "-Uninstall")
         self.assertFalse((dest / "patent-research").exists())
         self.assertFalse((dest / "patent-drafting").exists())
+        self.assertFalse((dest / "patent-discovery").exists())
 
     @unittest.skipIf(os.name == "nt", "POSIX installation is covered by the Linux CI runner")
     def test_bash_installs_both_skills(self):
@@ -127,11 +131,13 @@ class ReleaseAcceptance(unittest.TestCase):
         self.run_command(*command)
         self.assertTrue((dest / "patent-research/SKILL.md").is_file())
         self.assertTrue((dest / "patent-drafting/SKILL.md").is_file())
+        self.assertTrue((dest / "patent-discovery/SKILL.md").is_file())
         self.run_command(*command, expected=1)
         self.run_command(*command, "--force")
         self.run_command(*command, "--uninstall")
         self.assertFalse((dest / "patent-research").exists())
         self.assertFalse((dest / "patent-drafting").exists())
+        self.assertFalse((dest / "patent-discovery").exists())
 
     def test_drafting_single_package_installs_standalone(self):
         """单技能包（无样例）也能独立安装：自检降级为 SKILL.md 就位检查。"""
@@ -143,6 +149,7 @@ class ReleaseAcceptance(unittest.TestCase):
         self.run_command(*command)
         self.assertTrue((dest / "patent-drafting/SKILL.md").is_file())
         self.assertFalse((dest / "patent-research").exists())
+        self.assertFalse((dest / "patent-discovery").exists())
 
     def test_legacy_migration_then_installed_wrappers(self):
         from patentkit.assessment import schema_properties
@@ -175,7 +182,7 @@ class ReleaseAcceptance(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "nt", "Windows one-click installer")
     def test_oneclick_installs_the_final_zip_to_an_isolated_directory(self):
-        wheel = ROOT / "dist/patentkit-0.6.0-py3-none-any.whl"
+        wheel = ROOT / "dist/patentkit-0.7.0-py3-none-any.whl"
         self.assertTrue(wheel.is_file(), "Build the kernel wheel in dist before acceptance")
         bundle = self.root / "oneclick-bundle"
         bundle.mkdir()
@@ -188,6 +195,7 @@ class ReleaseAcceptance(unittest.TestCase):
         self.run_command(command)
         self.assertTrue((dest / "patent-research/SKILL.md").is_file())
         self.assertTrue((dest / "patent-drafting/SKILL.md").is_file())
+        self.assertTrue((dest / "patent-discovery/SKILL.md").is_file())
 
 
 if __name__ == "__main__":

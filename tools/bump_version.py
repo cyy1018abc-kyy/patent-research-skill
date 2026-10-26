@@ -30,8 +30,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL_PAIRING_FILES = (
     ("research/SKILL.md", "research frontmatter"),
     ("drafting/SKILL.md", "drafting frontmatter"),
+    ("discovery/SKILL.md", "discovery frontmatter"),
     ("research/references.en/SKILL.en.md", "research 英文镜像 frontmatter"),
     ("drafting/references.en/SKILL.en.md", "drafting 英文镜像 frontmatter"),
+    ("discovery/references.en/SKILL.en.md", "discovery 英文镜像 frontmatter"),
+    ("discovery/README.md", "discovery README 版本头"),
     ("tests/test_release.py", "发布验收 zip 文件名"),
     ("tests/test_assessment_contract.py", "SKILL version 断言"),
     ("release/INSTALL.md", "安装文档 tag/zip/notes 链接"),
@@ -55,8 +58,11 @@ KERNEL_PAIRING_FILES = (
     ("tests/test_assessment_contract.py", "内核错误消息版本断言"),
     ("research/SKILL.md", "SKILL 配套版本行"),
     ("drafting/SKILL.md", "SKILL 配套版本行"),
+    ("discovery/SKILL.md", "SKILL 配套版本行"),
     ("research/references.en/SKILL.en.md", "英文镜像配套版本行"),
     ("drafting/references.en/SKILL.en.md", "英文镜像配套版本行"),
+    ("discovery/references.en/SKILL.en.md", "英文镜像配套版本行"),
+    ("discovery/README.md", "discovery README 内核要求行"),
     ("drafting/README.md", "drafting README 前置版本行"),
     # 注意：release/patches/README.md 故意不在本清单——它含历史叙述段
     # （"Skill 2.5.0 requires patentkit 0.3.0"），整文件替换会篡改历史；
@@ -83,6 +89,8 @@ RESIDUE_WHITELIST = (
     ("research/references.en/02-query-templates.md", "「since kernel 0.4.0」历史陈述"),
     ("drafting/references/13-revision-loop.md", "「内核 0.4.0 起强制执行」历史陈述"),
     ("drafting/references.en/13-revision-loop.md", "「Since kernel 0.4.0」历史陈述"),
+    ("research/references/05-acceptance-gates.md", "「0.6.0 起 G-S-04 普查记录」历史陈述"),
+    ("research/references.en/05-acceptance-gates.md", "「Since 0.6.0」G-S-04 census history"),
     ("tools/build_kernel_patch.py", "工具文档字符串里的历史补丁名示例"),
     ("tools/render_terminal_shot.py", "截图脚注按当次发布手工更新"),
     ("evals/check_terminology.py", "「3.1.0 起全部双语」历史陈述"),
@@ -221,7 +229,7 @@ def check() -> list[str]:
         break
 
     if not problems:
-        print(f"✅ 版本配对点一致：skill（research+drafting）={skill}，kernel={kernel}，"
+        print(f"✅ 版本配对点一致：skill（research+drafting+discovery）={skill}，kernel={kernel}，"
               f"测试/发布脚本/CI/notes/补丁指针全部对齐")
     return problems
 
@@ -281,10 +289,13 @@ def bump(to: str, kernel_to: str | None, make_notes: bool, dry_run: bool, from_s
             path.write_text(pattern.sub(new, text), encoding="utf-8",
                             newline="\r\n" if was_crlf else "\n")
 
-    if make_notes:
+    if make_notes and not dry_run:
         _write_notes("skill", to, old_skill)
         if kernel_to:
             _write_notes("patentkit", kernel_to, old_kernel)
+    elif make_notes and dry_run:
+        print(f"  · [dry-run] 将生成 notes：release/notes/skill-v{to}.md"
+              + (f" / release/notes/patentkit-v{kernel_to}.md" if kernel_to else ""))
 
     if dry_run:
         print("（dry-run：未写入任何文件）")

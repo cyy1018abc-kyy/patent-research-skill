@@ -1,0 +1,9 @@
+# Desktop（Codex / ChatGPT App）显示与调用元数据。
+# 触发由 SKILL.md 的 description 决定；本文件只影响桌面 UI 展示与 @ 默认提示词。
+interface:
+  display_name: "专利点挖掘 Patent Discovery"
+  short_description: "研发材料→技术事实→专利候选点→人工确认→检索交接 / material intake, facts, patent points & research handoff"
+  default_prompt: "使用 patent-discovery 技能：先登记来源材料并逐条抽取带来源的技术事实，再生成候选点；确认只能由发明人做（内容指纹绑定），交接给 patent-research 前必须 G-I 通过。不预测新颖性/授权 (use the patent-discovery skill: register material, extract sourced technical facts, propose patent points; only humans confirm (fingerprint-bound), and require G-I before handing off to patent-research; never predict novelty or grant)."
+  brand_color: "#0891B2"
+policy:
+  allow_implicit_invocation: true

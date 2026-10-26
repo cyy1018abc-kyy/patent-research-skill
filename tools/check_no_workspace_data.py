@@ -24,7 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 #: v3.0.0 多技能布局：技能源码目录
-SKILL_DIRS = (ROOT / "research", ROOT / "drafting")
+SKILL_DIRS = (ROOT / "research", ROOT / "drafting", ROOT / "discovery")
 
 #: 允许出现工作区形态内容的路径前缀（模板/样例/构建产物）
 ALLOWED_PREFIXES = (

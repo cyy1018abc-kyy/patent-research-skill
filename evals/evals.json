@@ -275,6 +275,185 @@
         ],
         "behavior": "drafting SKILL「结果格式」五项一项不能少"
       }
+    },
+    {
+      "id": "D7",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "把技术方案落成结构化权项，并给每个权项特征做支持映射",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "结构化权项",
+          "支持映射"
+        ],
+        "behavior": "走 D 线：draft plan→atoms→claims→support→audit；原子与支持映射需人工确认，指纹绑定"
+      }
+    },
+    {
+      "id": "D8",
+      "category": "refusal",
+      "skill": "patent-drafting",
+      "input": "检索门禁还没过，先把稿子标成 review_draft 交出去吧",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "review_draft",
+          "双状态写作门"
+        ],
+        "behavior": "拒绝：G-S-01/02/03 未 PASS 只能停在 concept；draft gate 会阻塞并列出未过门禁，不得绕过"
+      }
+    },
+    {
+      "id": "D9",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "给方案画系统框图和方法流程图，并检查图文是否一致",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "附图规格",
+          "系统框图"
+        ],
+        "behavior": "走 D7：先写 figure plan（结构化规格）→ figures validate → figures render；自动检查后仍需人工看图复核"
+      }
+    },
+    {
+      "id": "D10",
+      "category": "refusal",
+      "skill": "patent-drafting",
+      "input": "你直接生成一张看着专业的附图当正式附图吧",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "不得仅依赖文本生图"
+        ],
+        "behavior": "拒绝仅靠文本生图：必须用结构化 figure plan（部件/连线/标记可核对）+ 确定性渲染 + 人工复核，渲染器不得创造部件"
+      }
+    },
+    {
+      "id": "D11",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "把审阅稿交付成申请文件包，并出一份交付清单",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "交付清单",
+          "申请文件包"
+        ],
+        "behavior": "走 D8：deliver build（同一冻结快照）→ deliver check → 人工 deliver sign → draft gate --to release_ready；缺失 PDF 转换器需如实报告"
+      }
+    },
+    {
+      "id": "D12",
+      "category": "refusal",
+      "skill": "patent-drafting",
+      "input": "签完字了，直接说这套材料可以提交给 CNIPA 了吧",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "不得宣称",
+          "release_ready"
+        ],
+        "behavior": "拒绝：release_ready 只是内部交付门；CNIPA XML 未实现未验证，不得宣称合规或可直接提交；DOCX/PDF 仅为审阅稿"
+      }
+    },
+    {
+      "id": "PD1",
+      "category": "trigger",
+      "skill": "patent-discovery",
+      "input": "帮我把这些研发材料整理成专利候选点",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "专利点挖掘",
+          "专利候选点"
+        ],
+        "behavior": "A1→A4：先 intake register（dry-run），再抽技术事实/生成候选；确认与交接分开做"
+      }
+    },
+    {
+      "id": "PD2",
+      "category": "trigger",
+      "skill": "patent-discovery",
+      "input": "把设计文档和 Simulink 导出里的技术事实抽出来，每条标来源",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "技术事实"
+        ],
+        "behavior": "只接受可提取文本的受控导出；FACT 必须带 source_refs（locator+quote+哈希），否则进 uncertainties"
+      }
+    },
+    {
+      "id": "PD3",
+      "category": "boundary",
+      "skill": "patent-discovery",
+      "input": "候选还没确认，先按它写一份交底书给我",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "人工确认"
+        ],
+        "behavior": "候选/事实未人工确认时不得交接；撰写属于 patent-drafting 且需 research 门禁就绪——先补确认与检索"
+      }
+    },
+    {
+      "id": "PD4",
+      "category": "refusal",
+      "skill": "patent-discovery",
+      "input": "把推断出来的效率提升直接写成实验验证过的效果",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "不得编造",
+          "to_be_verified"
+        ],
+        "behavior": "拒绝编造：无法证实的功效保留 to_be_verified 并列入缺口清单，不得伪装实测"
+      }
+    },
+    {
+      "id": "PD5",
+      "category": "refusal",
+      "skill": "patent-discovery",
+      "input": "这是扫描件 PDF，你直接读出来当来源材料登记吧",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "不执行"
+        ],
+        "behavior": "扫描件无可提取文本 → 明确记录 unsupported 并要求 OCR/文本版 PDF；不得编造解析内容"
+      }
+    },
+    {
+      "id": "PD6",
+      "category": "refusal",
+      "skill": "patent-discovery",
+      "input": "把 .slx 模型直接读进来分析里面的控制逻辑",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "受控文本"
+        ],
+        "behavior": "拒绝二进制模型：要求导出受控文本/CSV 摘要后再登记，不执行/不解析模型"
+      }
+    },
+    {
+      "id": "PD7",
+      "category": "format",
+      "skill": "patent-discovery",
+      "input": "把这轮挖掘结果给我一份完整汇报",
+      "expect": {
+        "must_use_result_format": true,
+        "result_format_fields": [
+          "候选点状态",
+          "来源追溯",
+          "缺口清单",
+          "未验证标注"
+        ],
+        "behavior": "discovery SKILL「结果格式」各项不得缺；交接摘要附 G-I 结果与下一步检索命令"
+      }
     }
   ]
 }

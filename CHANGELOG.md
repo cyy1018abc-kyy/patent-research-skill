@@ -1,5 +1,202 @@
 # Changelog
 
+## 2026-10-26 · 3.5.0 / patentkit 0.7.0 — P0–P4 release integration (local; not pushed, not published)
+
+> Version-paired release-integration snapshot of the P0–P4 upgrade. Skill **3.5.0** requires
+> kernel **0.7.0**; `release/patches/patentkit-0.1.2-to-0.7.0.patch` reconstructs the kernel
+> from the verified public 0.1.2 sdist. No GitHub Release or remote push was performed.
+
+**Kernel 0.7.0** (patch `patentkit-0.1.2-to-0.7.0.patch`)
+
+- P0: `contracts.py` (12 versioned schemas, canonical fingerprints) + `workspace_upgrade.py`
+  (non-destructive `upgrade check/apply`).
+- P1: `source_intake.py`, `discovery.py`, `discovery_handoff.py` (`intake`/`discovery` commands,
+  G-I control layer, G-I-gated handoff).
+- P2: `draft.py` (DraftingPlan/atoms/claims/support, G-D audit, `concept`/`review_draft` gate,
+  impact propagation).
+- P3: `figure_plan.py` (`figures plan/render/validate`, deterministic SVG + optional PNG,
+  F-001…F-014).
+- P4: `delivery.py` (frozen PatentDocumentModel, DOCX/optional PDF, delivery manifest, human
+  sign-off bound to the manifest fingerprint, `deliver check` E-001…E-012,
+  `draft gate --to release_ready`; CNIPA XML `not_attempted`).
+- Full regression: **737 passed / 11 skipped / 0 failed**; golden snapshots unchanged;
+  G-S/V001–V037/protocol-1 semantics untouched.
+
+**Skill 3.5.0**
+
+- New `patent-discovery` payload (zh + en references 00–03, glossary) and three-skill release
+  engineering (full package + drafting-only package; installers accept all three skills).
+- Drafting references 14–17 (structured pipeline, claims/support, professional figures,
+  delivery pipeline; zh + en) and SKILL hard constraints 9–12; evals 33 cases / 3 skills;
+  terminology pairing `drafting 00,09–17` + 12 new anchors.
+- Version pairing updated across builders, installers, CI, tests, docs, notes and the patch
+  pointer; `tools/bump_version.py --check` green; `tools/build_kernel_patch.py` fixed to apply
+  patches in a real temporary git repository (git 2.53 no-op in non-repo dirs) and now verifies
+  the applied tree byte-for-byte against the dev tree, plus an optional `--verify-against`
+  same-version equivalence check.
+
+**Upgrade notes**: install `patentkit-0.7.0` first; overwrite the skill packages with `--force`;
+existing workspaces stay readable — run `python -m patentkit upgrade check` (read-only) and then
+`upgrade apply` to add `10_discovery/` and `11_delivery/` non-destructively.
+
+## 2026-10-26 · Unreleased — P4 complete delivery (development line)
+
+> **Local development line; no release, no push.** P4 of the upgrade plan: frozen
+> PatentDocumentModel, DOCX/PDF delivery artifacts, delivery manifest with hash checks and
+> human sign-off bound to the manifest fingerprint, `release_ready` gate, and the CNIPA XML
+> research interface. Kernel distribution patches are rebuilt at release-integration time.
+
+**Kernel** (`patentkit/delivery.py`, `patentkit/contracts.py`, `patentkit/draft.py`)
+
+- `deliver build` — builds one frozen **PatentDocumentModel** (claims/paragraphs/abstract/figures,
+  input hashes, gates snapshot, fingerprint) from the current `review_draft` state, then generates
+  a review-copy DOCX (claims / specification / abstract / figures with embedded PNG when Pillow is
+  available) and an optional PDF preview via a local converter; a missing converter is reported as
+  not generated (never faked). Delivery artifacts live under `11_delivery/`.
+- `deliver check` — E-001…E-012: missing/stale snapshot, artifact hash mismatch, manuscript vs
+  model inconsistency, missing paragraphs, unknown figure citations, changed research gates,
+  draft-audit errors, unsigned/expired sign-off, manifest schema, missing independent claim or
+  abstract, false official-format claims; W-001/W-002 warnings.
+- `deliver sign` — human sign-off bound to the manifest content fingerprint (excluding the
+  sign-off); any later manifest change invalidates it (E-009).
+- `draft gate --to release_ready` — requires the current `review_draft` state, zero delivery
+  check errors and a valid sign-off; the state records the manifest hash and is demoted to
+  `concept` when the delivery or model becomes stale.
+- CNIPA XML stays `not_attempted`: `export_cnipa_xml()` fails closed, `cnipa_format_notes.md`
+  documents the research checklist, E-012 blocks false compliance claims.
+- Tests: 18 new delivery tests (happy path, every deliberate failure, PDF present/absent, CNIPA
+  fail-closed, CLI); kernel regression **737 passed / 11 skipped / 0 failed**; golden snapshots
+  unchanged.
+
+**Skill payload** (`drafting/`)
+
+- New reference `17-delivery.md` (zh + en mirror): inputs, commands, manifest/validation files,
+  E-001…E-012 codes, sign-off/invalidation semantics, CNIPA XML status and pre-delivery checklist.
+- `SKILL.md` (and English mirror): Line D step D8 (delivery), hard constraint 12 (frozen-snapshot
+  delivery, human sign-off, no compliance/submission claims before CNIPA XML verification),
+  result-format row "delivery state"; reference table entry.
+- Evals grew to 33 cases (delivery trigger; submit-claim refusal); terminology pairing extended
+  to drafting 17 with four new anchors.
+
+**Unchanged**: G-S-01…05, evidence levels, assessment protocol 1, V001–V037, revise/provenance/
+attest/ledger semantics, golden snapshots. No release has been published; `release_ready` is an
+internal delivery gate, not official-filing compliance.
+
+## 2026-10-26 · Unreleased — P3 professional figures (development line)
+
+> **Local development line; no release, no push.** P3 of the upgrade plan: structured figure
+> plans, deterministic rendering and figure-text validation. Kernel distribution patches are
+> rebuilt at release-integration time.
+
+**Kernel** (`patentkit/figure_plan.py`, source tree)
+
+- `figures plan` — derives figure-plan skeletons from the P2 drafting plan / claim atoms
+  (system block diagram + method flowchart by default or from `drawing_requirements`), with
+  deterministic reference signs; legacy `*.figure.yml` specs are normalized.
+- `figures render` — deterministic black-white SVG (grid/chain layout, orthogonal edges, marks;
+  no timestamps/scripts/external links, same plan → identical bytes); optional 300-DPI PNG via
+  Pillow (missing dependency is reported as not generated, never faked).
+- `figures validate` — locatable findings F-001…F-014: schema, duplicate ids, dangling/self/
+  duplicate edges, isolated nodes, type-required content, marks (in-figure duplicates are errors;
+  same sign across figures is a warning requiring human confirmation), layout options, manuscript
+  `图N` citation closure, drafting-plan coverage and support-mapping figure references. Reuses the
+  existing V033 mark check instead of duplicating it.
+- The renderer cannot create or delete parts/edges: geometry comes only from the plan. Rendering
+  refuses structurally invalid plans.
+- `draft audit` gained D-018 (figure validation findings; errors block `review_draft`).
+- `contracts.py`: figure nodes accept numeric ids/legacy compatibility, optional `kind`,
+  `spec_refs` and `notes`; tests: 21 new figure tests; kernel regression
+  **717 passed / 11 skipped / 0 failed**; golden snapshots unchanged.
+
+**Skill payload** (`drafting/`)
+
+- New reference `16-figures.md` (zh + en mirror): figure-plan schema, commands, F-001…F-014
+  codes, deterministic-rendering contract and human-review discipline.
+- `SKILL.md` (and English mirror): Line D step D7 (figures), hard constraint 11 (structured
+  figure plan, no text-to-image-only drawings, human visual review mandatory), result-format row
+  "figure consistency"; reference table entry.
+- Evals grew to 31 cases (figure trigger; text-to-image refusal); terminology pairing extended
+  to drafting 16 with three new anchors.
+
+**Unchanged**: G-S-01…05, evidence levels, assessment protocol 1, V001–V037, revise/provenance/
+attest/ledger semantics, golden snapshots.
+
+## 2026-10-26 · Unreleased — P2 structured drafting (development line)
+
+> **Local development line; no release, no push.** P2 of the upgrade plan
+> (`docs/patent-skill-upgrade-implementation-plan.md`): structured drafting model and the
+> two-state writing gate. Kernel distribution patches are rebuilt at release-integration time.
+
+**Kernel** (`patentkit/draft.py`, source tree)
+
+- `draft plan` — generates a schema-valid DraftingPlan from a **human-confirmed** candidate and
+  its confirmed facts, snapshotting the research gates and binding the candidate content
+  fingerprint (`idea_fingerprint`; a changed candidate marks the plan stale, D-003).
+- `draft atoms import|review` — claim-feature atoms with fact references; imported as `pending`,
+  human confirmation is bound to the **atom content fingerprint** (editing text invalidates it,
+  D-017), so self-claimed confirmation cannot survive content changes.
+- `draft claims import` — structured claims validated for numbering (contiguous from 1), at least
+  one independent claim, earlier-parent references, cycle rejection and known atom ids.
+- `draft support import|review` — claim/atom → paragraphs/facts/figures support matrix with
+  human semantic review; empty paragraph mapping is rejected as not-covered.
+- `draft audit` — G-D findings D-001…D-017, reusing the existing `provenance` and `revise`
+  checks instead of re-implementing hashing or revision ledgers.
+- `draft status` / `draft gate` — dual-state writing gate: `concept` by default; `review_draft`
+  requires zero audit errors, **G-S-01/02/03 PASS**, fingerprint-current atoms, confirmed support
+  review; a `bundle_fingerprint` makes any model change stale and reverts the state.
+- `draft impact --claim-no N` — change propagation to affected atoms/paragraphs/figures/facts and
+  dependent claims (plan §5.2 item 6), feeding the existing revision loop.
+- `contracts.py`: `drafting_plan` gains optional `idea_fingerprint` (staleness binding).
+- Tests: 17 new draft tests (structure, audit, gate, staleness, impact); kernel regression
+  **696 passed / 11 skipped / 0 failed**; golden snapshots unchanged.
+
+**Skill payload** (`drafting/`)
+
+- New references `14-drafting-pipeline.md` and `15-claims-and-support.md` (zh + en mirrors) with
+  the command table, G-D audit codes, dual-state gate rules and the claim/support checklist.
+- `SKILL.md` (and English mirror): Line D structured drafting, hard constraints 9/10
+  (fingerprint-bound atom confirmation; `review_draft` gate), result-format row "structured state".
+- Evals grew to 29 cases (structured-claims trigger; review_draft-gate refusal); terminology
+  pairing extended to drafting 14–15 with five new anchors.
+
+**Unchanged**: G-S-01…05, evidence levels, assessment protocol 1, V001–V037, revise/provenance/
+attest/ledger semantics, golden snapshots. `release_ready` remains unimplemented (P4).
+
+## 2026-10-26 · Unreleased — patent-discovery skill (P1 development line)
+
+> **Local development line; no release, no push.** Describes the P1 delivery of the upgrade
+> plan (`docs/patent-skill-upgrade-implementation-plan.md`): the kernel gains the discovery
+> contracts/commands and the repository gains the third skill payload. Kernel distribution
+> patches are rebuilt at release-integration time, not here.
+
+**Repository / skill payload**
+
+- New `discovery/` skill payload (`patent-discovery`, metadata version 3.4.0): Chinese-primary
+  `SKILL.md`, four references (`00-discovery-protocol`, `01-material-intake`,
+  `02-facts-and-ideas`, `03-human-review-and-handoff`), shared `glossary.md` copy, English
+  mirrors under `references.en/`, and desktop metadata (`agents/openai.yaml`).
+- Release builder now ships three skill payloads in the full package (drafting single package
+  unchanged); installers accept `patent-discovery`; evals grow to 27 cases anchored to three
+  `SKILL.md` files; terminology pairing extended to discovery `00-03` with a three-way
+  byte-identical glossary; secrecy guard covers the new payload.
+- Repository README documents the development line; no release assets were published.
+
+**Kernel capabilities exercised by this skill** (source tree; reach the public patch later)
+
+- `patentkit.contracts`: new `discovery_handoff` contract and idea *content* fingerprint
+  (status fields excluded from confirmation binding).
+- `patentkit.source_intake`: md/docx/pdf_text/py/m/csv/json/controlled Simulink text intake with
+  SHA-256 + locator scheme + parsed cache; fail-closed on binary models, path/symlink escapes,
+  oversized files; no execution and no network.
+- `patentkit.discovery`: schema-validated fact/idea import with source-hash binding, human
+  decision ledger bound to content fingerprints, fact review, search-priority ranking and the
+  G-I check layer (G-I-001…025).
+- `patentkit.discovery_handoff`: G-I-gated research handoff drafts (handoff JSON + query seed +
+  target draft + audit event); never writes research directories and never produces G-S results.
+
+**Unchanged**: G-S-01…05, evidence levels, assessment protocol 1, V001–V037, revise/provenance/
+attest/ledger semantics, golden snapshots.
+
 ## 2026-10-25 · Skill 3.4.0 / kernel 0.6.0
 
 Census-evidence gate rework + data-source chain fixes + installed-reference closure

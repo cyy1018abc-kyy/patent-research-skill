@@ -13,12 +13,12 @@ description: >
   「附图标记对不上」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 3.4.0
+  version: 3.5.0
 ---
 
 # 专利调研
 
-> **配套**：`patentkit >= 0.6.0`（评估协议 1 的唯一规则实现）+ 本包 `scripts/`（薄封装）
+> **配套**：`patentkit >= 0.7.0`（评估协议 1 的唯一规则实现）+ 本包 `scripts/`（薄封装）
 > + 姊妹技能 `patent-drafting`（v3.0.0 起拆分：交底书/权要/OA 答复走那边）。
 > 没有工具也能按 `references/` 工作，但结论必须标注「⚠️ 未经验证工具校验」。
 
