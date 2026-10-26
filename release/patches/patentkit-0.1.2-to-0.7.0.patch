@@ -5519,7 +5519,7 @@ index 3064d0e..e2ae5f7 100644
 +    raise SystemExit(main())
 diff --git a/b/patentkit/contracts.py b/patentkit/contracts.py
 new file mode 100644
-index 0000000..d182991
+index 0000000..ce208cb
 --- /dev/null
 +++ b/patentkit/contracts.py
 @@ -0,0 +1,762 @@
@@ -6255,7 +6255,7 @@ index 0000000..d182991
 +
 +#: Paths that are absolute on some supported platform. They must be rejected everywhere:
 +#: a workspace-relative locator that only *looks* safe on the current OS is a confinement hole.
-+_FOREIGN_ABSOLUTE = re.compile(r"^(?:[A-Za-z]:[\\/]|[A-Za-z]:$|\\\\|//)")
++_FOREIGN_ABSOLUTE = re.compile(r"^(?:[A-Za-z]:|\\\\|//)")
 +
 +
 +def resolve_confined_path(root: Path, relative: str, *, must_exist: bool = False) -> Path:
