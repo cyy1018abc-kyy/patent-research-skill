@@ -1,0 +1,175 @@
+{
+  "id": "P-003",
+  "kind": "patent",
+  "target": "TGT-9001",
+  "title": "Listening schedule method for event-driven medium access control",
+  "authors_or_applicants": [
+    "Qingwu Communication Technology Laboratory"
+  ],
+  "year": 2021,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900013A1",
+  "summary_zh": "",
+  "relevance": 3,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N3_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N3@TGT-9001"
+  ],
+  "logged_at": "2026-02-03T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-03_N3_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900013a12021",
+  "relevance_problem": 3,
+  "relevance_means": 3,
+  "review_note": "动态调整的对象是监听间隔而非信标周期，但按稳定性调整的思想一致",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900013A1.md",
+      "locator": "L13",
+      "quote": "根据信道占用统计的稳定性决定延长幅度",
+      "note": "动态调整的对象是监听间隔而非信标周期，但按稳定性调整的思想一致"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T02:37:28+08:00",
+    "basis": {
+      "N3@TGT-9001": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900013A1.md",
+          "locator": "L9",
+          "quote": "固定监听周期无法兼顾流量突发与平稳期",
+          "rationale": "固定周期不适应状态变化，与 F3 问题同构但对象不同"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900013A1.md",
+          "locator": "L13",
+          "quote": "延长监听间隔，并根据信道占用统计的稳定性决定延长幅度",
+          "rationale": "按稳定性动态调周期，手段最接近 F3"
+        }
+      }
+    },
+    "materials": {
+      "N3@TGT-9001": {
+        "problem": "[0003] 固定监听周期无法兼顾流量突发与平稳期，本发明提出按流量特征动态调整监听周期。",
+        "means": "[0007] 平稳期内，节点延长监听间隔，并根据信道占用统计的稳定性决定延长幅度，占用越稳定延得越长。"
+      }
+    },
+    "fingerprint": "908d537c5754948f19a3d91abc1e02d1cf714071a7096370800ffacb8eec426d"
+  },
+  "reviewed_at": "2026-10-27T02:37:28+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T02:37:28+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900013A1",
+        "target": "TGT-9001",
+        "tags": [
+          "N3@TGT-9001"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T02:37:28+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900013A1",
+        "target": "TGT-9001",
+        "tags": [
+          "N3@TGT-9001"
+        ],
+        "relevance": 3,
+        "relevance_problem": 3,
+        "relevance_means": 3,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "动态调整的对象是监听间隔而非信标周期，但按稳定性调整的思想一致",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900013A1.md",
+            "locator": "L13",
+            "quote": "根据信道占用统计的稳定性决定延长幅度",
+            "note": "动态调整的对象是监听间隔而非信标周期，但按稳定性调整的思想一致"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T02:37:28+08:00",
+          "basis": {
+            "N3@TGT-9001": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900013A1.md",
+                "locator": "L9",
+                "quote": "固定监听周期无法兼顾流量突发与平稳期",
+                "rationale": "固定周期不适应状态变化，与 F3 问题同构但对象不同"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900013A1.md",
+                "locator": "L13",
+                "quote": "延长监听间隔，并根据信道占用统计的稳定性决定延长幅度",
+                "rationale": "按稳定性动态调周期，手段最接近 F3"
+              }
+            }
+          },
+          "materials": {
+            "N3@TGT-9001": {
+              "problem": "[0003] 固定监听周期无法兼顾流量突发与平稳期，本发明提出按流量特征动态调整监听周期。",
+              "means": "[0007] 平稳期内，节点延长监听间隔，并根据信道占用统计的稳定性决定延长幅度，占用越稳定延得越长。"
+            }
+          },
+          "fingerprint": "908d537c5754948f19a3d91abc1e02d1cf714071a7096370800ffacb8eec426d"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T02:37:28+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T02:37:28+08:00",
+    "fingerprint": "908d537c5754948f19a3d91abc1e02d1cf714071a7096370800ffacb8eec426d"
+  }
+}

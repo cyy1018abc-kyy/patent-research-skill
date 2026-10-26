@@ -9,7 +9,7 @@ the release builder, and release notes.
 **No real project data, patent drafts, target IDs, or candidate IDs are included**;
 the sample workspace is synthetic (`TGT-0002`).
 
-## Skill 3.5.0 / kernel 0.7.0 — P0–P4 upgrade: three skills, structured drafting, figures, delivery
+## Skill 3.6.0 / kernel 0.7.0 — P0–P4 upgrade: three skills, structured drafting, figures, delivery
 
 This release integrates the P0–P4 upgrade plan
 ([docs/patent-skill-upgrade-implementation-plan.md](docs/patent-skill-upgrade-implementation-plan.md)):
@@ -29,9 +29,26 @@ The kernel is reconstructed in CI from the public 0.1.2 sdist plus
 `release/patches/patentkit-0.1.2-to-0.7.0.patch`; the full package ships all three skills.
 The skill-matrix decision (2026-10-25, see
 [docs/skill-matrix-plan.md](docs/skill-matrix-plan.md)) still describes the split into
-**research** and **drafting** (OA merged into drafting), and 3.5.0 additionally ships
+**research** and **drafting** (OA merged into drafting), and 3.6.0 additionally ships
 `patent-discovery`. Everything below still describes the 2.5.0 Chinese-primary +
 delivery-safety release, which 3.x inherits in full.
+
+## Skill 3.6.0 — release doctor + synthetic patent benchmark
+
+Kernel unchanged (0.7.0). Two additions for maintainers and evaluators:
+
+- **`tools/release_doctor.py`** — one-command release health check. Offline mode runs
+  pairing points, guard scripts, a fresh dual-zip build with manifest/SUMS deep checks and
+  per-platform installer smoke tests; release mode audits the *actual* GitHub releases
+  (assets, hashes vs SHA256SUMS, released-zip manifest, notes) and reruns installer tests
+  plus an isolated kernel-wheel import against the downloaded assets.
+- **[`benchmarks/`](benchmarks/README.md)** — a public benchmark of *synthetic* patent
+  cases measuring citation accuracy (verbatim, via the kernel's own `passage` check),
+  technical-feature omission, and misjudgment rate against per-case ground truth. Each case
+  ships a participant scaffold and a reference solution; CI requires the reference
+  solutions to score perfect (`--gate perfect`), and controlled-corruption tests ensure the
+  scorer is not a rubber stamp. All publication numbers use the non-existent `ZZ` country
+  prefix; no real application material may enter `benchmarks/`.
 
 ## Skill 2.5.0 highlights (inherited by 3.x)
 
@@ -63,11 +80,11 @@ Windows/Linux with Python 3.11/3.12 before publishing.
 
 ## Download & install
 
-Download the paired [Skill 3.5.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.5.0) and [patentkit 0.7.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.7.0) releases:
+Download the paired [Skill 3.6.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.6.0) and [patentkit 0.7.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.7.0) releases:
 
 | Asset | Purpose |
 |---|---|
-| `patent-research-skill-v3.5.0.zip` | Full package: installs all three skills (patent-research + patent-drafting + patent-discovery), with installers + synthetic sample workspace |
+| `patent-research-skill-v3.6.0.zip` | Full package: installs all three skills (patent-research + patent-drafting + patent-discovery), with installers + synthetic sample workspace |
 | `patentkit-0.7.0-py3-none-any.whl` | Matching kernel: assessment protocol 1 + P0–P4 modules (contracts, upgrade, intake, discovery, draft, figures, delivery) |
 | `install-oneclick.cmd` | Windows installer, also included in the ZIP |
 | `INSTALL-colleagues.md` | One-page install guide (repo source: `release/install-guide-for-colleagues.md`) |
@@ -81,13 +98,13 @@ same folder, then double-click `install-oneclick.cmd`.
 
 ```powershell
 python -m pip install ./patentkit-0.7.0-py3-none-any.whl
-Expand-Archive ./patent-research-skill-v3.5.0.zip -DestinationPath ./pkg
+Expand-Archive ./patent-research-skill-v3.6.0.zip -DestinationPath ./pkg
 pwsh -File ./pkg/install.ps1 -Client both -Force
 ```
 
 ```bash
 python3 -m pip install ./patentkit-0.2.0-py3-none-any.whl
-unzip patent-research-skill-v3.5.0.zip -d pkg
+unzip patent-research-skill-v3.6.0.zip -d pkg
 chmod +x pkg/install.sh && ./pkg/install.sh --client both --force
 ```
 
@@ -134,14 +151,14 @@ python -m unittest discover -s tests -v
 ## Requirements
 
 - Python >= 3.11 (required by the skill scripts)
-- Skill 3.5.0: `patentkit` >= 0.7.0, assessment protocol 1 (docx export needs the optional `python-docx`)
+- Skill 3.6.0: `patentkit` >= 0.7.0, assessment protocol 1 (docx export needs the optional `python-docx`)
 - Codex CLI >= 0.161 (the desktop app bundles a newer runtime, no upgrade needed)
 
 ## Language
 
 Since 2.5.0 the distributable skill runtime is **Chinese-primary**: `SKILL.md`, `references/`
 (including the new 08–13 and `glossary.md`) and assets. The English edition is mirrored under
-`references.en/` (research 01–08 and drafting 00/09–13 maintained on both sides since 3.5.0). Script and
+`references.en/` (research 01–08 and drafting 00/09–13 maintained on both sides since 3.6.0). Script and
 kernel messages, installers, and release notes remain English (engineering layer).
 Implementation plans and verification notes under `docs/` use Chinese.
 
@@ -163,5 +180,5 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 
 ## Version
 
-Skill version: **3.5.0** (patent-research + patent-drafting; patent-discovery in the P1 development line),
+Skill version: **3.6.0** (patent-research + patent-drafting; patent-discovery in the P1 development line),
 companion kernel: **0.7.0**. See [CHANGELOG.md](CHANGELOG.md).

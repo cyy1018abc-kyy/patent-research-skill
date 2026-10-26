@@ -1,0 +1,28 @@
+# 案例元数据与任务卡（bm02-bms）
+id: bm02-bms
+title: 电池组被动均衡 —— 技术特征遗漏专项
+focus: feature_omission
+difficulty: hard
+target: TGT-9002
+metrics_weight:
+  citation_precision: 0.2
+  citation_coverage: 0.1
+  feature_omission: 0.5
+  misjudgment: 0.2
+traps:
+  - F4 的披露藏在 ZZ900022A1 的 [0009]（暂停巡回采样）与 [0010]（ADC 分时复用），段落标题感弱、且 [0012] 明确说"不执行均衡"，浅读极易标成 absent
+  - F2 的时机披露在 ZZ900022A1 [0011]，通篇未出现"均衡"二字，需要按"末期阶段启动重负载辅助任务"的时机原理对齐
+  - F5 的披露在 ZZ900023A1 [0007]，但那是 PTC 自限温发热而非均衡电阻余热，状态应为 partial 而非 disclosed
+  - ZZ900021A1 [0007]"全过程均可执行"恰好是 F2 的反面，[0008] 固定占空比是 F3 的反面——反面证据也要在 note 里说清
+task: |
+  工作区已预置：4 条检索日志与 raw 工件（每篇对比文献一个日志）、已 ingest 的 4 个候选
+  （P-001..P-004，均 untouched）、目标 TGT-9002 的权利要求（见 07_drafting/claims.md 与
+  本案例 corpus/target_claims.md）。语料是编造的合成文献，全文在
+  02_search_logs/raw/ZZ9000xxA1.md。
+  请按 patent-research 技能的执行顺序完成判断链：
+  1. review export → 逐候选评估：relevance_problem / relevance_means / novelty_check / role /
+     feature_mapping（状态与引文，格式见 benchmarks/README.md；五个特征 F1..F5 逐个表态）；
+  2. review assess --apply → 对全部 near_prior_art 候选做显式人工确认（review confirm --apply，
+     --by 填 benchmark-operator）→ attest --apply；
+  3. 填 04_comparative_analysis/comparison_matrix.md（含每列输出，关键段落用 路径#L行：摘句 形态）；
+  4. 写 05_novelty_conclusions/conclusions.md（引用证据账本中存在的 P 编号）。

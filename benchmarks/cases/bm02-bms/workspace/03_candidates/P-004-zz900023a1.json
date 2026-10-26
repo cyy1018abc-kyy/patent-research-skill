@@ -1,0 +1,28 @@
+{
+  "id": "P-004",
+  "kind": "patent",
+  "target": "TGT-9002",
+  "title": "Battery preheating device for low temperature environment",
+  "authors_or_applicants": [
+    "Cold Region Vehicle Electrical Research Institute"
+  ],
+  "year": 2020,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900023A1",
+  "summary_zh": "",
+  "relevance": 3,
+  "novelty_check": "untouched",
+  "role": "pool",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N4_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N4@TGT-9002"
+  ],
+  "logged_at": "2026-02-04T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-04_N4_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900023a12020"
+}

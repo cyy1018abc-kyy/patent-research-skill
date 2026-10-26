@@ -1,0 +1,90 @@
+# bm03-agv 真值（全部为编造合成数据的判断基准）
+target: TGT-9003
+axes:
+  N1@TGT-9003: {title_zh: '车道分配', features: [F1]}
+  N2@TGT-9003: {title_zh: '本地避让', features: [F2]}
+  N3@TGT-9003: {title_zh: '路口预约', features: [F3]}
+  N4@TGT-9003: {title_zh: '失效重分配', features: [F4]}
+features:
+  F1: {claim: '1', statement: '按任务优先级与车道实时拥堵度为每台 AGV 分配行驶车道'}
+  F2: {claim: '1', statement: 'AGV 依车载传感器感知的障碍物位置本地自主减速避让'}
+  F3: {claim: '1', statement: '驶近路口前发送预约请求，中央控制器分配互不冲突的通行窗口'}
+  F4: {claim: '2', statement: 'AGV 失效时其未完成任务按优先级重分配至其余在途 AGV'}
+candidates:
+  P-001:
+    doc_number: ZZ900031B1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 2
+    relevance_means: 4
+    disclosure:
+      F1: {status: partial, ref: '02_search_logs/raw/ZZ900031B1.md', locator: '[0007]', quote: '当某一车道的实时拥堵度超过阈值时，系统将后续请求车辆优先分配至相邻较空车道', note: '有拥堵度分配；无任务优先级维度，且场景为城市社会车辆（[0009] 自认不适用 AGV）'}
+      F2: {status: absent}
+      F3: {status: absent, note: '[0008] 固定配时信号灯，不涉及路口通行权管理'}
+      F4: {status: absent}
+    basis:
+      N1@TGT-9003:
+        problem: {ref: '02_search_logs/raw/ZZ900031B1.md', locator: '[0002]', quote: '车道级不均衡拥堵', rationale: '拥堵分配问题同构，但场景与调度对象不同，problem 仅 2'}
+        means: {ref: '02_search_logs/raw/ZZ900031B1.md', locator: '[0007]', quote: '将后续请求车辆优先分配至相邻较空车道', rationale: '按拥堵度改派车道的手段与 F1 重叠'}
+  P-002:
+    doc_number: ZZ900032A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 5
+    relevance_means: 4
+    disclosure:
+      F1: {status: partial, ref: '02_search_logs/raw/ZZ900032A1.md', locator: '[0004]', quote: '按任务优先级从队列中取出任务，分配给空闲的自动导引车执行', note: '有任务优先级；车道分配按固定路径（[0005]）且不考虑实时车辆密度（[0008]），拥堵度维度缺失'}
+      F2: {status: absent}
+      F3: {status: partial, ref: '02_search_logs/raw/ZZ900032A1.md', locator: '[0009]', quote: '信标灯按固定时序轮询放行各方向', note: '存在路口通行权管理，但为固定时序轮询，非预约-分配通行窗口'}
+      F4: {status: absent, note: '[0010] 故障任务等待人工恢复'}
+    basis:
+      N1@TGT-9003:
+        problem: {ref: '02_search_logs/raw/ZZ900032A1.md', locator: '[0001]', quote: '多台自动导引车的中央调度', rationale: '与目标同一问题域'}
+        means: {ref: '02_search_logs/raw/ZZ900032A1.md', locator: '[0004]', quote: '按任务优先级从队列中取出任务', rationale: '优先级驱动分配手段相同；手段分 4 因拥堵度维度缺失'}
+  P-003:
+    doc_number: ZZ900033A2
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 4
+    relevance_means: 4
+    disclosure:
+      F1: {status: absent}
+      F2: {status: disclosed, ref: '02_search_logs/raw/ZZ900033A2.md', locator: '[0004]', quote: '障碍物进入制动包络时本地自主减速停车，全过程不依赖中央控制器'}
+      F3: {status: partial, ref: '02_search_logs/raw/ZZ900033A2.md', locator: '[0008]', quote: '通行请求按收到顺序排队轮询处理，同一时刻仅放行一个方向，请求本身不携带预计占用时长', note: '有请求-放行交互，但按序轮询、无互不冲突通行窗口的分配'}
+      F4: {status: absent}
+    basis:
+      N2@TGT-9003:
+        problem: {ref: '02_search_logs/raw/ZZ900033A2.md', locator: '[0002]', quote: '车辆需要具备车载端的安全兜底能力', rationale: '本地避让的动机一致'}
+        means: {ref: '02_search_logs/raw/ZZ900033A2.md', locator: '[0004]', quote: '障碍物进入制动包络时本地自主减速停车', rationale: '车载传感+本地减速手段相同'}
+  P-004:
+    doc_number: ZZ900035A1
+    role: excluded
+    novelty_check: untouched
+    relevance_problem: 1
+    relevance_means: 2
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent, note: '避让发生在三维空域，无车道/道路语境，技术主体不同'}
+      F3: {status: absent}
+      F4: {status: absent}
+    basis:
+      N2@TGT-9003:
+        problem: {ref: '02_search_logs/raw/ZZ900035A1.md', locator: '[0007]', quote: '不涉及地面车道或道路通行权', rationale: '自认不涉及道路通行，问题域不相关'}
+        means: {ref: '02_search_logs/raw/ZZ900035A1.md', locator: '[0004]', quote: '在三维空间内调整航迹高度', rationale: '三维航迹调整与地面 AGV 避让手段不同'}
+  P-005:
+    doc_number: ZZ900034A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 3
+    relevance_means: 4
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: absent}
+      F4: {status: disclosed, ref: '02_search_logs/raw/ZZ900034A1.md', locator: '[0006]', quote: '未完成任务按优先级排序后，重新分配至当前任务量最少的在役机器人'}
+    basis:
+      N4@TGT-9003:
+        problem: {ref: '02_search_logs/raw/ZZ900034A1.md', locator: '[0002]', quote: '单台失效会造成其任务积压', rationale: '失效任务积压问题一致，但对象为一般机器人集群'}
+        means: {ref: '02_search_logs/raw/ZZ900034A1.md', locator: '[0006]', quote: '重新分配至当前任务量最少的在役机器人', rationale: '按优先级重分配的手段相同'}
+conclusions_must_cite: [P-001, P-002, P-003, P-005]
+overall_verdict: '单篇新颖性 —— 初步成立（无单篇覆盖全部特征：P-002 最接近但缺拥堵度分配/预约窗口/本地避让/失效重分配）；创造性 —— 存疑（P-002 与 P-003、P-005 的组合启示明显，需补充检索）'

@@ -1,0 +1,17 @@
+{
+  "db": "espacenet",
+  "target": "TGT-9003",
+  "actor": "benchmark",
+  "capture_mode": "live",
+  "timestamp": "2026-02-04T08:00:00+00:00",
+  "query": {
+    "id": "N2",
+    "axis": "N2@TGT-9003",
+    "text": "abstract=(本地避让)"
+  },
+  "result": {
+    "hit_count": 1,
+    "raw_export": "raw/N2-2_page-1.csv",
+    "complete": true
+  }
+}

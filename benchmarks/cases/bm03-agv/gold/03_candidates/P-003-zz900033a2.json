@@ -1,0 +1,181 @@
+{
+  "id": "P-003",
+  "kind": "patent",
+  "target": "TGT-9003",
+  "title": "AGV autonomous obstacle avoidance control device",
+  "authors_or_applicants": [
+    "Xingwen Robotics Technology"
+  ],
+  "year": 2020,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900033A2",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N2_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N2@TGT-9003"
+  ],
+  "logged_at": "2026-02-03T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-03_N2_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900033a22020",
+  "relevance_problem": 4,
+  "relevance_means": 4,
+  "review_note": "有请求-放行交互，但按序轮询、无互不冲突通行窗口的分配",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900033A2.md",
+      "locator": "L10",
+      "quote": "障碍物进入制动包络时本地自主减速停车，全过程不依赖中央控制器"
+    },
+    "F3": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900033A2.md",
+      "locator": "L14",
+      "quote": "通行请求按收到顺序排队轮询处理，同一时刻仅放行一个方向，请求本身不携带预计占用时长",
+      "note": "有请求-放行交互，但按序轮询、无互不冲突通行窗口的分配"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T02:37:29+08:00",
+    "basis": {
+      "N2@TGT-9003": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900033A2.md",
+          "locator": "L8",
+          "quote": "车辆需要具备车载端的安全兜底能力",
+          "rationale": "本地避让的动机一致"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900033A2.md",
+          "locator": "L10",
+          "quote": "障碍物进入制动包络时本地自主减速停车",
+          "rationale": "车载传感+本地减速手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N2@TGT-9003": {
+        "problem": "[0002] 中央调度的放行指令存在延迟，车辆需要具备车载端的安全兜底能力。",
+        "means": "[0004] 车载控制器根据所述障碍物位置与本车速度计算制动距离，障碍物进入制动包络时本地自主减速停车，全过程不依赖中央控制器。"
+      }
+    },
+    "fingerprint": "bac3233a0fedfe581b505e41f7304643e44e06f3024d4f76a5283ff90503a82f"
+  },
+  "reviewed_at": "2026-10-27T02:37:29+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T02:37:29+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900033A2",
+        "target": "TGT-9003",
+        "tags": [
+          "N2@TGT-9003"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T02:37:29+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900033A2",
+        "target": "TGT-9003",
+        "tags": [
+          "N2@TGT-9003"
+        ],
+        "relevance": 4,
+        "relevance_problem": 4,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "有请求-放行交互，但按序轮询、无互不冲突通行窗口的分配",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900033A2.md",
+            "locator": "L10",
+            "quote": "障碍物进入制动包络时本地自主减速停车，全过程不依赖中央控制器"
+          },
+          "F3": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900033A2.md",
+            "locator": "L14",
+            "quote": "通行请求按收到顺序排队轮询处理，同一时刻仅放行一个方向，请求本身不携带预计占用时长",
+            "note": "有请求-放行交互，但按序轮询、无互不冲突通行窗口的分配"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T02:37:29+08:00",
+          "basis": {
+            "N2@TGT-9003": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900033A2.md",
+                "locator": "L8",
+                "quote": "车辆需要具备车载端的安全兜底能力",
+                "rationale": "本地避让的动机一致"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900033A2.md",
+                "locator": "L10",
+                "quote": "障碍物进入制动包络时本地自主减速停车",
+                "rationale": "车载传感+本地减速手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N2@TGT-9003": {
+              "problem": "[0002] 中央调度的放行指令存在延迟，车辆需要具备车载端的安全兜底能力。",
+              "means": "[0004] 车载控制器根据所述障碍物位置与本车速度计算制动距离，障碍物进入制动包络时本地自主减速停车，全过程不依赖中央控制器。"
+            }
+          },
+          "fingerprint": "bac3233a0fedfe581b505e41f7304643e44e06f3024d4f76a5283ff90503a82f"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T02:37:29+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T02:37:29+08:00",
+    "fingerprint": "bac3233a0fedfe581b505e41f7304643e44e06f3024d4f76a5283ff90503a82f"
+  }
+}

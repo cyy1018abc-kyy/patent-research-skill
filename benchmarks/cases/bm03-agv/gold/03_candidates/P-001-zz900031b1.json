@@ -1,0 +1,177 @@
+{
+  "id": "P-001",
+  "kind": "patent",
+  "target": "TGT-9003",
+  "title": "Urban road lane assignment system",
+  "authors_or_applicants": [
+    "Tongqu Smart Traffic Co."
+  ],
+  "year": 2017,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900031B1",
+  "summary_zh": "",
+  "relevance": 2,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N1_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N1@TGT-9003"
+  ],
+  "logged_at": "2026-02-01T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-01_N1_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900031b12017",
+  "relevance_problem": 2,
+  "relevance_means": 4,
+  "review_note": "有拥堵度分配；无任务优先级维度，且场景为城市社会车辆（[0009] 自认不适用 AGV）；[0008] 固定配时信号灯，不涉及路口通行权管理",
+  "feature_mapping": {
+    "F1": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900031B1.md",
+      "locator": "L13",
+      "quote": "当某一车道的实时拥堵度超过阈值时，系统将后续请求车辆优先分配至相邻较空车道",
+      "note": "有拥堵度分配；无任务优先级维度，且场景为城市社会车辆（[0009] 自认不适用 AGV）"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "absent",
+      "note": "[0008] 固定配时信号灯，不涉及路口通行权管理"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T02:37:29+08:00",
+    "basis": {
+      "N1@TGT-9003": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900031B1.md",
+          "locator": "L8",
+          "quote": "车道级不均衡拥堵",
+          "rationale": "拥堵分配问题同构，但场景与调度对象不同，problem 仅 2"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900031B1.md",
+          "locator": "L13",
+          "quote": "将后续请求车辆优先分配至相邻较空车道",
+          "rationale": "按拥堵度改派车道的手段与 F1 重叠"
+        }
+      }
+    },
+    "materials": {
+      "N1@TGT-9003": {
+        "problem": "[0002] 城市主干道在高峰期出现车道级不均衡拥堵，部分车道排队过长而相邻车道空闲。",
+        "means": "[0007] 当某一车道的实时拥堵度超过阈值时，系统将后续请求车辆优先分配至相邻较空车道。"
+      }
+    },
+    "fingerprint": "fed6925a2cb0564525b4b17e35ff3c8ba75f64947e0fa12f78ba0e6de08e5269"
+  },
+  "reviewed_at": "2026-10-27T02:37:29+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T02:37:29+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900031B1",
+        "target": "TGT-9003",
+        "tags": [
+          "N1@TGT-9003"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T02:37:29+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900031B1",
+        "target": "TGT-9003",
+        "tags": [
+          "N1@TGT-9003"
+        ],
+        "relevance": 2,
+        "relevance_problem": 2,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "有拥堵度分配；无任务优先级维度，且场景为城市社会车辆（[0009] 自认不适用 AGV）；[0008] 固定配时信号灯，不涉及路口通行权管理",
+        "feature_mapping": {
+          "F1": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900031B1.md",
+            "locator": "L13",
+            "quote": "当某一车道的实时拥堵度超过阈值时，系统将后续请求车辆优先分配至相邻较空车道",
+            "note": "有拥堵度分配；无任务优先级维度，且场景为城市社会车辆（[0009] 自认不适用 AGV）"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "absent",
+            "note": "[0008] 固定配时信号灯，不涉及路口通行权管理"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T02:37:29+08:00",
+          "basis": {
+            "N1@TGT-9003": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900031B1.md",
+                "locator": "L8",
+                "quote": "车道级不均衡拥堵",
+                "rationale": "拥堵分配问题同构，但场景与调度对象不同，problem 仅 2"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900031B1.md",
+                "locator": "L13",
+                "quote": "将后续请求车辆优先分配至相邻较空车道",
+                "rationale": "按拥堵度改派车道的手段与 F1 重叠"
+              }
+            }
+          },
+          "materials": {
+            "N1@TGT-9003": {
+              "problem": "[0002] 城市主干道在高峰期出现车道级不均衡拥堵，部分车道排队过长而相邻车道空闲。",
+              "means": "[0007] 当某一车道的实时拥堵度超过阈值时，系统将后续请求车辆优先分配至相邻较空车道。"
+            }
+          },
+          "fingerprint": "fed6925a2cb0564525b4b17e35ff3c8ba75f64947e0fa12f78ba0e6de08e5269"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T02:37:29+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T02:37:29+08:00",
+    "fingerprint": "fed6925a2cb0564525b4b17e35ff3c8ba75f64947e0fa12f78ba0e6de08e5269"
+  }
+}

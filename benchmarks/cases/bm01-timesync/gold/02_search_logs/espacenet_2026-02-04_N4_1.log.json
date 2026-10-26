@@ -1,0 +1,17 @@
+{
+  "db": "espacenet",
+  "target": "TGT-9001",
+  "actor": "benchmark",
+  "capture_mode": "live",
+  "timestamp": "2026-02-04T08:00:00+00:00",
+  "query": {
+    "id": "N4",
+    "axis": "N4@TGT-9001",
+    "text": "abstract=(重同步请求)"
+  },
+  "result": {
+    "hit_count": 1,
+    "raw_export": "raw/N4_page-1.csv",
+    "complete": true
+  }
+}

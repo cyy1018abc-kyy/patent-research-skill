@@ -25,8 +25,8 @@ class ReleaseAcceptance(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix="patent-release-test-")
         cls.root = Path(cls.temp.name)
         cls.result = builder.build(cls.root / "dist", "2026-10-25T00:00:00+00:00")
-        cls.full_zip = ROOT / "dist/patent-research-skill-v3.5.0.zip"
-        cls.drafting_zip = ROOT / "dist/patent-drafting-skill-v3.5.0.zip"
+        cls.full_zip = ROOT / "dist/patent-research-skill-v3.6.0.zip"
+        cls.drafting_zip = ROOT / "dist/patent-drafting-skill-v3.6.0.zip"
         if not cls.full_zip.is_file() or not cls.drafting_zip.is_file():
             raise AssertionError("Build both release ZIPs in dist before acceptance (full + drafting)")
         cls.package = cls.root / "package"

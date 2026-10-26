@@ -1,0 +1,52 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "4c0deced9de249bbe3dfa4744a4e50861fe0eb863e2b3f94c94560d1834c4f79",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "pool",
+    "novelty_check": "untouched",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "03791e6e05dcaa0623b10cf43abb4ade2ee623f8d39ab5e95546d0dd6713a1cb",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "pool",
+    "novelty_check": "untouched",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "c1e8dcf2c6e073ead1cefa8f02eebc85bc3e28a0747e1da54eafa4ec899eb454",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "pool",
+    "novelty_check": "untouched",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-004",
+    "expected_fingerprint": "8e070f2b0784c84a6e58a19b3e20dfc1176b94d0fb6cd942ea8b6d917e605db8",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "pool",
+    "novelty_check": "untouched",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-005",
+    "expected_fingerprint": "0bcbfdf5fddf221567c4c92a296f5ce274be7d061503e77bf153fc1ae1bf2ff5",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "pool",
+    "novelty_check": "untouched",
+    "review_note": "",
+    "basis": {}
+  }
+]

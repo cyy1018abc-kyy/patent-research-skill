@@ -13,7 +13,7 @@ description: >
   "can asserted be used as evidence", or "evidence level".
 license: Apache-2.0
 metadata:
-  version: 3.5.0
+  version: 3.6.0
 ---
 
 # Patent Research

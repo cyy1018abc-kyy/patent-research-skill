@@ -1,0 +1,80 @@
+# bm02-bms 真值（全部为编造合成数据的判断基准）
+target: TGT-9002
+axes:
+  N1@TGT-9002: {title_zh: '单体电压巡回采样', features: [F1]}
+  N2@TGT-9002: {title_zh: '均衡开启时机', features: [F2]}
+  N3@TGT-9002: {title_zh: '占空比温度修正', features: [F3]}
+  N4@TGT-9002: {title_zh: '采样复用与余热利用', features: [F4, F5]}
+features:
+  F1: {claim: '1', statement: '单体电压巡回采样单元依次采集各串联电芯端电压'}
+  F2: {claim: '1', statement: '仅在充电末期恒压阶段开启均衡支路，其余阶段旁路'}
+  F3: {claim: '1', statement: '均衡占空比按电芯温度与组内最大温差的修正系数确定'}
+  F4: {claim: '2', statement: '均衡执行窗口内暂停电压巡回采样，同一模数转换器分时复用读取均衡支路电流'}
+  F5: {claim: '3', statement: '均衡电阻热量经导热件传导至相邻低温电芯用于预热'}
+candidates:
+  P-001:
+    doc_number: ZZ900021A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 5
+    relevance_means: 4
+    disclosure:
+      F1: {status: disclosed, ref: '02_search_logs/raw/ZZ900021A1.md', locator: '[0005]', quote: '每五十毫秒完成一轮全部电芯的电压巡回采样'}
+      F2: {status: absent, note: '[0007] 明确"全过程均可执行"，与"仅恒压阶段"相反'}
+      F3: {status: absent, note: '[0008] 占空比固定为二分之一，无温度修正'}
+      F4: {status: absent}
+      F5: {status: absent, note: '[0009] 热量自然散失，未用于预热'}
+    basis:
+      N1@TGT-9002:
+        problem: {ref: '02_search_logs/raw/ZZ900021A1.md', locator: '[0002]', quote: '需对高压单体进行旁路泄放', rationale: '同为串联电池组均衡问题'}
+        means: {ref: '02_search_logs/raw/ZZ900021A1.md', locator: '[0004]', quote: '控制器按轮询次序依次读取各串联电芯的端电压', rationale: '电压巡回采样手段相同'}
+  P-002:
+    doc_number: ZZ900022A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 4
+    relevance_means: 3
+    disclosure:
+      F1: {status: absent}
+      F2: {status: partial, ref: '02_search_logs/raw/ZZ900022A1.md', locator: '[0011]', quote: '在恒压阶段，充电电流纹波对高精度采样的干扰最小，适合安排精密测量类任务', note: '披露了恒压阶段启动重负载辅助任务的时机原理，但未提及均衡'}
+      F3: {status: absent}
+      F4: {status: partial, ref: '02_search_logs/raw/ZZ900022A1.md', locator: '[0009]', quote: '调度器暂停该窗口内的电压巡回采样，待任务完成后恢复巡回节拍', note: '暂停巡回+ADC 分时复用的机制在 [0009]/[0010] 披露，但服务于辅助测量任务而非均衡支路电流'}
+      F5: {status: absent}
+    basis:
+      N2@TGT-9002:
+        problem: {ref: '02_search_logs/raw/ZZ900022A1.md', locator: '[0006]', quote: '把低负载阶段的剩余算力与采样窗口安排给辅助管理任务', rationale: '按充电阶段调度资源的思路与 F2 的开启时机控制同向'}
+        means: {ref: '02_search_logs/raw/ZZ900022A1.md', locator: '[0008]', quote: '任务调度器按阶段切换辅助任务的启停', rationale: '阶段化启停控制手段与 F2 部分重叠'}
+  P-003:
+    doc_number: ZZ900024A1
+    role: excluded
+    novelty_check: untouched
+    relevance_problem: 2
+    relevance_means: 2
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: absent, note: '[0006] 的"温差"用于调风扇转速，不是均衡占空比修正'}
+      F4: {status: absent}
+      F5: {status: absent}
+    basis:
+      N3@TGT-9002:
+        problem: {ref: '02_search_logs/raw/ZZ900024A1.md', locator: '[0002]', quote: '长期运行形成组内温差，加速单体老化离散', rationale: '温差是共同关键词，但目的为散热均匀而非均衡控制'}
+        means: {ref: '02_search_logs/raw/ZZ900024A1.md', locator: '[0006]', quote: '按比例积分规律调节风扇转速', rationale: '风扇调速与均衡执行无关'}
+  P-004:
+    doc_number: ZZ900023A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 3
+    relevance_means: 3
+    disclosure:
+      F1: {status: absent, note: '[0004] 采集的是温度而非端电压'}
+      F2: {status: absent}
+      F3: {status: absent}
+      F4: {status: absent}
+      F5: {status: partial, ref: '02_search_logs/raw/ZZ900023A1.md', locator: '[0007]', quote: '加热元件采用正温度系数热敏电阻片，直接贴附于电芯侧面', note: '披露了贴附电芯的电阻加热，但为独立 PTC 回路而非均衡电阻余热经导热件传导'}
+    basis:
+      N4@TGT-9002:
+        problem: {ref: '02_search_logs/raw/ZZ900023A1.md', locator: '[0002]', quote: '在零下环境可充性急剧下降', rationale: '低温可充性问题与 F5 的预热目的相邻'}
+        means: {ref: '02_search_logs/raw/ZZ900023A1.md', locator: '[0007]', quote: '正温度系数热敏电阻片', rationale: '电阻加热手段相似，热源不同'}
+conclusions_must_cite: [P-001, P-002]
+overall_verdict: '单篇新颖性 —— 初步成立（无单篇覆盖全部特征；P-001 缺 F2–F5，P-002/P-003 仅部分披露）；创造性 —— 存疑（P-001 与 P-002 的阶段化开启思想、P-002 的采样复用机制存在组合启示方向）'
