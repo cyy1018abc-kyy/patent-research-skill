@@ -134,6 +134,10 @@ def _git_apply(cwd: Path, patch: Path, directory: str, check_only: bool = False,
 
     autocrlf 钉成 false（CI ubuntu 的口径，最严格）；历史补丁若只兼容
     autocrlf=true，由调用方以 autocrlf=None 重试。
+
+    注意：``git apply --directory`` 只在 **git 仓库内**按预期工作；git 2.53 在
+    非仓库目录会静默退出 0 且不落盘（正是本工具旧版 --verify-against 的假通过根因）。
+    调用方必须先 ``_init_git_repo`` 再应用，才能在本地复刻 CI 的行为。
     """
     cmd = ["git", "apply"] + (["--check"] if check_only else []) + [f"--directory={directory}", str(patch)]
     if autocrlf is not None:
@@ -141,6 +145,61 @@ def _git_apply(cwd: Path, patch: Path, directory: str, check_only: bool = False,
     proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
     if proc.returncode != 0:
         raise SystemExit(f"git apply {'--check ' if check_only else ''}失败（rc={proc.returncode}）：\n{proc.stderr}")
+
+
+def _init_git_repo(path: Path) -> None:
+    """把解包目录变成真实 git 仓库（CI 的 $GITHUB_WORKSPACE 就是仓库根）。
+
+    没有这一步时 ``git apply --directory`` 在裸目录里可能静默 no-op；同时用固定
+    user/autocrlf 配置保证本地与 CI 的可重复性。
+    """
+    path.mkdir(parents=True, exist_ok=True)
+
+    def run(*args: str) -> None:
+        proc = subprocess.run(["git", *args], cwd=path, capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise SystemExit(f"git {' '.join(args)} 失败（rc={proc.returncode}）：\n{proc.stderr}")
+
+    run("init", "-q")
+    run("config", "user.name", "patentkit-patch-builder")
+    run("config", "user.email", "patch-builder@localhost")
+    run("config", "core.autocrlf", "false")
+    # 用一次基线提交把上游树固定下来，git apply 只改工作树，不影响这一步的校验语义。
+    run("add", "-A")
+    run("-c", "commit.gpgsign=false", "commit", "-q", "-m", "upstream baseline")
+
+
+def _compare_dev_tree(applied: Path, dev_tree: Path) -> list[str]:
+    """补丁应用结果（镜像子集）与内核开发树逐字节比对（LF 归一后）。
+
+    这是重建补丁的第三层验证：不仅"能 apply"，还要证明补丁忠实重建了开发树的
+    P0–P4 代码，避免镜像遗漏/旧文件覆盖新文件。
+    """
+    expected: dict[str, Path] = {}
+    for name in MIRROR_DIRS:
+        base = dev_tree / name
+        if not base.is_dir():
+            continue
+        for path in base.rglob("*"):
+            rel = path.relative_to(dev_tree)
+            if path.is_symlink():
+                continue
+            if any(part in EXCLUDE_DIR_NAMES or part.endswith(".egg-info") for part in rel.parts):
+                continue
+            if path.is_file() and path.suffix not in {".pyc", ".pyo"}:
+                expected[rel.as_posix()] = path
+    for name in MIRROR_FILES:
+        expected[Path(name).as_posix()] = dev_tree / name
+
+    diffs: list[str] = []
+    for rel, source in sorted(expected.items()):
+        target = applied / rel
+        if not target.is_file():
+            diffs.append(f"补丁产物缺少：{rel}")
+            continue
+        if _normalize_lf(source.read_bytes()) != _normalize_lf(target.read_bytes()):
+            diffs.append(f"内容不同：{rel}")
+    return diffs
 
 
 def build_patch(dev_tree: Path, upstream_tarball: Path, out: Path, verify_against: Path | None,
@@ -204,6 +263,7 @@ def build_patch(dev_tree: Path, upstream_tarball: Path, out: Path, verify_agains
         # 验证 1：CI 同款命令可应用（钉死 autocrlf=false，CI ubuntu 口径），且哨兵文件出现
         check_root = temp / "verify"
         _extract_upstream(upstream_tarball, check_root)
+        _init_git_repo(check_root)
         target = f"kernel-build/patentkit-{UPSTREAM_VERSION}"
         _git_apply(check_root, patch_path, target, check_only=True)
         _git_apply(check_root, patch_path, target)
@@ -211,18 +271,31 @@ def build_patch(dev_tree: Path, upstream_tarball: Path, out: Path, verify_agains
             if not (check_root / target / sentinel).is_file():
                 raise SystemExit(f"补丁应用后缺少 CI 哨兵文件：{sentinel}")
 
+        # 验证 1b：应用结果必须逐字节重建开发树的镜像子集（防止镜像遗漏/旧文件覆盖新代码）
+        dev_diffs = _compare_dev_tree(check_root / target, dev_tree)
+        if dev_diffs:
+            print(f"✗ 补丁应用结果与开发树不一致（{len(dev_diffs)} 处）：", file=sys.stderr)
+            for line in dev_diffs[:20]:
+                print(f"  · {line}", file=sys.stderr)
+            return 1
+        print("✅ 开发树等价性验证：补丁应用结果与开发树镜像文件逐字节一致")
+
         # 验证 2：与现有补丁的产物树逐字节等价（历史补丁可能只兼容 autocrlf=true，
         # 先按钉死口径试，失败再放宽重试并说明）
         if verify_against:
-            tree_new = _extract_upstream(upstream_tarball, temp / "cmp-new") / f"kernel-build/patentkit-{UPSTREAM_VERSION}"
-            _git_apply(temp / "cmp-new", patch_path, f"kernel-build/patentkit-{UPSTREAM_VERSION}")
-            tree_old = _extract_upstream(upstream_tarball, temp / "cmp-old") / f"kernel-build/patentkit-{UPSTREAM_VERSION}"
+            cmp_new = temp / "cmp-new"
+            tree_new = _extract_upstream(upstream_tarball, cmp_new) / f"kernel-build/patentkit-{UPSTREAM_VERSION}"
+            _init_git_repo(cmp_new)
+            _git_apply(cmp_new, patch_path, f"kernel-build/patentkit-{UPSTREAM_VERSION}")
+            cmp_old = temp / "cmp-old"
+            tree_old = _extract_upstream(upstream_tarball, cmp_old) / f"kernel-build/patentkit-{UPSTREAM_VERSION}"
+            _init_git_repo(cmp_old)
             legacy_dir = f"kernel-build/patentkit-{UPSTREAM_VERSION}"
             try:
-                _git_apply(temp / "cmp-old", verify_against.resolve(), legacy_dir)
+                _git_apply(cmp_old, verify_against.resolve(), legacy_dir)
             except SystemExit:
                 print("   （历史补丁在 autocrlf=false 下应用失败，改用环境 git 配置重试做等价对比）")
-                _git_apply(temp / "cmp-old", verify_against.resolve(), legacy_dir, autocrlf=None)
+                _git_apply(cmp_old, verify_against.resolve(), legacy_dir, autocrlf=None)
             diffs = _compare_trees(tree_new, tree_old)
             if diffs:
                 print(f"✗ 新补丁与 {verify_against.name} 的应用结果不一致（{len(diffs)} 处）：", file=sys.stderr)
