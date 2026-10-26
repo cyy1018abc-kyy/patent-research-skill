@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-10-26 · 3.5.0 / patentkit 0.7.0 — P0–P4 release integration (local; not pushed, not published)
+
+> Version-paired release-integration snapshot of the P0–P4 upgrade. Skill **3.5.0** requires
+> kernel **0.7.0**; `release/patches/patentkit-0.1.2-to-0.7.0.patch` reconstructs the kernel
+> from the verified public 0.1.2 sdist. No GitHub Release or remote push was performed.
+
+**Kernel 0.7.0** (patch `patentkit-0.1.2-to-0.7.0.patch`)
+
+- P0: `contracts.py` (12 versioned schemas, canonical fingerprints) + `workspace_upgrade.py`
+  (non-destructive `upgrade check/apply`).
+- P1: `source_intake.py`, `discovery.py`, `discovery_handoff.py` (`intake`/`discovery` commands,
+  G-I control layer, G-I-gated handoff).
+- P2: `draft.py` (DraftingPlan/atoms/claims/support, G-D audit, `concept`/`review_draft` gate,
+  impact propagation).
+- P3: `figure_plan.py` (`figures plan/render/validate`, deterministic SVG + optional PNG,
+  F-001…F-014).
+- P4: `delivery.py` (frozen PatentDocumentModel, DOCX/optional PDF, delivery manifest, human
+  sign-off bound to the manifest fingerprint, `deliver check` E-001…E-012,
+  `draft gate --to release_ready`; CNIPA XML `not_attempted`).
+- Full regression: **737 passed / 11 skipped / 0 failed**; golden snapshots unchanged;
+  G-S/V001–V037/protocol-1 semantics untouched.
+
+**Skill 3.5.0**
+
+- New `patent-discovery` payload (zh + en references 00–03, glossary) and three-skill release
+  engineering (full package + drafting-only package; installers accept all three skills).
+- Drafting references 14–17 (structured pipeline, claims/support, professional figures,
+  delivery pipeline; zh + en) and SKILL hard constraints 9–12; evals 33 cases / 3 skills;
+  terminology pairing `drafting 00,09–17` + 12 new anchors.
+- Version pairing updated across builders, installers, CI, tests, docs, notes and the patch
+  pointer; `tools/bump_version.py --check` green; `tools/build_kernel_patch.py` fixed to apply
+  patches in a real temporary git repository (git 2.53 no-op in non-repo dirs) and now verifies
+  the applied tree byte-for-byte against the dev tree, plus an optional `--verify-against`
+  same-version equivalence check.
+
+**Upgrade notes**: install `patentkit-0.7.0` first; overwrite the skill packages with `--force`;
+existing workspaces stay readable — run `python -m patentkit upgrade check` (read-only) and then
+`upgrade apply` to add `10_discovery/` and `11_delivery/` non-destructively.
+
 ## 2026-10-26 · Unreleased — P4 complete delivery (development line)
 
 > **Local development line; no release, no push.** P4 of the upgrade plan: frozen

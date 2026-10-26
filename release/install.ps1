@@ -130,9 +130,9 @@ $python = $null
 if (-not $DryRun -and -not $NoSelfCheck) {
     $python = Get-Command python -ErrorAction SilentlyContinue
     if (-not $python) { $python = Get-Command python3 -ErrorAction SilentlyContinue }
-    if (-not $python) { Fail "Python 3.11+ with patentkit 0.6.0 is required before installation" }
+    if (-not $python) { Fail "Python 3.11+ with patentkit 0.7.0 is required before installation" }
     & $python.Source '-c' 'import sys; from patentkit.assessment import PROTOCOL_VERSION; assert sys.version_info >= (3, 11) and PROTOCOL_VERSION == 1' | Out-Null
-    if ($LASTEXITCODE -ne 0) { Fail "Install the patentkit 0.6.0 wheel before replacing the skill" }
+    if ($LASTEXITCODE -ne 0) { Fail "Install the patentkit 0.7.0 wheel before replacing the skill" }
 }
 
 $installedAny = @()
@@ -177,7 +177,7 @@ if (-not $NoSelfCheck) {
         $statusScript = Join-Path $probe 'scripts/status.py'
         & $python.Source $statusScript --root $sampleRoot --json | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Fail "self-check failed (exit $LASTEXITCODE). Install the matching patentkit 0.6.0 wheel and retry"
+            Fail "self-check failed (exit $LASTEXITCODE). Install the matching patentkit 0.7.0 wheel and retry"
         }
         Write-Host "✅ Self-check passed: status.py located the sample workspace and computed the status"
     } else {

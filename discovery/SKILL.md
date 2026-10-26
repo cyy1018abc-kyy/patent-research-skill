@@ -11,12 +11,12 @@ description: >
   「人工确认」「内容指纹」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 3.4.0
+  version: 3.5.0
 ---
 
 # 专利点挖掘（Discovery）
 
-> **配套**：`patentkit >= 0.6.0`（规则与数据契约的唯一实现）+ 姊妹技能 `patent-research`
+> **配套**：`patentkit >= 0.7.0`（规则与数据契约的唯一实现）+ 姊妹技能 `patent-research`
 > （检索/证据链/验收门）与 `patent-drafting`（撰写底稿）。
 > **定位**：把私有研发材料变成**可追溯、可人工确认、可交接**的专利候选点。
 > 产出永远带缺口清单；确认只能由发明人做出，模型输出永远是 proposed。
