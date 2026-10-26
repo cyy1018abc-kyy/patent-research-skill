@@ -468,6 +468,19 @@ def _owner_repo() -> str:
     return found.group(1)
 
 
+def _is_ancestor(maybe_ancestor: str, descendant: str) -> bool:
+    """maybe_ancestor 是否为 descendant 的祖先（用于"发布后有补充提交"的判定）。
+
+    需要 checkout 带 publish 提交的完整历史（CI 传 fetch-depth: 0）；浅克隆下
+    判定不了就返回 False（按严格相等语义报错，宁可误报不可漏报）。
+    """
+    try:
+        return subprocess.run(["git", "merge-base", "--is-ancestor", maybe_ancestor, descendant],
+                              cwd=ROOT, capture_output=True, timeout=60).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def check_release_state(gh: Github, expect_commit: str | None) -> tuple[str, str]:
     bump = _load_tool("bump_version")
     skill_version, kernel_version = bump._frontmatter_version("research"), bump._kernel_version()
@@ -486,8 +499,12 @@ def check_release_state(gh: Github, expect_commit: str | None) -> tuple[str, str
             problems.append(f"{tag} 被标记为 prerelease")
         commit = rel.get("target_commitish") or ""
         if expect_commit and commit != expect_commit:
-            if key == "skill":
-                problems.append(f"{tag} target_commitish={commit} ≠ 期望 {expect_commit}")
+            if key == "skill" and not _is_ancestor(commit, expect_commit):
+                # 严格相等只适用于"发布就是本次推送"的场景；发布后有纯 CI/文档类
+                # 补充提交时，只要求发布来源是当前提交的祖先（fetch-depth: 0 下可判）。
+                problems.append(f"{tag} target_commitish={commit} ≠ 期望 {expect_commit}（且非其祖先）")
+            elif key == "skill":
+                notes.append(f"{tag} 来自当前历史的祖先提交 {commit[:12]}（发布后有补充提交）")
             else:
                 # 内核未升版的轮次不重发 kernel tag，指向旧提交属预期（配对由 manifest.compat 把关）
                 notes.append(f"{tag} 未随本轮重发（target={commit[:12]}）")
@@ -499,7 +516,7 @@ def check_release_state(gh: Github, expect_commit: str | None) -> tuple[str, str
         return FAIL, "\n".join(problems)
     detail = (f"{tags['skill']} = Latest、{tags['kernel']} 非草稿；"
               f"skill target_commitish{(' = ' + expect_commit) if expect_commit else ' 已核对'}"
-              + ("；".join(notes) if notes else ""))
+              + ("；" + "；".join(notes) if notes else ""))
     return PASS, detail
 
 

@@ -145,9 +145,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 祖先判定需要完整历史（发布后有补充提交时 target_commitish 落后于 HEAD）
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install PyYAML for the pairing check
+        run: python -m pip install pyyaml
       - name: Audit the actual releases and run install tests against downloaded assets
         env:
           GH_TOKEN: ${{ github.token }}
