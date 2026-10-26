@@ -6,7 +6,7 @@ drafting/references（00,09–13+glossary）、research/references.en（英文�
 drafting/references.en（英文镜像 00,09–13）。
 
 校验三层：
-1. **配对完整**：research 01–08 与 drafting 00/09–13 在中文与英文镜像两侧都存在；
+1. **配对完整**：research 01–08 与 drafting 00/09–15 在中文与英文镜像两侧都存在；
 2. **术语锚定**：核心术语中文在中文文档（两技能合计）出现、英文在英文镜像出现；
 3. **glossary 同步**：research 与 drafting 各自携带的 glossary.md 必须**逐字节一致**
    （单技能包自包含的代价是复制一份，CI 防漂移）。
@@ -28,7 +28,7 @@ EN_DISCOVERY = ROOT / "discovery" / "references.en"
 
 #: 中文主文件名前缀（两侧镜像齐备的部分）
 PAIRED_RESEARCH = [f"0{i}-" for i in range(1, 9)]   # 01–08
-PAIRED_DRAFTING = ["00-", "09-", "10-", "11-", "12-", "13-"]
+PAIRED_DRAFTING = ["00-", "09-", "10-", "11-", "12-", "13-", "14-", "15-"]
 PAIRED_DISCOVERY = ["00-", "01-", "02-", "03-"]
 
 #: 核心锚定术语：中文须在中文文档（两技能）出现，英文 token 须在英文镜像出现。
@@ -65,6 +65,11 @@ GLOBAL_ANCHORS = [
     ("内容指纹", "content fingerprint"),
     ("专利点挖掘", "patent point mining"),
     ("交接草案", "handoff draft"),
+    ("结构化权项", "structured claim"),
+    ("权项原子", "claim atom"),
+    ("支持映射", "support mapping"),
+    ("双状态写作门", "dual-state writing gate"),
+    ("先行基础", "antecedent basis"),
 ]
 
 
@@ -95,7 +100,7 @@ def main() -> int:
                         + sorted(EN_DRAFTING.glob("*.md"))
                         + sorted(EN_DISCOVERY.glob("*.md")))
 
-    # 1. 配对完整（research 01–07；drafting 00/09–13）
+    # 1. 配对完整（research 01–07；drafting 00/09–15）
     for prefix in PAIRED_RESEARCH:
         if not any(p.name.startswith(prefix) for p in ZH_RESEARCH.glob("*.md")):
             problems.append(f"中文主版本缺失：research/references/{prefix}*.md")
@@ -146,7 +151,7 @@ def main() -> int:
         for p in problems[:30]:
             print(f"  · {p}")
         return 1
-    print("✅ 术语一致性通过：research 01–08 / drafting 00,09–13 / discovery 00–03 中英配对完整，"
+    print("✅ 术语一致性通过：research 01–08 / drafting 00,09–15 / discovery 00–03 中英配对完整，"
           "锚定术语在用，glossary 三份逐字节一致")
     return 0
 

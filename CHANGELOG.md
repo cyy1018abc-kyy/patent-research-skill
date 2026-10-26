@@ -1,5 +1,46 @@
 # Changelog
 
+## 2026-10-26 · Unreleased — P2 structured drafting (development line)
+
+> **Local development line; no release, no push.** P2 of the upgrade plan
+> (`docs/patent-skill-upgrade-implementation-plan.md`): structured drafting model and the
+> two-state writing gate. Kernel distribution patches are rebuilt at release-integration time.
+
+**Kernel** (`patentkit/draft.py`, source tree)
+
+- `draft plan` — generates a schema-valid DraftingPlan from a **human-confirmed** candidate and
+  its confirmed facts, snapshotting the research gates and binding the candidate content
+  fingerprint (`idea_fingerprint`; a changed candidate marks the plan stale, D-003).
+- `draft atoms import|review` — claim-feature atoms with fact references; imported as `pending`,
+  human confirmation is bound to the **atom content fingerprint** (editing text invalidates it,
+  D-017), so self-claimed confirmation cannot survive content changes.
+- `draft claims import` — structured claims validated for numbering (contiguous from 1), at least
+  one independent claim, earlier-parent references, cycle rejection and known atom ids.
+- `draft support import|review` — claim/atom → paragraphs/facts/figures support matrix with
+  human semantic review; empty paragraph mapping is rejected as not-covered.
+- `draft audit` — G-D findings D-001…D-017, reusing the existing `provenance` and `revise`
+  checks instead of re-implementing hashing or revision ledgers.
+- `draft status` / `draft gate` — dual-state writing gate: `concept` by default; `review_draft`
+  requires zero audit errors, **G-S-01/02/03 PASS**, fingerprint-current atoms, confirmed support
+  review; a `bundle_fingerprint` makes any model change stale and reverts the state.
+- `draft impact --claim-no N` — change propagation to affected atoms/paragraphs/figures/facts and
+  dependent claims (plan §5.2 item 6), feeding the existing revision loop.
+- `contracts.py`: `drafting_plan` gains optional `idea_fingerprint` (staleness binding).
+- Tests: 17 new draft tests (structure, audit, gate, staleness, impact); kernel regression
+  **696 passed / 11 skipped / 0 failed**; golden snapshots unchanged.
+
+**Skill payload** (`drafting/`)
+
+- New references `14-drafting-pipeline.md` and `15-claims-and-support.md` (zh + en mirrors) with
+  the command table, G-D audit codes, dual-state gate rules and the claim/support checklist.
+- `SKILL.md` (and English mirror): Line D structured drafting, hard constraints 9/10
+  (fingerprint-bound atom confirmation; `review_draft` gate), result-format row "structured state".
+- Evals grew to 29 cases (structured-claims trigger; review_draft-gate refusal); terminology
+  pairing extended to drafting 14–15 with five new anchors.
+
+**Unchanged**: G-S-01…05, evidence levels, assessment protocol 1, V001–V037, revise/provenance/
+attest/ledger semantics, golden snapshots. `release_ready` remains unimplemented (P4).
+
 ## 2026-10-26 · Unreleased — patent-discovery skill (P1 development line)
 
 > **Local development line; no release, no push.** Describes the P1 delivery of the upgrade

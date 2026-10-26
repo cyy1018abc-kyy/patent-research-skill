@@ -10,10 +10,11 @@ description: >
   must begin with "⚠️ Unverified by tool checks".
   Use when the user wants to write a disclosure, draft claims, write the specification,
   turn invention points into application documents, respond to an office action / OA,
-  revise with a change trail, or check whether a number may be written into a claim.
+  revise with a change trail, check whether a number may be written into a claim, or turn a
+  technical solution into **structured claims** with a **support mapping**.
   Prefer triggering on phrases such as "write a disclosure", "how to write the claims",
   "specification support", "how to answer the OA", "revision loop",
-  "can this number be written in".
+  "can this number be written in", "structured claims", "support mapping".
 license: Apache-2.0
 metadata:
   version: 3.4.0
@@ -75,6 +76,17 @@ A self-contained summary of the preconditions is in
 Read [12](12-policy-radar.md); log practice changes in `docs/policy-log.md`;
 the hand-off may not proceed with "pending" rows uncleared.
 
+### Line D: structured drafting pipeline (P2; the kernel validates structure, the AI writes prose)
+
+| # | Step | Read | Do |
+|---|---|---|---|
+| D1 | Drafting plan | [14](14-drafting-pipeline.md) | `patentkit draft plan --idea IDEA-001 --apply` (candidate/facts must be human-confirmed) |
+| D2 | Claim atoms | [15](15-claims-and-support.md) | `draft atoms import` → inventor `draft atoms review` (fingerprint-bound) |
+| D3 | Structured claims | [15](15-claims-and-support.md) | `draft claims import`: numbering/order/cycles/atoms validated by the kernel |
+| D4 | Support mapping | [15](15-claims-and-support.md) | `draft support import` + `draft support review`: claim atom → paragraphs/facts/figures |
+| D5 | Audit & gate | [14](14-drafting-pipeline.md) | `draft audit` → `draft status` → `draft gate --to review_draft` (requires G-S-01/02/03 PASS) |
+| D6 | Change impact | [14](14-drafting-pipeline.md) | `draft impact --claim-no N` reports affected paragraphs/figures/dependents, then use the revision loop |
+
 ## Hard constraints (must not be violated)
 
 1. **Search before drafting**: when the preconditions fail, go back to the research skill
@@ -95,6 +107,13 @@ the hand-off may not proceed with "pending" rows uncleared.
    tool checks"; never disguise results as verified.
 8. **Manuscripts stay outside the repo**: only registry / ledgers / mapping tables live
    inside; manuscript bodies never enter the repository (confidentiality red line).
+9. **Structured model first**: claim atoms / claims / support mapping are validated by the
+   kernel `patentkit draft`; atom and support confirmations bind content fingerprints — editing
+   text invalidates earlier confirmation (D-017 blocks it) and requires re-confirmation.
+10. **Dual-state writing gate (`review_draft` gate)**: until G-S-01/02/03 pass, the only legal
+    state is `concept`; marking `review_draft` requires `draft gate` (no audit errors, atoms and
+    support mapping human-confirmed, candidate fingerprint current). No formal deliverables
+    before P4 — never call a draft "ready to submit".
 
 ## Result format (use it for every draft delivery; nothing may be omitted)
 
@@ -104,6 +123,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | **Gap list** | every unclear point listed: what material is missing, who supplies it, which section it blocks |
 | **Evidence citations** | every cited document = ledger ID + evidence level + judgment state |
 | **Numerical provenance** | count of numerical statements in this draft and the A/B/C distribution; unsourced numbers must not appear |
+| **Structured state** | plan/atom/claim/support counts + `draft audit` result + current gate (concept / review_draft, stale or not) |
 | **Unverified annotation** | when tools did not run or data is incomplete, state "⚠️ Unverified by tool checks" explicitly |
 
 ## References (load on demand)
@@ -116,6 +136,8 @@ the hand-off may not proceed with "pending" rows uncleared.
 | [`11-oa-response.md`](11-oa-response.md) | OA clause table, three-tier reverse argumentation, response structure |
 | [`12-policy-radar.md`](12-policy-radar.md) | tracking examination-practice / form / drawing-requirement changes |
 | [`13-revision-loop.md`](13-revision-loop.md) | multi-round revision: patch → log → re-run gates |
+| [`14-drafting-pipeline.md`](14-drafting-pipeline.md) | **P2** structured pipeline: plan→atoms→claims→support→dual-state gate (G-D audit codes) |
+| [`15-claims-and-support.md`](15-claims-and-support.md) | claim atom / structured claim / support mapping fields, validation rules and review checklist |
 | [`glossary.md`](../references/glossary.md) | zh⇄en glossary (shared with patent-research; CI keeps the copies identical) |
 
 > Commands go straight through `python -m patentkit <subcommand>` (provenance / figures /

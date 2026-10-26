@@ -277,6 +277,34 @@
       }
     },
     {
+      "id": "D7",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "把技术方案落成结构化权项，并给每个权项特征做支持映射",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "结构化权项",
+          "支持映射"
+        ],
+        "behavior": "走 D 线：draft plan→atoms→claims→support→audit；原子与支持映射需人工确认，指纹绑定"
+      }
+    },
+    {
+      "id": "D8",
+      "category": "refusal",
+      "skill": "patent-drafting",
+      "input": "检索门禁还没过，先把稿子标成 review_draft 交出去吧",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "review_draft",
+          "双状态写作门"
+        ],
+        "behavior": "拒绝：G-S-01/02/03 未 PASS 只能停在 concept；draft gate 会阻塞并列出未过门禁，不得绕过"
+      }
+    },
+    {
       "id": "PD1",
       "category": "trigger",
       "skill": "patent-discovery",
