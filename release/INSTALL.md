@@ -28,7 +28,7 @@ python -m pip install ./patentkit-0.6.0-py3-none-any.whl
 
 ## Three-step installation
 
-Run this in the **root of the unzipped release package** (the directory should contain `manifest.json`, `patent-research/`, `samples/`):
+Run this in the **root of the unzipped release package** (the directory should contain `manifest.json`, `patent-research/`, `patent-drafting/`, `samples/`; the P1 development line also adds `patent-discovery/`):
 
 ```powershell
 # 1) Preview (writes no files)

@@ -30,8 +30,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL_PAIRING_FILES = (
     ("research/SKILL.md", "research frontmatter"),
     ("drafting/SKILL.md", "drafting frontmatter"),
+    ("discovery/SKILL.md", "discovery frontmatter"),
     ("research/references.en/SKILL.en.md", "research 英文镜像 frontmatter"),
     ("drafting/references.en/SKILL.en.md", "drafting 英文镜像 frontmatter"),
+    ("discovery/references.en/SKILL.en.md", "discovery 英文镜像 frontmatter"),
     ("tests/test_release.py", "发布验收 zip 文件名"),
     ("tests/test_assessment_contract.py", "SKILL version 断言"),
     ("release/INSTALL.md", "安装文档 tag/zip/notes 链接"),
@@ -55,8 +57,10 @@ KERNEL_PAIRING_FILES = (
     ("tests/test_assessment_contract.py", "内核错误消息版本断言"),
     ("research/SKILL.md", "SKILL 配套版本行"),
     ("drafting/SKILL.md", "SKILL 配套版本行"),
+    ("discovery/SKILL.md", "SKILL 配套版本行"),
     ("research/references.en/SKILL.en.md", "英文镜像配套版本行"),
     ("drafting/references.en/SKILL.en.md", "英文镜像配套版本行"),
+    ("discovery/references.en/SKILL.en.md", "英文镜像配套版本行"),
     ("drafting/README.md", "drafting README 前置版本行"),
     # 注意：release/patches/README.md 故意不在本清单——它含历史叙述段
     # （"Skill 2.5.0 requires patentkit 0.3.0"），整文件替换会篡改历史；
@@ -221,7 +225,7 @@ def check() -> list[str]:
         break
 
     if not problems:
-        print(f"✅ 版本配对点一致：skill（research+drafting）={skill}，kernel={kernel}，"
+        print(f"✅ 版本配对点一致：skill（research+drafting+discovery）={skill}，kernel={kernel}，"
               f"测试/发布脚本/CI/notes/补丁指针全部对齐")
     return problems
 

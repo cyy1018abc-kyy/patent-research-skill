@@ -21,12 +21,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ZH_RESEARCH = ROOT / "research" / "references"
 ZH_DRAFTING = ROOT / "drafting" / "references"
+ZH_DISCOVERY = ROOT / "discovery" / "references"
 EN_RESEARCH = ROOT / "research" / "references.en"
 EN_DRAFTING = ROOT / "drafting" / "references.en"
+EN_DISCOVERY = ROOT / "discovery" / "references.en"
 
 #: 中文主文件名前缀（两侧镜像齐备的部分）
 PAIRED_RESEARCH = [f"0{i}-" for i in range(1, 9)]   # 01–08
 PAIRED_DRAFTING = ["00-", "09-", "10-", "11-", "12-", "13-"]
+PAIRED_DISCOVERY = ["00-", "01-", "02-", "03-"]
 
 #: 核心锚定术语：中文须在中文文档（两技能）出现，英文 token 须在英文镜像出现。
 #: 只收录两版真实共用的核心术语；3.1.0 起两技能 references 已全部双语，新增概念
@@ -56,6 +59,12 @@ GLOBAL_ANCHORS = [
     ("期限台账", "deadline"),
     ("附图标记", "figure-mark"),
     ("数值声明溯源", "A/B/C"),
+    ("来源材料", "source material"),
+    ("技术事实", "technical fact"),
+    ("必要技术特征", "essential feature"),
+    ("内容指纹", "content fingerprint"),
+    ("专利点挖掘", "patent point mining"),
+    ("交接草案", "handoff draft"),
 ]
 
 
@@ -75,10 +84,16 @@ def main() -> int:
     _pin_utf8_stdio()
     problems: list[str] = []
 
-    zh_files = sorted(ZH_RESEARCH.glob("*.md")) + sorted(ZH_DRAFTING.glob("*.md"))
+    zh_files = (
+        sorted(ZH_RESEARCH.glob("*.md"))
+        + sorted(ZH_DRAFTING.glob("*.md"))
+        + sorted(ZH_DISCOVERY.glob("*.md"))
+    )
     zh_all = "\n".join(p.read_text(encoding="utf-8") for p in zh_files)
     en_all = "\n".join(p.read_text(encoding="utf-8")
-                        for p in sorted(EN_RESEARCH.glob("*.md")) + sorted(EN_DRAFTING.glob("*.md")))
+                        for p in sorted(EN_RESEARCH.glob("*.md"))
+                        + sorted(EN_DRAFTING.glob("*.md"))
+                        + sorted(EN_DISCOVERY.glob("*.md")))
 
     # 1. 配对完整（research 01–07；drafting 00/09–13）
     for prefix in PAIRED_RESEARCH:
@@ -91,6 +106,11 @@ def main() -> int:
             problems.append(f"中文主版本缺失：drafting/references/{prefix}*.md")
         if not any(p.name.startswith(prefix) for p in EN_DRAFTING.glob("*.md")):
             problems.append(f"英文镜像缺失：drafting/references.en/{prefix}*.md")
+    for prefix in PAIRED_DISCOVERY:
+        if not any(p.name.startswith(prefix) for p in ZH_DISCOVERY.glob("*.md")):
+            problems.append(f"中文主版本缺失：discovery/references/{prefix}*.md")
+        if not any(p.name.startswith(prefix) for p in EN_DISCOVERY.glob("*.md")):
+            problems.append(f"英文镜像缺失：discovery/references.en/{prefix}*.md")
 
     # 2. 术语锚定
     for zh_term, en_term in GLOBAL_ANCHORS:
@@ -102,11 +122,12 @@ def main() -> int:
     # 3. glossary 双份同步（research 权威，drafting 复制）
     g_research = ZH_RESEARCH / "glossary.md"
     g_drafting = ZH_DRAFTING / "glossary.md"
-    if not g_research.is_file() or not g_drafting.is_file():
-        problems.append("glossary.md 必须同时存在于 research 与 drafting 的 references/")
-    elif g_research.read_bytes() != g_drafting.read_bytes():
-        problems.append("research 与 drafting 的 glossary.md 不一致——以 research 为准复制后重试"
-                        "（单技能包自包含；CI 防两份漂移）")
+    g_discovery = ZH_DISCOVERY / "glossary.md"
+    if not g_research.is_file() or not g_drafting.is_file() or not g_discovery.is_file():
+        problems.append("glossary.md 必须同时存在于 research / drafting / discovery 的 references/")
+    elif not (g_research.read_bytes() == g_drafting.read_bytes() == g_discovery.read_bytes()):
+        problems.append("research / drafting / discovery 的 glossary.md 不一致——以 research 为准复制后重试"
+                        "（单技能包自包含；CI 防多份漂移）")
 
     # 4. glossary 自身健全性：行内中文术语必须在中文文档真实使用
     glossary = g_research.read_text(encoding="utf-8") if g_research.is_file() else ""
@@ -125,7 +146,8 @@ def main() -> int:
         for p in problems[:30]:
             print(f"  · {p}")
         return 1
-    print("✅ 术语一致性通过：research 01–08 与 drafting 00/09–13 中英配对完整，锚定术语在用，glossary 双份逐字节一致")
+    print("✅ 术语一致性通过：research 01–08 / drafting 00,09–13 / discovery 00–03 中英配对完整，"
+          "锚定术语在用，glossary 三份逐字节一致")
     return 0
 
 

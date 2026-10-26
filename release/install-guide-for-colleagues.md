@@ -5,7 +5,7 @@
 
 ## 0. Files you need to obtain
 
-Get this matched pair (Skill **3.4.0** + kernel **0.6.0**；一个包同时安装 patent-research 与 patent-drafting 两个技能) and the installer from the release page / group chat (put them in the same folder):
+Get this matched pair (Skill **3.4.0** + kernel **0.6.0**；一个包同时安装 patent-research 与 patent-drafting 两个已发布技能；P1 开发线另含 patent-discovery) and the installer from the release page / group chat (put them in the same folder):
 
 | File | Purpose |
 |---|---|

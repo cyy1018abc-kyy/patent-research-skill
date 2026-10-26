@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-10-26 · Unreleased — patent-discovery skill (P1 development line)
+
+> **Local development line; no release, no push.** Describes the P1 delivery of the upgrade
+> plan (`docs/patent-skill-upgrade-implementation-plan.md`): the kernel gains the discovery
+> contracts/commands and the repository gains the third skill payload. Kernel distribution
+> patches are rebuilt at release-integration time, not here.
+
+**Repository / skill payload**
+
+- New `discovery/` skill payload (`patent-discovery`, metadata version 3.4.0): Chinese-primary
+  `SKILL.md`, four references (`00-discovery-protocol`, `01-material-intake`,
+  `02-facts-and-ideas`, `03-human-review-and-handoff`), shared `glossary.md` copy, English
+  mirrors under `references.en/`, and desktop metadata (`agents/openai.yaml`).
+- Release builder now ships three skill payloads in the full package (drafting single package
+  unchanged); installers accept `patent-discovery`; evals grow to 27 cases anchored to three
+  `SKILL.md` files; terminology pairing extended to discovery `00-03` with a three-way
+  byte-identical glossary; secrecy guard covers the new payload.
+- Repository README documents the development line; no release assets were published.
+
+**Kernel capabilities exercised by this skill** (source tree; reach the public patch later)
+
+- `patentkit.contracts`: new `discovery_handoff` contract and idea *content* fingerprint
+  (status fields excluded from confirmation binding).
+- `patentkit.source_intake`: md/docx/pdf_text/py/m/csv/json/controlled Simulink text intake with
+  SHA-256 + locator scheme + parsed cache; fail-closed on binary models, path/symlink escapes,
+  oversized files; no execution and no network.
+- `patentkit.discovery`: schema-validated fact/idea import with source-hash binding, human
+  decision ledger bound to content fingerprints, fact review, search-priority ranking and the
+  G-I check layer (G-I-001…025).
+- `patentkit.discovery_handoff`: G-I-gated research handoff drafts (handoff JSON + query seed +
+  target draft + audit event); never writes research directories and never produces G-S results.
+
+**Unchanged**: G-S-01…05, evidence levels, assessment protocol 1, V001–V037, revise/provenance/
+attest/ledger semantics, golden snapshots.
+
 ## 2026-10-25 · Skill 3.4.0 / kernel 0.6.0
 
 Census-evidence gate rework + data-source chain fixes + installed-reference closure

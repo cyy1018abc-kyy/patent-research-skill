@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = {
     "patent-research": ROOT / "research" / "SKILL.md",
     "patent-drafting": ROOT / "drafting" / "SKILL.md",
+    "patent-discovery": ROOT / "discovery" / "SKILL.md",
 }
 
 VALID_CATEGORIES = {"trigger", "boundary", "refusal", "format"}

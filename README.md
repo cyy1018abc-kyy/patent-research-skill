@@ -51,7 +51,7 @@ Download the paired [Skill 3.4.0](https://github.com/cyy1018abc-kyy/patent-resea
 
 | Asset | Purpose |
 |---|---|
-| `patent-research-skill-v3.4.0.zip` | Full package: installs **both** skills (patent-research + patent-drafting) | Skill installation package (with installers + synthetic sample workspace) |
+| `patent-research-skill-v3.4.0.zip` | Full package: installs **both released** skills (patent-research + patent-drafting); the P1 development line additionally ships `patent-discovery` | Skill installation package (with installers + synthetic sample workspace) |
 | `patentkit-0.6.0-py3-none-any.whl` | Matching kernel, assessment protocol 1 + delivery-safety layer |
 | `install-oneclick.cmd` | Windows installer, also included in the ZIP |
 | `INSTALL-colleagues.md` | One-page install guide (repo source: `release/install-guide-for-colleagues.md`) |
@@ -85,12 +85,20 @@ After installation, restart the client:
 ```
 research/                patent-research 技能：SKILL.md + references/(zh 01-08+glossary) + references.en/ + scripts/ + assets/
 drafting/                patent-drafting 技能：SKILL.md + references/(zh 00,09-13+glossary)（OA 已并入）
+discovery/               patent-discovery 技能（P1 开发线，未发布）：SKILL.md + references/(zh 00-03+glossary) + references.en/
 evals/                   trigger/refusal/boundary eval set + terminology consistency check (CI)
 release/                 installers (ps1/sh/oneclick), install docs, patches, release notes
 tools/                   reproducible ZIP builder + paired release publisher + secrecy guard
 docs/                    design memos (skill matrix, data sources, scope decisions) + verification notes
 .github/workflows/ci.yml  wheel/ZIP builds, regressions, evals, guards, installation and publication
 ```
+
+> **P1 development line (local, unreleased)**: `discovery/` implements the patent-discovery
+> skill (material intake → technical facts → patent candidates → human confirmation → research
+> handoff draft, G-I control layer). It is included in the full package built from this tree;
+> the paired kernel capabilities live in the kernel source tree and only reach this repository
+> through a rebuilt `release/patches/` patch at release-integration time. No release has been
+> published for this line, and G-S / evidence / validation semantics are unchanged.
 
 ## Build a release package
 
@@ -132,4 +140,5 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 
 ## Version
 
-Skill version: **3.4.0** (patent-research + patent-drafting), companion kernel: **0.6.0**. See [CHANGELOG.md](CHANGELOG.md).
+Skill version: **3.4.0** (patent-research + patent-drafting; patent-discovery in the P1 development line),
+companion kernel: **0.6.0**. See [CHANGELOG.md](CHANGELOG.md).
