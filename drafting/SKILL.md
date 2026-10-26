@@ -8,9 +8,9 @@ description: >
   「⚠️ 未经验证工具校验」开头。
   当用户要写交底书、起草权利要求、写说明书、梳理发明点成申请文件、
   回复审查意见/OA、改稿并留变更记录、核对数值能不能写进权项、
-  或把技术方案落成结构化权项并做支持映射时使用。
+  把技术方案落成结构化权项并做支持映射、或把审阅稿交付成申请文件包并出交付清单时使用。
   命中「写交底书」「权项怎么写」「说明书支持」「OA 怎么答复」「改稿闭环」
-  「这个数值能写吗」「结构化权项」「支持映射」等说法时优先触发。
+  「这个数值能写吗」「结构化权项」「支持映射」「申请文件包」「交付清单」等说法时优先触发。
 license: Apache-2.0
 metadata:
   version: 3.4.0
@@ -78,6 +78,7 @@ metadata:
 | D5 | 审计与门 | [`14`](references/14-drafting-pipeline.md) | `draft audit` → `draft status` → `draft gate --to review_draft`（需 G-S-01/02/03 PASS） |
 | D6 | 改稿影响 | [`14`](references/14-drafting-pipeline.md) | `draft impact --claim-no N` 报告受影响段落/附图/从权，再走 13 号改稿闭环 |
 | D7 | 专业附图 | [`16-专业附图`](references/16-figures.md) | `figures plan`（系统框图/方法流程图）→ `figures validate` → `figures render`；图文一致与人工看图复核 |
+| D8 | 交付 | [`17-交付管线`](references/17-delivery.md) | 写 `07_drafting/manuscript/{claims,specification,abstract}.md` → `deliver build`（DOCX，可选 PDF）→ `deliver check` → 人工 `deliver sign` → `draft gate --to release_ready` |
 
 ## 硬约束（不得违反）
 
@@ -99,6 +100,11 @@ metadata:
 11. **附图由结构化 figure plan（附图规格）决定**：系统框图/方法流程图先写规格再渲染；渲染器不得创造或删除
     部件/连线，**不得仅依赖文本生图**；自动检查（F-001…F-014、V033）不替代人工看图复核，
     正式提交前必须逐图人工确认。
+12. **交付只来自同一冻结快照**：`deliver build` 生成 PatentDocumentModel + 申请文件包（DOCX 审阅稿，
+    PDF 预览需本地转换器，缺失如实报告）；`deliver check` 零 error 且**人工签核**（签核绑定清单指纹）
+    才能 `draft gate --to release_ready`。改任何输入（候选/计划/原子/权项/支持映射/稿件/图规格/门禁）
+    都会使旧交付失效，必须重建并重新签核。CNIPA XML **未实现/未验证**之前，**不得宣称**材料合规或
+    「可直接提交」；`release_ready` 只是内部交付门。
 
 ## 结果格式（凡交付底稿一律用它，不得缺项）
 
@@ -110,6 +116,7 @@ metadata:
 | **数值溯源** | 本稿包含的数值声明数与 A/B/C 分布；未溯源的数值不得出现 |
 | **结构化状态** | plan/原子/权项/支持映射计数 + `draft audit` 结果 + 当前写作门（concept / review_draft，是否 stale） |
 | **附图一致性** | `figures validate` 结果（F-001…F-014 摘要）+ 已渲染图号 + 是否已人工看图复核 |
+| **交付状态** | `deliver check` 摘要（E-xxx/W-xxx）+ 产物清单与哈希 + 签核状态 + 当前写作门（`release_ready` 是否 stale） |
 | **未验证标注** | 工具未跑或数据不全时，明确写「⚠️ 未经验证工具校验」 |
 
 ## 参考文档（按需加载）
@@ -125,6 +132,7 @@ metadata:
 | [`14-drafting-pipeline.md`](references/14-drafting-pipeline.md) | **P2** 结构化管线：plan→原子→权项→支持映射→双状态门（G-D 审计码） |
 | [`15-claims-and-support.md`](references/15-claims-and-support.md) | 权项原子/结构化权项/支持映射的字段、校验规则与验收清单 |
 | [`16-figures.md`](references/16-figures.md) | **P3** 专业附图：figure plan 规格、确定性渲染、F-001…F-014 校验与人工复核纪律 |
+| [`17-delivery.md`](references/17-delivery.md) | **P4** 交付管线：冻结快照、DOCX/PDF、交付清单、E-001…E-012、签核与失效语义、CNIPA XML 现状 |
 | [`glossary.md`](references/glossary.md) | 中英术语对照（与 patent-research 技能同一份，CI 锁定同步） |
 
 > 命令直接用 `python -m patentkit <子命令>`（provenance / figures / deadlines / attest /

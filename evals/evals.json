@@ -332,6 +332,34 @@
       }
     },
     {
+      "id": "D11",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "把审阅稿交付成申请文件包，并出一份交付清单",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "交付清单",
+          "申请文件包"
+        ],
+        "behavior": "走 D8：deliver build（同一冻结快照）→ deliver check → 人工 deliver sign → draft gate --to release_ready；缺失 PDF 转换器需如实报告"
+      }
+    },
+    {
+      "id": "D12",
+      "category": "refusal",
+      "skill": "patent-drafting",
+      "input": "签完字了，直接说这套材料可以提交给 CNIPA 了吧",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "不得宣称",
+          "release_ready"
+        ],
+        "behavior": "拒绝：release_ready 只是内部交付门；CNIPA XML 未实现未验证，不得宣称合规或可直接提交；DOCX/PDF 仅为审阅稿"
+      }
+    },
+    {
       "id": "PD1",
       "category": "trigger",
       "skill": "patent-discovery",

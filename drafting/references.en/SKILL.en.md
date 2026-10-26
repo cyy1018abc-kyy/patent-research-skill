@@ -10,11 +10,13 @@ description: >
   must begin with "⚠️ Unverified by tool checks".
   Use when the user wants to write a disclosure, draft claims, write the specification,
   turn invention points into application documents, respond to an office action / OA,
-  revise with a change trail, check whether a number may be written into a claim, or turn a
-  technical solution into **structured claims** with a **support mapping**.
+  revise with a change trail, check whether a number may be written into a claim, turn a
+  technical solution into **structured claims** with a **support mapping**, or deliver the
+  reviewed draft as an **application document package** with a **delivery manifest**.
   Prefer triggering on phrases such as "write a disclosure", "how to write the claims",
   "specification support", "how to answer the OA", "revision loop",
-  "can this number be written in", "structured claims", "support mapping".
+  "can this number be written in", "structured claims", "support mapping",
+  "application document package", "delivery manifest".
 license: Apache-2.0
 metadata:
   version: 3.4.0
@@ -87,6 +89,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | D5 | Audit & gate | [14](14-drafting-pipeline.md) | `draft audit` → `draft status` → `draft gate --to review_draft` (requires G-S-01/02/03 PASS) |
 | D6 | Change impact | [14](14-drafting-pipeline.md) | `draft impact --claim-no N` reports affected paragraphs/figures/dependents, then use the revision loop |
 | D7 | Professional figures | [16](16-figures.md) | `figures plan` (system block diagram / method flowchart) → `figures validate` → `figures render`; figure-text consistency plus human visual review |
+| D8 | Delivery | [17](17-delivery.md) | write `07_drafting/manuscript/{claims,specification,abstract}.md` → `deliver build` (DOCX, optional PDF) → `deliver check` → human `deliver sign` → `draft gate --to release_ready` |
 
 ## Hard constraints (must not be violated)
 
@@ -119,6 +122,14 @@ the hand-off may not proceed with "pending" rows uncleared.
     method flowchart), then render; the renderer must not create or delete parts/edges and must
     not rely on text-to-image generation alone; automated checks (F-001…F-014, V033) never replace
     human visual review, which is mandatory before formal submission.
+12. **Delivery comes only from one frozen snapshot**: `deliver build` produces the
+    PatentDocumentModel + application document package (DOCX review copy; PDF preview needs a
+    local converter and is reported honestly when missing); `deliver check` must have zero errors
+    and a **human sign-off** (bound to the manifest fingerprint) before
+    `draft gate --to release_ready`. Any input change (candidate/plan/atoms/claims/support/
+    manuscript/figure spec/gates) invalidates the old delivery — rebuild and re-sign. Until
+    CNIPA XML is implemented and verified, **never claim** the material is compliant or
+    "ready to submit"; `release_ready` is only an internal delivery gate.
 
 ## Result format (use it for every draft delivery; nothing may be omitted)
 
@@ -130,6 +141,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | **Numerical provenance** | count of numerical statements in this draft and the A/B/C distribution; unsourced numbers must not appear |
 | **Structured state** | plan/atom/claim/support counts + `draft audit` result + current gate (concept / review_draft, stale or not) |
 | **Figure consistency** | `figures validate` result (F-001…F-014 summary) + rendered figure ids + whether human visual review is done |
+| **Delivery state** | `deliver check` summary (E-xxx/W-xxx) + artifacts and hashes + sign-off state + current gate (`release_ready` stale or not) |
 | **Unverified annotation** | when tools did not run or data is incomplete, state "⚠️ Unverified by tool checks" explicitly |
 
 ## References (load on demand)
@@ -145,6 +157,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | [`14-drafting-pipeline.md`](14-drafting-pipeline.md) | **P2** structured pipeline: plan→atoms→claims→support→dual-state gate (G-D audit codes) |
 | [`15-claims-and-support.md`](15-claims-and-support.md) | claim atom / structured claim / support mapping fields, validation rules and review checklist |
 | [`16-figures.md`](16-figures.md) | **P3** professional figures: figure plan spec, deterministic rendering, F-001…F-014 checks, human review discipline |
+| [`17-delivery.md`](17-delivery.md) | **P4** delivery pipeline: frozen snapshot, DOCX/PDF, delivery manifest, E-001…E-012, sign-off/invalidation, CNIPA XML status |
 | [`glossary.md`](../references/glossary.md) | zh⇄en glossary (shared with patent-research; CI keeps the copies identical) |
 
 > Commands go straight through `python -m patentkit <subcommand>` (provenance / figures /

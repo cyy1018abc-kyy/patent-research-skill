@@ -1,5 +1,48 @@
 # Changelog
 
+## 2026-10-26 · Unreleased — P4 complete delivery (development line)
+
+> **Local development line; no release, no push.** P4 of the upgrade plan: frozen
+> PatentDocumentModel, DOCX/PDF delivery artifacts, delivery manifest with hash checks and
+> human sign-off bound to the manifest fingerprint, `release_ready` gate, and the CNIPA XML
+> research interface. Kernel distribution patches are rebuilt at release-integration time.
+
+**Kernel** (`patentkit/delivery.py`, `patentkit/contracts.py`, `patentkit/draft.py`)
+
+- `deliver build` — builds one frozen **PatentDocumentModel** (claims/paragraphs/abstract/figures,
+  input hashes, gates snapshot, fingerprint) from the current `review_draft` state, then generates
+  a review-copy DOCX (claims / specification / abstract / figures with embedded PNG when Pillow is
+  available) and an optional PDF preview via a local converter; a missing converter is reported as
+  not generated (never faked). Delivery artifacts live under `11_delivery/`.
+- `deliver check` — E-001…E-012: missing/stale snapshot, artifact hash mismatch, manuscript vs
+  model inconsistency, missing paragraphs, unknown figure citations, changed research gates,
+  draft-audit errors, unsigned/expired sign-off, manifest schema, missing independent claim or
+  abstract, false official-format claims; W-001/W-002 warnings.
+- `deliver sign` — human sign-off bound to the manifest content fingerprint (excluding the
+  sign-off); any later manifest change invalidates it (E-009).
+- `draft gate --to release_ready` — requires the current `review_draft` state, zero delivery
+  check errors and a valid sign-off; the state records the manifest hash and is demoted to
+  `concept` when the delivery or model becomes stale.
+- CNIPA XML stays `not_attempted`: `export_cnipa_xml()` fails closed, `cnipa_format_notes.md`
+  documents the research checklist, E-012 blocks false compliance claims.
+- Tests: 18 new delivery tests (happy path, every deliberate failure, PDF present/absent, CNIPA
+  fail-closed, CLI); kernel regression **737 passed / 11 skipped / 0 failed**; golden snapshots
+  unchanged.
+
+**Skill payload** (`drafting/`)
+
+- New reference `17-delivery.md` (zh + en mirror): inputs, commands, manifest/validation files,
+  E-001…E-012 codes, sign-off/invalidation semantics, CNIPA XML status and pre-delivery checklist.
+- `SKILL.md` (and English mirror): Line D step D8 (delivery), hard constraint 12 (frozen-snapshot
+  delivery, human sign-off, no compliance/submission claims before CNIPA XML verification),
+  result-format row "delivery state"; reference table entry.
+- Evals grew to 33 cases (delivery trigger; submit-claim refusal); terminology pairing extended
+  to drafting 17 with four new anchors.
+
+**Unchanged**: G-S-01…05, evidence levels, assessment protocol 1, V001–V037, revise/provenance/
+attest/ledger semantics, golden snapshots. No release has been published; `release_ready` is an
+internal delivery gate, not official-filing compliance.
+
 ## 2026-10-26 · Unreleased — P3 professional figures (development line)
 
 > **Local development line; no release, no push.** P3 of the upgrade plan: structured figure
