@@ -1,0 +1,185 @@
+{
+  "id": "P-002",
+  "kind": "patent",
+  "target": "TGT-9003",
+  "title": "AGV central scheduling system",
+  "authors_or_applicants": [
+    "Cangji Logistics Equipment Co."
+  ],
+  "year": 2019,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900032A1",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N1-2_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N1@TGT-9003"
+  ],
+  "logged_at": "2026-02-02T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-02_N1-2_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900032a12019",
+  "relevance_problem": 5,
+  "relevance_means": 4,
+  "review_note": "有任务优先级；车道分配按固定路径（[0005]）且不考虑实时车辆密度（[0008]），拥堵度维度缺失；存在路口通行权管理，但为固定时序轮询，非预约-分配通行窗口；[0010] 故障任务等待人工恢复",
+  "feature_mapping": {
+    "F1": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900032A1.md",
+      "locator": "L10",
+      "quote": "按任务优先级从队列中取出任务，分配给空闲的自动导引车执行",
+      "note": "有任务优先级；车道分配按固定路径（[0005]）且不考虑实时车辆密度（[0008]），拥堵度维度缺失"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900032A1.md",
+      "locator": "L15",
+      "quote": "信标灯按固定时序轮询放行各方向",
+      "note": "存在路口通行权管理，但为固定时序轮询，非预约-分配通行窗口"
+    },
+    "F4": {
+      "status": "absent",
+      "note": "[0010] 故障任务等待人工恢复"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T02:37:29+08:00",
+    "basis": {
+      "N1@TGT-9003": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900032A1.md",
+          "locator": "L7",
+          "quote": "多台自动导引车的中央调度",
+          "rationale": "与目标同一问题域"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900032A1.md",
+          "locator": "L10",
+          "quote": "按任务优先级从队列中取出任务",
+          "rationale": "优先级驱动分配手段相同；手段分 4 因拥堵度维度缺失"
+        }
+      }
+    },
+    "materials": {
+      "N1@TGT-9003": {
+        "problem": "[0001] 本发明涉及仓储自动化领域，尤其涉及多台自动导引车的中央调度。",
+        "means": "[0004] 中央控制器按任务优先级从队列中取出任务，分配给空闲的自动导引车执行。"
+      }
+    },
+    "fingerprint": "ae1ea61c28ecaa1293947aeb8fb9cf30b375bb1bf9342cce26149e72f9459c97"
+  },
+  "reviewed_at": "2026-10-27T02:37:29+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T02:37:29+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900032A1",
+        "target": "TGT-9003",
+        "tags": [
+          "N1@TGT-9003"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T02:37:29+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900032A1",
+        "target": "TGT-9003",
+        "tags": [
+          "N1@TGT-9003"
+        ],
+        "relevance": 4,
+        "relevance_problem": 5,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "有任务优先级；车道分配按固定路径（[0005]）且不考虑实时车辆密度（[0008]），拥堵度维度缺失；存在路口通行权管理，但为固定时序轮询，非预约-分配通行窗口；[0010] 故障任务等待人工恢复",
+        "feature_mapping": {
+          "F1": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900032A1.md",
+            "locator": "L10",
+            "quote": "按任务优先级从队列中取出任务，分配给空闲的自动导引车执行",
+            "note": "有任务优先级；车道分配按固定路径（[0005]）且不考虑实时车辆密度（[0008]），拥堵度维度缺失"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900032A1.md",
+            "locator": "L15",
+            "quote": "信标灯按固定时序轮询放行各方向",
+            "note": "存在路口通行权管理，但为固定时序轮询，非预约-分配通行窗口"
+          },
+          "F4": {
+            "status": "absent",
+            "note": "[0010] 故障任务等待人工恢复"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T02:37:29+08:00",
+          "basis": {
+            "N1@TGT-9003": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900032A1.md",
+                "locator": "L7",
+                "quote": "多台自动导引车的中央调度",
+                "rationale": "与目标同一问题域"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900032A1.md",
+                "locator": "L10",
+                "quote": "按任务优先级从队列中取出任务",
+                "rationale": "优先级驱动分配手段相同；手段分 4 因拥堵度维度缺失"
+              }
+            }
+          },
+          "materials": {
+            "N1@TGT-9003": {
+              "problem": "[0001] 本发明涉及仓储自动化领域，尤其涉及多台自动导引车的中央调度。",
+              "means": "[0004] 中央控制器按任务优先级从队列中取出任务，分配给空闲的自动导引车执行。"
+            }
+          },
+          "fingerprint": "ae1ea61c28ecaa1293947aeb8fb9cf30b375bb1bf9342cce26149e72f9459c97"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T02:37:29+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T02:37:29+08:00",
+    "fingerprint": "ae1ea61c28ecaa1293947aeb8fb9cf30b375bb1bf9342cce26149e72f9459c97"
+  }
+}

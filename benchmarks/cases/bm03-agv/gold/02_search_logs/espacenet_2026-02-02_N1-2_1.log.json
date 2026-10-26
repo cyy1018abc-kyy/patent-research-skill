@@ -1,0 +1,17 @@
+{
+  "db": "espacenet",
+  "target": "TGT-9003",
+  "actor": "benchmark",
+  "capture_mode": "live",
+  "timestamp": "2026-02-02T08:00:00+00:00",
+  "query": {
+    "id": "N1",
+    "axis": "N1@TGT-9003",
+    "text": "abstract=(车道分配)"
+  },
+  "result": {
+    "hit_count": 1,
+    "raw_export": "raw/N1-2_page-1.csv",
+    "complete": true
+  }
+}

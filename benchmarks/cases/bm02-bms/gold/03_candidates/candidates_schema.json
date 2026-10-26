@@ -1,0 +1,360 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Patent Prior-Art Candidate",
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "title",
+    "authors_or_applicants",
+    "year",
+    "source_db",
+    "url_or_doc_number",
+    "relevance",
+    "novelty_check",
+    "tags",
+    "logged_at",
+    "source_log",
+    "evidence_level",
+    "role",
+    "target"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[PL]-\\d{3,}$"
+    },
+    "kind": {
+      "enum": [
+        "patent",
+        "paper"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 2,
+      "description": "Title. The original minLength=5 constraint assumed Latin characters — a four-character CJK title (e.g. one meaning water electrolyzer or hydrogen production) is perfectly valid. Relaxed to 2, which only rejects empty values and obvious truncation."
+    },
+    "authors_or_applicants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "year": {
+      "type": "integer",
+      "minimum": 1900,
+      "maximum": 2100
+    },
+    "source_db": {
+      "enum": [
+        "CNIPA",
+        "Espacenet",
+        "WIPO",
+        "GooglePatents",
+        "Crossref",
+        "CNKI",
+        "Wanfang",
+        "VIP",
+        "IEEE",
+        "Elsevier",
+        "Springer",
+        "Wiley",
+        "AIAA",
+        "Other"
+      ],
+      "description": "Source database. Crossref denotes a **paper** (kind=paper) retrieved through the Crossref API; the others are mostly patent databases."
+    },
+    "url_or_doc_number": {
+      "type": "string",
+      "minLength": 1
+    },
+    "summary_zh": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "relevance": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "novelty_check": {
+      "enum": [
+        "untouched",
+        "partial",
+        "covered",
+        "blocking"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^N[1-6](@TGT-\\d{4})?$"
+      },
+      "description": "Axis tags. Since v2 these should be **qualified IDs** (e.g. N1@TGT-0002); bare axis names are temporarily tolerated during migration, and V023 reminds you to complete them"
+    },
+    "logged_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_log": {
+      "type": "string"
+    },
+    "family": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cited_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "pdf_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "bibtex_key": {
+      "type": "string"
+    },
+    "evidence_level": {
+      "enum": [
+        "verified",
+        "attested",
+        "asserted"
+      ],
+      "description": "Source provenance only; assessment and human confirmation are independent."
+    },
+    "evidence_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "role": {
+      "enum": [
+        "near_prior_art",
+        "pool",
+        "excluded",
+        "family"
+      ],
+      "description": "The candidate's role in the evidence chain; definitions are in 00_methodology/glossary.yml"
+    },
+    "target": {
+      "type": "string",
+      "pattern": "^TGT-\\d{4}$",
+      "description": "Owning target ID (the filter key of multi-target gates); see the targets section of 00_methodology/glossary.yml"
+    },
+    "review_note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Basis for manual review. State “which feature was disclosed”, not “it feels related” — otherwise relevance becomes an untraceable self-assertion. Written by patentkit.review apply."
+    },
+    "reviewed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Manual review time (ISO 8601). **Its purpose is disambiguation**: relevance==3 may be ingest's default value (not yet judged), or a human score of 3 (judged). Only this field distinguishes the two. Written by patentkit.review apply."
+    },
+    "abstract_raw": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 4000,
+      "description": "The retrieved **original abstract** (possibly in a foreign language). Kept separate from summary_zh because summary_zh is semantically a Chinese summary; putting an English abstract there would be a misrepresentation. Source and fetch time are recorded in abstract_source / abstract_fetched_at."
+    },
+    "abstract_source": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Abstract source, e.g. the Google Patents page URL."
+    },
+    "abstract_fetched_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Abstract fetch time (ISO 8601)."
+    },
+    "relevance_problem": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 5,
+      "description": "The **technical problem dimension** of relevance (manually scored 1–5). relevance is composed from two dimensions: relevance = min(problem, means); see the relevance_dimensions section of the glossary."
+    },
+    "relevance_means": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 5,
+      "description": "The **technical means dimension** of relevance (manually scored 1–5). Score the two dimensions separately and then take the min — a differing technical problem cannot be rescued by similar means."
+    },
+    "assessment": {
+      "type": "object",
+      "required": [
+        "actor",
+        "by",
+        "at",
+        "basis",
+        "fingerprint"
+      ],
+      "properties": {
+        "actor": {
+          "enum": [
+            "ai",
+            "human",
+            "unknown"
+          ]
+        },
+        "by": {
+          "type": "string"
+        },
+        "at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "basis": {
+          "type": "object"
+        },
+        "materials": {
+          "type": "object"
+        },
+        "fingerprint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "human_confirmation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "by",
+        "at",
+        "fingerprint"
+      ],
+      "properties": {
+        "by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "at": {
+          "type": "string"
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "review_history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "assessment_proposals": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "feature_mapping": {
+      "type": "object"
+    },
+    "census": {
+      "type": "object",
+      "description": "G-S-04 census evidence: one record per dimension (family / cited_by) proving the lookup was performed and binding the raw artifact. Written by patentkit fetch-bigquery --fill; hand-written records for other sources follow the same schema (see research reference 05).",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "$ref": "#/definitions/censusRecord"
+        },
+        "cited_by": {
+          "$ref": "#/definitions/censusRecord"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "censusRecord": {
+      "type": "object",
+      "required": [
+        "doc_number",
+        "source",
+        "query_id",
+        "at",
+        "status",
+        "artifact",
+        "artifact_sha256"
+      ],
+      "properties": {
+        "doc_number": {
+          "type": "string",
+          "description": "The queried publication number (must match the candidate's url_or_doc_number)."
+        },
+        "source": {
+          "type": "string",
+          "description": "Data source id, e.g. BQ / OPS / EP (free form, non-empty)."
+        },
+        "query_id": {
+          "type": "string",
+          "description": "Census query family, e.g. GS04."
+        },
+        "at": {
+          "type": "string",
+          "description": "Query time (ISO 8601 with timezone)."
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "zero_hits",
+            "partial",
+            "failed"
+          ],
+          "description": "complete/zero_hits count as done (zero hits is a legitimate result); partial/failed do not."
+        },
+        "artifact": {
+          "type": "string",
+          "description": "Raw artifact, workspace-relative (e.g. 02_search_logs/raw/...)."
+        },
+        "artifact_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

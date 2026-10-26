@@ -1,0 +1,170 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "6c9210fc9b8bedd9ae1aad73d960f220a09c123416d64e4326865fce55c252a0",
+    "relevance_problem": 5,
+    "relevance_means": 4,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "直接写入而非按队列深度预测修正，手段未完全重叠",
+    "feature_mapping": {
+      "F1": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900011A1.md",
+        "locator": "L10",
+        "quote": "汇聚节点在射频开启前的最后一步将本地时刻写入该字段",
+        "note": "直接写入而非按队列深度预测修正，手段未完全重叠"
+      },
+      "F2": {
+        "status": "absent"
+      },
+      "F3": {
+        "status": "absent"
+      },
+      "F4": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N1@TGT-9001": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900011A1.md",
+          "locator": "L7",
+          "quote": "电池供电节点的时间同步方法",
+          "rationale": "同为传感网低功耗时间同步问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900011A1.md",
+          "locator": "L10",
+          "quote": "将本地时刻写入该字段",
+          "rationale": "信标携带发送时刻，但为直接写入，F1 仅部分披露"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "c41de97f5d1c22eef15c35ff89a0a63c5d41fdfdcd80cc53ad9518289865f434",
+    "relevance_problem": 4,
+    "relevance_means": 3,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "有漂移估计与补偿，但手段为双向报文而非信标间隔",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent"
+      },
+      "F2": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900012A1.md",
+        "locator": "L12",
+        "quote": "统计时间戳偏差的变化趋势，得到从站晶振相对主站的漂移斜率",
+        "note": "有漂移估计与补偿，但手段为双向报文而非信标间隔"
+      },
+      "F3": {
+        "status": "absent"
+      },
+      "F4": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N2@TGT-9001": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900012A1.md",
+          "locator": "L8",
+          "quote": "与主站时钟的偏差逐渐累积",
+          "rationale": "同为时钟漂移累积问题，场景为工业总线"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900012A1.md",
+          "locator": "L12",
+          "quote": "统计时间戳偏差的变化趋势",
+          "rationale": "双向报文估计漂移，与信标间隔法不同"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "1fbd22361c7689ba69ba87d3304df0352571e39d1b57fe901679916029c63305",
+    "relevance_problem": 3,
+    "relevance_means": 3,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "动态调整的对象是监听间隔而非信标周期，但按稳定性调整的思想一致",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent"
+      },
+      "F2": {
+        "status": "absent"
+      },
+      "F3": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900013A1.md",
+        "locator": "L13",
+        "quote": "根据信道占用统计的稳定性决定延长幅度",
+        "note": "动态调整的对象是监听间隔而非信标周期，但按稳定性调整的思想一致"
+      },
+      "F4": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N3@TGT-9001": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900013A1.md",
+          "locator": "L9",
+          "quote": "固定监听周期无法兼顾流量突发与平稳期",
+          "rationale": "固定周期不适应状态变化，与 F3 问题同构但对象不同"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900013A1.md",
+          "locator": "L13",
+          "quote": "延长监听间隔，并根据信道占用统计的稳定性决定延长幅度",
+          "rationale": "按稳定性动态调周期，手段最接近 F3"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-004",
+    "expected_fingerprint": "f7d3a413d3803efc922b9560b66dcea5d40e9dc2044a70ebca6b16e571b27a31",
+    "relevance_problem": 2,
+    "relevance_means": 2,
+    "novelty_check": "untouched",
+    "role": "excluded",
+    "review_note": "benchmark gold",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent"
+      },
+      "F2": {
+        "status": "absent"
+      },
+      "F3": {
+        "status": "absent"
+      },
+      "F4": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N4@TGT-9001": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900014A1.md",
+          "locator": "L8",
+          "quote": "可能因电磁干扰丢失",
+          "rationale": "数据可靠性问题，与时间同步无关"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900014A1.md",
+          "locator": "L12",
+          "quote": "主动向网关发送重传请求帧",
+          "rationale": "重传请求与重同步请求一字之差，对象是数据帧，不构成 F4 披露"
+        }
+      }
+    }
+  }
+]

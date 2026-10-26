@@ -10,3 +10,7 @@
 *.jsonl -text
 # 补丁空白上下文属于格式内容，原始行尾必须保留以匹配源文件。
 release/patches/*.patch -text whitespace=-blank-at-eol
+
+# 基准夹具含 sha256 绑定文件（claims.md / raw 工件）与逐字节语料一致性比对，
+# 禁止行尾转换（3.4.0 的 *.jsonl -text 同理）。
+benchmarks/** -text

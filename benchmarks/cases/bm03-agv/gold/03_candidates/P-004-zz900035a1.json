@@ -1,0 +1,100 @@
+{
+  "id": "P-004",
+  "kind": "patent",
+  "target": "TGT-9003",
+  "title": "UAV swarm cooperative avoidance method",
+  "authors_or_applicants": [
+    "Lingyun Aircraft Laboratory"
+  ],
+  "year": 2022,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900035A1",
+  "summary_zh": "",
+  "relevance": 1,
+  "novelty_check": "untouched",
+  "role": "excluded",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N2-2_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N2@TGT-9003"
+  ],
+  "logged_at": "2026-02-04T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-04_N2-2_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900035a12022",
+  "relevance_problem": 1,
+  "relevance_means": 2,
+  "review_note": "避让发生在三维空域，无车道/道路语境，技术主体不同",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent",
+      "note": "避让发生在三维空域，无车道/道路语境，技术主体不同"
+    },
+    "F3": {
+      "status": "absent"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T02:37:29+08:00",
+    "basis": {
+      "N2@TGT-9003": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900035A1.md",
+          "locator": "L13",
+          "quote": "不涉及地面车道或道路通行权",
+          "rationale": "自认不涉及道路通行，问题域不相关"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900035A1.md",
+          "locator": "L10",
+          "quote": "在三维空间内调整航迹高度",
+          "rationale": "三维航迹调整与地面 AGV 避让手段不同"
+        }
+      }
+    },
+    "materials": {
+      "N2@TGT-9003": {
+        "problem": "[0007] 本方法面向自由空域飞行，不涉及地面车道或道路通行权。",
+        "means": "[0004] 当两机预测最近点距离小于安全裕度时，按预设的让行优先级规则，较低优先级一方在三维空间内调整航迹高度。"
+      }
+    },
+    "fingerprint": "dbda25f0a3491d99e788357d593398a4c1381a83460febfb1931a1a032a5ccf6"
+  },
+  "reviewed_at": "2026-10-27T02:37:29+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T02:37:29+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-004",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900035A1",
+        "target": "TGT-9003",
+        "tags": [
+          "N2@TGT-9003"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    }
+  ]
+}

@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-27 · 3.6.0 / patentkit 0.7.0 — release doctor + synthetic patent benchmark
+
+> Kernel unchanged (0.7.0; no rule or protocol changes). Pure release-engineering and
+> evaluation-infrastructure round.
+
+**Skill 3.6.0**
+
+- `tools/release_doctor.py`: one-command release health check. `--offline` (in the CI check
+  job): pairing points, four guard scripts, dual-zip build + manifest deep check + SUMS
+  cross-check vs the publish script's asset list, per-platform installer smoke tests
+  (one-click installs the kernel wheel in a throwaway venv). `--release` (new CI job after
+  publish, ubuntu+windows matrix): audits the actual GitHub releases — tag/draft/latest/
+  target_commitish, asset lists, per-asset sha256 vs SUMS, released-zip manifest, notes
+  provenance — then reruns installer tests and an isolated kernel-wheel import against the
+  downloaded assets (api.github.com only). Kernel tag not re-released in a no-kernel round
+  is reported as a note, not a failure.
+- `benchmarks/`: public synthetic benchmark measuring judgment behavior — citation accuracy
+  (verbatim verification via the kernel's `assessment.passage`), technical-feature omission
+  (ground truth × `feature_mapping`), and misjudgment rate (role/novelty/relevance/feature
+  status/matrix cells/required citations; 40+ judgment points per case). Three cases with
+  designed traps; each ships a participant scaffold (`workspace/`) and a reference solution
+  (`gold/`, built through the real kernel commands, 0 errors / 0 warnings).
+- `tools/score_benchmark.py`: reuses kernel validation (0 errors required) — no second rule
+  set; `--suite --gold --gate perfect` locks scorer semantics in CI.
+- `tests/test_benchmark_scorer.py`: controlled-corruption tests asserting the metrics
+  degrade or the kernel rejects first (V029 fabricated-quote path).
+- `tools/check_no_workspace_data.py`: allows the `benchmarks/` prefix (synthetic corpus
+  justification); real data remains forbidden.
+
 ## 2026-10-26 · 3.5.0 / patentkit 0.7.0 — P0–P4 release integration (local; not pushed, not published)
 
 > Version-paired release-integration snapshot of the P0–P4 upgrade. Skill **3.5.0** requires

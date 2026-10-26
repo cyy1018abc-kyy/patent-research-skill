@@ -1,0 +1,42 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "417a46c7d54124a0b281ecb2ed6ed3fe216ef78c6420b84cb2abd9a0d9c6dd5f",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "near_prior_art",
+    "novelty_check": "partial",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "52f934babf70cc41b405e15e7e1711e55f864a53fdcc66a6b9da6c9a2ebaeb85",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "near_prior_art",
+    "novelty_check": "partial",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "9626192ae43bb95935869dd97733b19a6254a09160c652aa6cb983976ba6717d",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "excluded",
+    "novelty_check": "untouched",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-004",
+    "expected_fingerprint": "c916945c057a5aceba717e55ae2c370e0303c8115dc8ff3f1743321e350816c4",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "near_prior_art",
+    "novelty_check": "partial",
+    "review_note": "",
+    "basis": {}
+  }
+]

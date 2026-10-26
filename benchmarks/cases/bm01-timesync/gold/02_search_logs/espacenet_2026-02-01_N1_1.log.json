@@ -1,0 +1,17 @@
+{
+  "db": "espacenet",
+  "target": "TGT-9001",
+  "actor": "benchmark",
+  "capture_mode": "live",
+  "timestamp": "2026-02-01T08:00:00+00:00",
+  "query": {
+    "id": "N1",
+    "axis": "N1@TGT-9001",
+    "text": "abstract=(信标发送时刻估计)"
+  },
+  "result": {
+    "hit_count": 1,
+    "raw_export": "raw/N1_page-1.csv",
+    "complete": true
+  }
+}

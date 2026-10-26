@@ -1,0 +1,173 @@
+{
+  "id": "P-005",
+  "kind": "patent",
+  "target": "TGT-9003",
+  "title": "Robot swarm task reassignment method",
+  "authors_or_applicants": [
+    "Qunli Intelligent Equipment Research Institute"
+  ],
+  "year": 2021,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900034A1",
+  "summary_zh": "",
+  "relevance": 3,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N4_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N4@TGT-9003"
+  ],
+  "logged_at": "2026-02-05T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-05_N4_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900034a12021",
+  "relevance_problem": 3,
+  "relevance_means": 4,
+  "review_note": "benchmark gold",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "absent"
+    },
+    "F4": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900034A1.md",
+      "locator": "L12",
+      "quote": "未完成任务按优先级排序后，重新分配至当前任务量最少的在役机器人"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T02:37:29+08:00",
+    "basis": {
+      "N4@TGT-9003": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900034A1.md",
+          "locator": "L8",
+          "quote": "单台失效会造成其任务积压",
+          "rationale": "失效任务积压问题一致，但对象为一般机器人集群"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900034A1.md",
+          "locator": "L12",
+          "quote": "重新分配至当前任务量最少的在役机器人",
+          "rationale": "按优先级重分配的手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N4@TGT-9003": {
+        "problem": "[0002] 集群中的作业机器人执行分拣与搬运任务，单台失效会造成其任务积压。",
+        "means": "[0006] 未完成任务按优先级排序后，重新分配至当前任务量最少的在役机器人。"
+      }
+    },
+    "fingerprint": "07c6f416001a54067c1d723f24ae4c3f436b1bf8e23eff78fd6cb6a9a9420d16"
+  },
+  "reviewed_at": "2026-10-27T02:37:29+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T02:37:29+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-005",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900034A1",
+        "target": "TGT-9003",
+        "tags": [
+          "N4@TGT-9003"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T02:37:29+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-005",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900034A1",
+        "target": "TGT-9003",
+        "tags": [
+          "N4@TGT-9003"
+        ],
+        "relevance": 3,
+        "relevance_problem": 3,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "benchmark gold",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "absent"
+          },
+          "F4": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900034A1.md",
+            "locator": "L12",
+            "quote": "未完成任务按优先级排序后，重新分配至当前任务量最少的在役机器人"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T02:37:29+08:00",
+          "basis": {
+            "N4@TGT-9003": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900034A1.md",
+                "locator": "L8",
+                "quote": "单台失效会造成其任务积压",
+                "rationale": "失效任务积压问题一致，但对象为一般机器人集群"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900034A1.md",
+                "locator": "L12",
+                "quote": "重新分配至当前任务量最少的在役机器人",
+                "rationale": "按优先级重分配的手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N4@TGT-9003": {
+              "problem": "[0002] 集群中的作业机器人执行分拣与搬运任务，单台失效会造成其任务积压。",
+              "means": "[0006] 未完成任务按优先级排序后，重新分配至当前任务量最少的在役机器人。"
+            }
+          },
+          "fingerprint": "07c6f416001a54067c1d723f24ae4c3f436b1bf8e23eff78fd6cb6a9a9420d16"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T02:37:29+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T02:37:29+08:00",
+    "fingerprint": "07c6f416001a54067c1d723f24ae4c3f436b1bf8e23eff78fd6cb6a9a9420d16"
+  }
+}

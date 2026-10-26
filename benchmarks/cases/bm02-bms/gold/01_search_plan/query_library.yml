@@ -1,0 +1,35 @@
+# Query library — the single registry for all search queries
+#
+# Three purposes:
+#   1. Human lookup: which queries have this axis used
+#   2. Tool runs: `patentkit fetch-cnipa --axis N1 --from-library`
+#   3. Traceability: query.id in the logs points to the axis here
+#
+# ⚠️ Sub-queries are always **appended at the end; never renumber existing entries** — otherwise historical logs will no longer match.
+
+version: 1
+updated: '2026-10-27'
+
+# ── CNIPA sub-query batches ───────────────────────────────────────────
+# CNIPA returns at most 3 records per query, so results can only accumulate through multiple sub-queries.
+# Each sub-query = "domain term and object term and means term" (at most 3 AND sub-expressions).
+cnipa_batches:
+  N1@TGT-9002:
+    - { label: basic, abstract: 'TBD: domain term and object term' }
+  N2@TGT-9002:
+    - { label: basic, abstract: 'TBD: domain term and object term' }
+  N3@TGT-9002:
+    - { label: basic, abstract: 'TBD: domain term and object term' }
+  N4@TGT-9002:
+    - { label: basic, abstract: 'TBD: domain term and object term' }
+  N5@TGT-9002:
+    - { label: basic, abstract: 'TBD: domain term and object term' }
+  N6@TGT-9002:
+    - { label: basic, abstract: 'TBD: domain term and object term' }
+
+# ── Crossref literature search (covers the literature side of G-S-01) ──
+# ⚠️ A Crossref query is a full-text relevance search, not a Boolean expression; the hit universe can reach the millions.
+#    Taking only the relevance Top-N is by design, and the log must declare result.complete=false.
+crossref_queries:
+  N1@TGT-9002:
+    - 'TBD: English technical phrase (e.g. PEM fuel cell water management microgravity)'

@@ -1,0 +1,75 @@
+# bm01-timesync 真值（全部为编造合成数据的判断基准）
+target: TGT-9001
+axes:
+  N1@TGT-9001: {title_zh: '信标发送时刻估计', features: [F1]}
+  N2@TGT-9001: {title_zh: '漂移估计与补偿', features: [F2]}
+  N3@TGT-9001: {title_zh: '动态信标周期', features: [F3]}
+  N4@TGT-9001: {title_zh: '重同步请求', features: [F4]}
+features:
+  F1: {claim: '1', statement: '信标帧携带根据待发队列深度预测修正得到的发送时刻估计值'}
+  F2: {claim: '1', statement: '按相邻信标到达间隔与本振计数差估计漂移并补偿'}
+  F3: {claim: '1', statement: '按漂移估计的稳定性动态调整广播周期'}
+  F4: {claim: '2', statement: '超门限时发送携带误差度量的重同步请求帧'}
+candidates:
+  P-001:
+    doc_number: ZZ900011A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 5
+    relevance_means: 4
+    disclosure:
+      F1: {status: partial, ref: '02_search_logs/raw/ZZ900011A1.md', locator: '[0004]', quote: '汇聚节点在射频开启前的最后一步将本地时刻写入该字段', note: '直接写入而非按队列深度预测修正，手段未完全重叠'}
+      F2: {status: absent}
+      F3: {status: absent}
+      F4: {status: absent}
+    basis:
+      N1@TGT-9001:
+        problem: {ref: '02_search_logs/raw/ZZ900011A1.md', locator: '[0001]', quote: '电池供电节点的时间同步方法', rationale: '同为传感网低功耗时间同步问题'}
+        means: {ref: '02_search_logs/raw/ZZ900011A1.md', locator: '[0004]', quote: '将本地时刻写入该字段', rationale: '信标携带发送时刻，但为直接写入，F1 仅部分披露'}
+  P-002:
+    doc_number: ZZ900012A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 4
+    relevance_means: 3
+    disclosure:
+      F1: {status: absent}
+      F2: {status: partial, ref: '02_search_logs/raw/ZZ900012A1.md', locator: '[0006]', quote: '统计时间戳偏差的变化趋势，得到从站晶振相对主站的漂移斜率', note: '有漂移估计与补偿，但手段为双向报文而非信标间隔'}
+      F3: {status: absent}
+      F4: {status: absent}
+    basis:
+      N2@TGT-9001:
+        problem: {ref: '02_search_logs/raw/ZZ900012A1.md', locator: '[0002]', quote: '与主站时钟的偏差逐渐累积', rationale: '同为时钟漂移累积问题，场景为工业总线'}
+        means: {ref: '02_search_logs/raw/ZZ900012A1.md', locator: '[0006]', quote: '统计时间戳偏差的变化趋势', rationale: '双向报文估计漂移，与信标间隔法不同'}
+  P-003:
+    doc_number: ZZ900013A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 3
+    relevance_means: 3
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: partial, ref: '02_search_logs/raw/ZZ900013A1.md', locator: '[0007]', quote: '根据信道占用统计的稳定性决定延长幅度', note: '动态调整的对象是监听间隔而非信标周期，但按稳定性调整的思想一致'}
+      F4: {status: absent}
+    basis:
+      N3@TGT-9001:
+        problem: {ref: '02_search_logs/raw/ZZ900013A1.md', locator: '[0003]', quote: '固定监听周期无法兼顾流量突发与平稳期', rationale: '固定周期不适应状态变化，与 F3 问题同构但对象不同'}
+        means: {ref: '02_search_logs/raw/ZZ900013A1.md', locator: '[0007]', quote: '延长监听间隔，并根据信道占用统计的稳定性决定延长幅度', rationale: '按稳定性动态调周期，手段最接近 F3'}
+  P-004:
+    doc_number: ZZ900014A1
+    role: excluded
+    novelty_check: untouched
+    relevance_problem: 2
+    relevance_means: 2
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: absent}
+      F4: {status: absent}
+    basis:
+      N4@TGT-9001:
+        problem: {ref: '02_search_logs/raw/ZZ900014A1.md', locator: '[0002]', quote: '可能因电磁干扰丢失', rationale: '数据可靠性问题，与时间同步无关'}
+        means: {ref: '02_search_logs/raw/ZZ900014A1.md', locator: '[0006]', quote: '主动向网关发送重传请求帧', rationale: '重传请求与重同步请求一字之差，对象是数据帧，不构成 F4 披露'}
+conclusions_must_cite: [P-001, P-002, P-003]
+overall_verdict: '单篇新颖性 —— 初步成立（无单篇覆盖全部核心特征）；创造性 —— 存疑（P-001 与 P-002/P-003 的手段组合方向需进一步检索确认）'

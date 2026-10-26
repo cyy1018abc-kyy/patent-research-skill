@@ -52,7 +52,7 @@ class AssessmentContract(unittest.TestCase):
 
     def test_skill_and_sample_keep_source_and_judgment_separate(self):
         skill = (ROOT / "research/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("version: 3.5.0", skill)
+        self.assertIn("version: 3.6.0", skill)
         self.assertIn("07-assessment-protocol.md", skill)
         self.assertNotIn("conclusion is downgraded to `asserted`", skill)
         sample = json.loads((ROOT / "research/assets/sample_data/candidates_example.json").read_text(encoding="utf-8"))

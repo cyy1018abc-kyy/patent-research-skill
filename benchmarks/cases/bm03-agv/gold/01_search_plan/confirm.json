@@ -1,0 +1,18 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "fed6925a2cb0564525b4b17e35ff3c8ba75f64947e0fa12f78ba0e6de08e5269"
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "ae1ea61c28ecaa1293947aeb8fb9cf30b375bb1bf9342cce26149e72f9459c97"
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "bac3233a0fedfe581b505e41f7304643e44e06f3024d4f76a5283ff90503a82f"
+  },
+  {
+    "candidate_id": "P-005",
+    "expected_fingerprint": "07c6f416001a54067c1d723f24ae4c3f436b1bf8e23eff78fd6cb6a9a9420d16"
+  }
+]

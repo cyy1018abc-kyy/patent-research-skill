@@ -1,0 +1,103 @@
+{
+  "id": "P-003",
+  "kind": "patent",
+  "target": "TGT-9002",
+  "title": "Battery pack thermal management fan control method",
+  "authors_or_applicants": [
+    "Fengchi Thermal Control Technology Co."
+  ],
+  "year": 2019,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900024A1",
+  "summary_zh": "",
+  "relevance": 2,
+  "novelty_check": "untouched",
+  "role": "excluded",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N3_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N3@TGT-9002"
+  ],
+  "logged_at": "2026-02-03T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-03_N3_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900024a12019",
+  "relevance_problem": 2,
+  "relevance_means": 2,
+  "review_note": "[0006] 的\"温差\"用于调风扇转速，不是均衡占空比修正",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "absent",
+      "note": "[0006] 的\"温差\"用于调风扇转速，不是均衡占空比修正"
+    },
+    "F4": {
+      "status": "absent"
+    },
+    "F5": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T02:37:28+08:00",
+    "basis": {
+      "N3@TGT-9002": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900024A1.md",
+          "locator": "L8",
+          "quote": "长期运行形成组内温差，加速单体老化离散",
+          "rationale": "温差是共同关键词，但目的为散热均匀而非均衡控制"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900024A1.md",
+          "locator": "L12",
+          "quote": "按比例积分规律调节风扇转速",
+          "rationale": "风扇调速与均衡执行无关"
+        }
+      }
+    },
+    "materials": {
+      "N3@TGT-9002": {
+        "problem": "[0002] 电池组内各位置电芯的散热条件不同，长期运行形成组内温差，加速单体老化离散。",
+        "means": "[0006] 控制器根据所述组内最大温差与目标温差的偏差，按比例积分规律调节风扇转速。"
+      }
+    },
+    "fingerprint": "9626192ae43bb95935869dd97733b19a6254a09160c652aa6cb983976ba6717d"
+  },
+  "reviewed_at": "2026-10-27T02:37:28+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T02:37:28+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900024A1",
+        "target": "TGT-9002",
+        "tags": [
+          "N3@TGT-9002"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    }
+  ]
+}

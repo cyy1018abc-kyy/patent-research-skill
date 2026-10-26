@@ -97,9 +97,13 @@ jobs:
           PY
       - name: Skill protocol and installation acceptance
         run: python -m unittest discover -s tests -v
+      - name: Benchmark gold solutions score perfect (scorer semantics locked)
+        run: python tools/score_benchmark.py --suite benchmarks/cases --gold --gate perfect
+      - name: Release doctor offline preflight (pairing + guards + build + installers)
+        run: python tools/release_doctor.py --offline --dist dist --json > release-doctor-offline.json
       - name: Syntax checks
         run: |
-          python -m compileall -q research/scripts tools evals
+          python -m compileall -q research/scripts tools evals benchmarks
           bash -n release/install.sh
           bash -n tools/publish_release.sh
           git diff --check
@@ -130,3 +134,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash tools/publish_release.sh
+
+  release-doctor:
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Audit the actual releases and run install tests against downloaded assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python tools/release_doctor.py --release --expect-commit "${{ github.sha }}"

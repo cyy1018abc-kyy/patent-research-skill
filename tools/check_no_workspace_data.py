@@ -32,6 +32,7 @@ ALLOWED_PREFIXES = (
     "dist",                  # CI 构建产物（含合成样例工作区 samples/）
     "_upstream",             # 上游源码（不提交，但本地存在也不算泄漏）
     ".venv",
+    "benchmarks",            # 合成专利案例基准：脚手架/金解工作区全部为编造数据（见 benchmarks/README.md）
 )
 
 WORKSPACE_DIR_PREFIXES = (

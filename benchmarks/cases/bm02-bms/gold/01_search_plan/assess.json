@@ -1,0 +1,190 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "f33206c7e69f9a88c469ef65498804ae4de959f7d5cce9fc926212697706186f",
+    "relevance_problem": 5,
+    "relevance_means": 4,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "[0007] 明确\"全过程均可执行\"，与\"仅恒压阶段\"相反；[0008] 占空比固定为二分之一，无温度修正；[0009] 热量自然散失，未用于预热",
+    "feature_mapping": {
+      "F1": {
+        "status": "disclosed",
+        "ref": "02_search_logs/raw/ZZ900021A1.md",
+        "locator": "L11",
+        "quote": "每五十毫秒完成一轮全部电芯的电压巡回采样"
+      },
+      "F2": {
+        "status": "absent",
+        "note": "[0007] 明确\"全过程均可执行\"，与\"仅恒压阶段\"相反"
+      },
+      "F3": {
+        "status": "absent",
+        "note": "[0008] 占空比固定为二分之一，无温度修正"
+      },
+      "F4": {
+        "status": "absent"
+      },
+      "F5": {
+        "status": "absent",
+        "note": "[0009] 热量自然散失，未用于预热"
+      }
+    },
+    "basis": {
+      "N1@TGT-9002": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900021A1.md",
+          "locator": "L8",
+          "quote": "需对高压单体进行旁路泄放",
+          "rationale": "同为串联电池组均衡问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900021A1.md",
+          "locator": "L10",
+          "quote": "控制器按轮询次序依次读取各串联电芯的端电压",
+          "rationale": "电压巡回采样手段相同"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "ab8fd390e18f7be7e6a4cbae45d44a2ee28dc0267ec1a0d6534f1c22d99c0eb3",
+    "relevance_problem": 4,
+    "relevance_means": 3,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "披露了恒压阶段启动重负载辅助任务的时机原理，但未提及均衡；暂停巡回+ADC 分时复用的机制在 [0009]/[0010] 披露，但服务于辅助测量任务而非均衡支路电流",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent"
+      },
+      "F2": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900022A1.md",
+        "locator": "L17",
+        "quote": "在恒压阶段，充电电流纹波对高精度采样的干扰最小，适合安排精密测量类任务",
+        "note": "披露了恒压阶段启动重负载辅助任务的时机原理，但未提及均衡"
+      },
+      "F3": {
+        "status": "absent"
+      },
+      "F4": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900022A1.md",
+        "locator": "L15",
+        "quote": "调度器暂停该窗口内的电压巡回采样，待任务完成后恢复巡回节拍",
+        "note": "暂停巡回+ADC 分时复用的机制在 [0009]/[0010] 披露，但服务于辅助测量任务而非均衡支路电流"
+      },
+      "F5": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N2@TGT-9002": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900022A1.md",
+          "locator": "L12",
+          "quote": "把低负载阶段的剩余算力与采样窗口安排给辅助管理任务",
+          "rationale": "按充电阶段调度资源的思路与 F2 的开启时机控制同向"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900022A1.md",
+          "locator": "L14",
+          "quote": "任务调度器按阶段切换辅助任务的启停",
+          "rationale": "阶段化启停控制手段与 F2 部分重叠"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "00c88d185ac85870db91cda712f7440b6ff6f1d3fb9b50dd63e509d36aff6bd2",
+    "relevance_problem": 2,
+    "relevance_means": 2,
+    "novelty_check": "untouched",
+    "role": "excluded",
+    "review_note": "[0006] 的\"温差\"用于调风扇转速，不是均衡占空比修正",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent"
+      },
+      "F2": {
+        "status": "absent"
+      },
+      "F3": {
+        "status": "absent",
+        "note": "[0006] 的\"温差\"用于调风扇转速，不是均衡占空比修正"
+      },
+      "F4": {
+        "status": "absent"
+      },
+      "F5": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N3@TGT-9002": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900024A1.md",
+          "locator": "L8",
+          "quote": "长期运行形成组内温差，加速单体老化离散",
+          "rationale": "温差是共同关键词，但目的为散热均匀而非均衡控制"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900024A1.md",
+          "locator": "L12",
+          "quote": "按比例积分规律调节风扇转速",
+          "rationale": "风扇调速与均衡执行无关"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-004",
+    "expected_fingerprint": "a4766b2570caf188bf6cf1f8d15ceb6a2ee104204d164c4aa37073af763bff5f",
+    "relevance_problem": 3,
+    "relevance_means": 3,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "[0004] 采集的是温度而非端电压；披露了贴附电芯的电阻加热，但为独立 PTC 回路而非均衡电阻余热经导热件传导",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent",
+        "note": "[0004] 采集的是温度而非端电压"
+      },
+      "F2": {
+        "status": "absent"
+      },
+      "F3": {
+        "status": "absent"
+      },
+      "F4": {
+        "status": "absent"
+      },
+      "F5": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900023A1.md",
+        "locator": "L13",
+        "quote": "加热元件采用正温度系数热敏电阻片，直接贴附于电芯侧面",
+        "note": "披露了贴附电芯的电阻加热，但为独立 PTC 回路而非均衡电阻余热经导热件传导"
+      }
+    },
+    "basis": {
+      "N4@TGT-9002": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900023A1.md",
+          "locator": "L8",
+          "quote": "在零下环境可充性急剧下降",
+          "rationale": "低温可充性问题与 F5 的预热目的相邻"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900023A1.md",
+          "locator": "L13",
+          "quote": "正温度系数热敏电阻片",
+          "rationale": "电阻加热手段相似，热源不同"
+        }
+      }
+    }
+  }
+]
