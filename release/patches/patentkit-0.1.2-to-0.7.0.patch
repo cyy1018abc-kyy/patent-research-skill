@@ -5519,10 +5519,10 @@ index 3064d0e..e2ae5f7 100644
 +    raise SystemExit(main())
 diff --git a/b/patentkit/contracts.py b/patentkit/contracts.py
 new file mode 100644
-index 0000000..90a63e6
+index 0000000..d182991
 --- /dev/null
 +++ b/patentkit/contracts.py
-@@ -0,0 +1,751 @@
+@@ -0,0 +1,762 @@
 +"""Versioned data contracts for the patent-agent upgrade (P0).
 +
 +Single source of truth for every **new** data object introduced by the upgrade plan
@@ -5553,6 +5553,7 @@ index 0000000..90a63e6
 +
 +import hashlib
 +import json
++import re
 +from pathlib import Path
 +from typing import Any
 +
@@ -6252,6 +6253,11 @@ index 0000000..90a63e6
 +# ── Path confinement (plan §4.1 / §9 security) ────────────────────────────────────────
 +
 +
++#: Paths that are absolute on some supported platform. They must be rejected everywhere:
++#: a workspace-relative locator that only *looks* safe on the current OS is a confinement hole.
++_FOREIGN_ABSOLUTE = re.compile(r"^(?:[A-Za-z]:[\\/]|[A-Za-z]:$|\\\\|//)")
++
++
 +def resolve_confined_path(root: Path, relative: str, *, must_exist: bool = False) -> Path:
 +    """Resolve a workspace-relative path and refuse anything escaping ``root``.
 +
@@ -6261,6 +6267,11 @@ index 0000000..90a63e6
 +    """
 +    if not relative or not str(relative).strip():
 +        raise ContractError("source path is empty")
++    text = str(relative)
++    if _FOREIGN_ABSOLUTE.match(text):
++        raise ContractError(
++            f"source path must be workspace-relative, got absolute/drive/UNC path: {relative!r}"
++        )
 +    raw = Path(relative)
 +    if raw.is_absolute() or raw.drive:
 +        raise ContractError(f"source path must be workspace-relative, got absolute path: {relative!r}")
@@ -26146,10 +26157,10 @@ index c14ae53..a90e755 100644
 +    assert findings == [], "\n".join(str(f) for f in findings)
 diff --git a/b/tests/test_contracts.py b/tests/test_contracts.py
 new file mode 100644
-index 0000000..f2b946b
+index 0000000..50991f7
 --- /dev/null
 +++ b/tests/test_contracts.py
-@@ -0,0 +1,536 @@
+@@ -0,0 +1,537 @@
 +"""P0 contract tests — JSON Schemas, canonical fingerprints, path confinement, hashes.
 +
 +Covers the upgrade plan §4 data contracts and §9 "missing/negative/security" matrix entries
@@ -26606,6 +26617,7 @@ index 0000000..f2b946b
 +        "a/../../outside.md",
 +        "..",
 +        "C:/Windows/win.ini",
++        "C:drive-relative.md",
 +        "/etc/passwd",
 +        "\\\\server\\share\\x.md",
 +    ],

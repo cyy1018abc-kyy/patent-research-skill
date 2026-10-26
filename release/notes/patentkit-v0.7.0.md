@@ -15,7 +15,8 @@ delivery pipeline. It ships as `patentkit-0.1.2-to-0.7.0.patch` applied to the p
   `idea`, `idea_decision`, `drafting_plan`, `claim_atom`, `claim`, `support_mapping`,
   `figure_plan`, `delivery_manifest`, `discovery_handoff`, `patent_document_model`),
   canonical-JSON SHA-256 fingerprints, idea content fingerprint that excludes status,
-  confined-path resolution. Schema version 1.0 (additive).
+  confined-path resolution (Windows absolute/drive/UNC locators are rejected on every
+  platform, POSIX included). Schema version 1.0 (additive).
 - `patentkit/workspace_upgrade.py` — `upgrade check/apply`: deterministic, non-destructive
   layout upgrade adding `10_discovery/` (with `ideas/`, `materials/`, `parsed/`...) and
   `11_delivery/`; dry-run by default, legacy workspaces keep working.
