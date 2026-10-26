@@ -330,7 +330,34 @@ def _installer_env() -> dict[str, str]:
     return env
 
 
-def _try_ps1(package: Path, dest: Path) -> tuple[bool, str]:
+def _kernel_env(work: Path, wheel: Path | None) -> tuple[dict[str, str] | None, str]:
+    """为 ps1/bash 安装器准备"内核可导入"的环境（安装器有内核前置检查）。
+
+    优先复用当前环境；当前环境 import 不了且手上有 wheel 时，造一次性 venv 并把
+    wheel 装进去（绝不污染当前环境）。返回 (env|None, 说明)；None = 两个前提都不
+    满足，调用方应 SKIP。
+    """
+    probe = subprocess.run([sys.executable, "-c", "import patentkit"], capture_output=True, timeout=60)
+    if probe.returncode == 0:
+        return _installer_env(), "当前环境已含内核"
+    if wheel is None or not wheel.is_file():
+        return None, "当前环境无内核且无 wheel 可装"
+    venv = work / "installer-venv"
+    proc = subprocess.run([sys.executable, "-m", "venv", str(venv)], capture_output=True,
+                          text=True, encoding="utf-8", errors="replace", timeout=180)
+    if proc.returncode != 0:
+        return None, f"一次性 venv 创建失败: {(proc.stdout + proc.stderr)[-300:]}"
+    pip = venv / "Scripts" / "python.exe" if os.name == "nt" else venv / "bin" / "python"
+    proc = subprocess.run([str(pip), "-m", "pip", "install", "--quiet", str(wheel)],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=420)
+    if proc.returncode != 0:
+        return None, f"venv 内安装内核 wheel 失败: {(proc.stdout + proc.stderr)[-400:]}"
+    env = _installer_env()
+    env["PATH"] = str(venv / ("Scripts" if os.name == "nt" else "bin")) + os.pathsep + env["PATH"]
+    return env, "一次性 venv + 下载的 wheel"
+
+
+def _try_ps1(package: Path, dest: Path, env: dict[str, str]) -> tuple[bool, str]:
     shell = None
     for candidate in ("pwsh", "powershell"):
         found = __import__("shutil").which(candidate)
@@ -340,14 +367,14 @@ def _try_ps1(package: Path, dest: Path) -> tuple[bool, str]:
     if not shell:
         return False, "no PowerShell found"
     proc = subprocess.run([shell, "-NoProfile", "-File", str(package / "install.ps1"),
-                           "-Dest", str(dest)], env=_installer_env(), capture_output=True,
+                           "-Dest", str(dest)], env=env, capture_output=True,
                           text=True, encoding="utf-8", errors="replace", timeout=INSTALL_TIMEOUT)
     return proc.returncode == 0, (proc.stdout + proc.stderr).strip()[-1200:]
 
 
-def _try_bash(package: Path, dest: Path) -> tuple[bool, str]:
+def _try_bash(package: Path, dest: Path, env: dict[str, str]) -> tuple[bool, str]:
     proc = subprocess.run(["bash", str(package / "install.sh"), "--dest", str(dest)],
-                          env=_installer_env(), capture_output=True, text=True,
+                          env=env, capture_output=True, text=True,
                           encoding="utf-8", errors="replace", timeout=INSTALL_TIMEOUT)
     return proc.returncode == 0, (proc.stdout + proc.stderr).strip()[-1200:]
 
@@ -401,12 +428,14 @@ def check_installers(package: Path, zips: list[Path], wheel: Path | None) -> tup
 
         dest_for: dict[str, Path] = {}
         ran = __import__("shutil").which("pwsh") or __import__("shutil").which("powershell")
+        env, env_note = _kernel_env(work, wheel)
         dest_for["install.ps1"] = work / "dest-ps1"
-        record("install.ps1", *_try_ps1(work / "pkg", dest_for["install.ps1"]) + (bool(ran),
-               "无 PowerShell（Windows CI 会跑）"))
+        record("install.ps1", *_try_ps1(work / "pkg", dest_for["install.ps1"], env) + (bool(ran) and env is not None,
+               "无 PowerShell" if not ran else f"内核环境不可用（{env_note}）"))
         if os.name != "nt":
             dest_for["install.sh"] = work / "dest-sh"
-            record("install.sh", *_try_bash(work / "pkg", dest_for["install.sh"]) + (True, ""))
+            record("install.sh", *_try_bash(work / "pkg", dest_for["install.sh"], env) + (env is not None,
+                   f"内核环境不可用（{env_note}）"))
         else:
             statuses.append("install.sh: SKIP（POSIX 安装器由 Linux CI 覆盖）")
         if os.name == "nt":
@@ -652,11 +681,14 @@ def check_release_install(gh: Github, blobs: dict[str, bytes]) -> tuple[str, str
 
         dest: dict[str, Path] = {}
         ran = bool(__import__("shutil").which("pwsh") or __import__("shutil").which("powershell"))
+        env, env_note = _kernel_env(work, wheel if wheel.is_file() else None)
         dest["install.ps1"] = work / "dest-ps1"
-        record("install.ps1", *_try_ps1(work / "pkg", dest["install.ps1"]) + (ran, "无 PowerShell"))
+        record("install.ps1", *_try_ps1(work / "pkg", dest["install.ps1"], env) + (ran and env is not None,
+               "无 PowerShell" if not ran else f"内核环境不可用（{env_note}）"))
         if os.name != "nt":
             dest["install.sh"] = work / "dest-sh"
-            record("install.sh", *_try_bash(work / "pkg", dest["install.sh"]) + (True, ""))
+            record("install.sh", *_try_bash(work / "pkg", dest["install.sh"], env) + (env is not None,
+                   f"内核环境不可用（{env_note}）"))
         else:
             statuses.append("install.sh: SKIP（POSIX 安装器由 Linux CI 覆盖）")
         if os.name == "nt" and wheel.is_file():
