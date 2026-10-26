@@ -77,6 +77,7 @@ metadata:
 | D4 | 支持映射 | [`15`](references/15-claims-and-support.md) | `draft support import` + `draft support review`：每个权项原子→段落/事实/附图 |
 | D5 | 审计与门 | [`14`](references/14-drafting-pipeline.md) | `draft audit` → `draft status` → `draft gate --to review_draft`（需 G-S-01/02/03 PASS） |
 | D6 | 改稿影响 | [`14`](references/14-drafting-pipeline.md) | `draft impact --claim-no N` 报告受影响段落/附图/从权，再走 13 号改稿闭环 |
+| D7 | 专业附图 | [`16-专业附图`](references/16-figures.md) | `figures plan`（系统框图/方法流程图）→ `figures validate` → `figures render`；图文一致与人工看图复核 |
 
 ## 硬约束（不得违反）
 
@@ -95,6 +96,9 @@ metadata:
 10. **双状态写作门（review_draft 门禁）**：未达到 G-S-01/02/03 时只能停留在 `concept`；
     标记 `review_draft` 必须通过 `draft gate`（审计无 error、原子与支持映射人工确认、
     候选指纹当前）。P4 之前不产生正式交付件，不得把底稿说成"可直接提交"。
+11. **附图由结构化 figure plan（附图规格）决定**：系统框图/方法流程图先写规格再渲染；渲染器不得创造或删除
+    部件/连线，**不得仅依赖文本生图**；自动检查（F-001…F-014、V033）不替代人工看图复核，
+    正式提交前必须逐图人工确认。
 
 ## 结果格式（凡交付底稿一律用它，不得缺项）
 
@@ -105,6 +109,7 @@ metadata:
 | **证据引用** | 引用的每篇对比文献 = 账本内编号 + 证据等级 + 判定状态 |
 | **数值溯源** | 本稿包含的数值声明数与 A/B/C 分布；未溯源的数值不得出现 |
 | **结构化状态** | plan/原子/权项/支持映射计数 + `draft audit` 结果 + 当前写作门（concept / review_draft，是否 stale） |
+| **附图一致性** | `figures validate` 结果（F-001…F-014 摘要）+ 已渲染图号 + 是否已人工看图复核 |
 | **未验证标注** | 工具未跑或数据不全时，明确写「⚠️ 未经验证工具校验」 |
 
 ## 参考文档（按需加载）
@@ -119,6 +124,7 @@ metadata:
 | [`13-revision-loop.md`](references/13-revision-loop.md) | 多轮改稿闭环：补丁→日志→重过门 |
 | [`14-drafting-pipeline.md`](references/14-drafting-pipeline.md) | **P2** 结构化管线：plan→原子→权项→支持映射→双状态门（G-D 审计码） |
 | [`15-claims-and-support.md`](references/15-claims-and-support.md) | 权项原子/结构化权项/支持映射的字段、校验规则与验收清单 |
+| [`16-figures.md`](references/16-figures.md) | **P3** 专业附图：figure plan 规格、确定性渲染、F-001…F-014 校验与人工复核纪律 |
 | [`glossary.md`](references/glossary.md) | 中英术语对照（与 patent-research 技能同一份，CI 锁定同步） |
 
 > 命令直接用 `python -m patentkit <子命令>`（provenance / figures / deadlines / attest /

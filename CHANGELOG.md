@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-10-26 · Unreleased — P3 professional figures (development line)
+
+> **Local development line; no release, no push.** P3 of the upgrade plan: structured figure
+> plans, deterministic rendering and figure-text validation. Kernel distribution patches are
+> rebuilt at release-integration time.
+
+**Kernel** (`patentkit/figure_plan.py`, source tree)
+
+- `figures plan` — derives figure-plan skeletons from the P2 drafting plan / claim atoms
+  (system block diagram + method flowchart by default or from `drawing_requirements`), with
+  deterministic reference signs; legacy `*.figure.yml` specs are normalized.
+- `figures render` — deterministic black-white SVG (grid/chain layout, orthogonal edges, marks;
+  no timestamps/scripts/external links, same plan → identical bytes); optional 300-DPI PNG via
+  Pillow (missing dependency is reported as not generated, never faked).
+- `figures validate` — locatable findings F-001…F-014: schema, duplicate ids, dangling/self/
+  duplicate edges, isolated nodes, type-required content, marks (in-figure duplicates are errors;
+  same sign across figures is a warning requiring human confirmation), layout options, manuscript
+  `图N` citation closure, drafting-plan coverage and support-mapping figure references. Reuses the
+  existing V033 mark check instead of duplicating it.
+- The renderer cannot create or delete parts/edges: geometry comes only from the plan. Rendering
+  refuses structurally invalid plans.
+- `draft audit` gained D-018 (figure validation findings; errors block `review_draft`).
+- `contracts.py`: figure nodes accept numeric ids/legacy compatibility, optional `kind`,
+  `spec_refs` and `notes`; tests: 21 new figure tests; kernel regression
+  **717 passed / 11 skipped / 0 failed**; golden snapshots unchanged.
+
+**Skill payload** (`drafting/`)
+
+- New reference `16-figures.md` (zh + en mirror): figure-plan schema, commands, F-001…F-014
+  codes, deterministic-rendering contract and human-review discipline.
+- `SKILL.md` (and English mirror): Line D step D7 (figures), hard constraint 11 (structured
+  figure plan, no text-to-image-only drawings, human visual review mandatory), result-format row
+  "figure consistency"; reference table entry.
+- Evals grew to 31 cases (figure trigger; text-to-image refusal); terminology pairing extended
+  to drafting 16 with three new anchors.
+
+**Unchanged**: G-S-01…05, evidence levels, assessment protocol 1, V001–V037, revise/provenance/
+attest/ledger semantics, golden snapshots.
+
 ## 2026-10-26 · Unreleased — P2 structured drafting (development line)
 
 > **Local development line; no release, no push.** P2 of the upgrade plan

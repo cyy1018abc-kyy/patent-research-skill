@@ -84,7 +84,7 @@ After installation, restart the client:
 
 ```
 research/                patent-research 技能：SKILL.md + references/(zh 01-08+glossary) + references.en/ + scripts/ + assets/
-drafting/                patent-drafting 技能：SKILL.md + references/(zh 00,09-15+glossary)（OA 已并入；14-15 为 P2 结构化撰写管线）
+drafting/                patent-drafting 技能：SKILL.md + references/(zh 00,09-16+glossary)（OA 已并入；14-16 为 P2/P3 结构化撰写与附图管线）
 discovery/               patent-discovery 技能（P1 开发线，未发布）：SKILL.md + references/(zh 00-03+glossary) + references.en/
 evals/                   trigger/refusal/boundary eval set + terminology consistency check (CI)
 release/                 installers (ps1/sh/oneclick), install docs, patches, release notes
@@ -93,11 +93,13 @@ docs/                    design memos (skill matrix, data sources, scope decisio
 .github/workflows/ci.yml  wheel/ZIP builds, regressions, evals, guards, installation and publication
 ```
 
-> **P1/P2 development line (local, unreleased)**: `discovery/` implements the patent-discovery
+> **P1/P2/P3 development line (local, unreleased)**: `discovery/` implements the patent-discovery
 > skill (material intake → technical facts → patent candidates → human confirmation → research
 > handoff draft, G-I control layer). The drafting skill gained the P2 structured pipeline
 > (DraftingPlan → ClaimAtom → Claim → SupportMapping → two-state writing gate, G-D audit codes in
-> `drafting/references/14`–`15`) plus the kernel-side `patentkit draft` commands. These are
+> `drafting/references/14`–`15`) plus the kernel-side `patentkit draft` commands, and the P3
+> professional-figure engine (`figures plan/render/validate`, F-001…F-014 checks,
+> `drafting/references/16`). These are
 > included in the full package built from this tree; the paired kernel capabilities live in the
 > kernel source tree and only reach this repository through a rebuilt `release/patches/` patch at
 > release-integration time. No release has been published for this line, and G-S / evidence /

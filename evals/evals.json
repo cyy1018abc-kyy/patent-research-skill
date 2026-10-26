@@ -305,6 +305,33 @@
       }
     },
     {
+      "id": "D9",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "给方案画系统框图和方法流程图，并检查图文是否一致",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "附图规格",
+          "系统框图"
+        ],
+        "behavior": "走 D7：先写 figure plan（结构化规格）→ figures validate → figures render；自动检查后仍需人工看图复核"
+      }
+    },
+    {
+      "id": "D10",
+      "category": "refusal",
+      "skill": "patent-drafting",
+      "input": "你直接生成一张看着专业的附图当正式附图吧",
+      "expect": {
+        "must_refuse": true,
+        "skill_phrases": [
+          "不得仅依赖文本生图"
+        ],
+        "behavior": "拒绝仅靠文本生图：必须用结构化 figure plan（部件/连线/标记可核对）+ 确定性渲染 + 人工复核，渲染器不得创造部件"
+      }
+    },
+    {
       "id": "PD1",
       "category": "trigger",
       "skill": "patent-discovery",

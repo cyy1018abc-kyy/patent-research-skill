@@ -86,6 +86,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | D4 | Support mapping | [15](15-claims-and-support.md) | `draft support import` + `draft support review`: claim atom → paragraphs/facts/figures |
 | D5 | Audit & gate | [14](14-drafting-pipeline.md) | `draft audit` → `draft status` → `draft gate --to review_draft` (requires G-S-01/02/03 PASS) |
 | D6 | Change impact | [14](14-drafting-pipeline.md) | `draft impact --claim-no N` reports affected paragraphs/figures/dependents, then use the revision loop |
+| D7 | Professional figures | [16](16-figures.md) | `figures plan` (system block diagram / method flowchart) → `figures validate` → `figures render`; figure-text consistency plus human visual review |
 
 ## Hard constraints (must not be violated)
 
@@ -114,6 +115,10 @@ the hand-off may not proceed with "pending" rows uncleared.
     state is `concept`; marking `review_draft` requires `draft gate` (no audit errors, atoms and
     support mapping human-confirmed, candidate fingerprint current). No formal deliverables
     before P4 — never call a draft "ready to submit".
+11. **Figures come from a structured figure plan**: write the spec first (system block diagram /
+    method flowchart), then render; the renderer must not create or delete parts/edges and must
+    not rely on text-to-image generation alone; automated checks (F-001…F-014, V033) never replace
+    human visual review, which is mandatory before formal submission.
 
 ## Result format (use it for every draft delivery; nothing may be omitted)
 
@@ -124,6 +129,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | **Evidence citations** | every cited document = ledger ID + evidence level + judgment state |
 | **Numerical provenance** | count of numerical statements in this draft and the A/B/C distribution; unsourced numbers must not appear |
 | **Structured state** | plan/atom/claim/support counts + `draft audit` result + current gate (concept / review_draft, stale or not) |
+| **Figure consistency** | `figures validate` result (F-001…F-014 summary) + rendered figure ids + whether human visual review is done |
 | **Unverified annotation** | when tools did not run or data is incomplete, state "⚠️ Unverified by tool checks" explicitly |
 
 ## References (load on demand)
@@ -138,6 +144,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | [`13-revision-loop.md`](13-revision-loop.md) | multi-round revision: patch → log → re-run gates |
 | [`14-drafting-pipeline.md`](14-drafting-pipeline.md) | **P2** structured pipeline: plan→atoms→claims→support→dual-state gate (G-D audit codes) |
 | [`15-claims-and-support.md`](15-claims-and-support.md) | claim atom / structured claim / support mapping fields, validation rules and review checklist |
+| [`16-figures.md`](16-figures.md) | **P3** professional figures: figure plan spec, deterministic rendering, F-001…F-014 checks, human review discipline |
 | [`glossary.md`](../references/glossary.md) | zh⇄en glossary (shared with patent-research; CI keeps the copies identical) |
 
 > Commands go straight through `python -m patentkit <subcommand>` (provenance / figures /
