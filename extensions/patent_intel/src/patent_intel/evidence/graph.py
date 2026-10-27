@@ -19,7 +19,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from patent_intel.contracts import EvidenceProjection, ReviewState, Relation
+from patent_intel.contracts import EvidenceProjection, ReviewState, Relation, utc_now_iso
 from patent_intel.io.safe_io import write_json_atomic
 from patent_intel.kernel_bridge import read_candidates
 
@@ -41,14 +41,20 @@ def fingerprint_record(record: dict[str, Any]) -> str:
 
 
 class EvidenceGraphBuilder:
-    """Builds EvidenceProjection records from the kernel workspace (read-only)."""
+    """Builds EvidenceProjection records from the kernel workspace (read-only).
 
-    def __init__(self, *, features: list[dict[str, Any]] | None = None) -> None:
+    ``built_at``: pass a fixed timestamp to get a byte-identical rebuild for the
+    same workspace (the cache-deletion invariant); defaults to build time.
+    """
+
+    def __init__(self, *, features: list[dict[str, Any]] | None = None, built_at: str | None = None) -> None:
         # features: serialized FeatureSpec dicts from the sidecar (query view)
         self._features = features or []
+        self._built_at = built_at
 
     def build_from_workspace(self, workspace: Path) -> list[EvidenceProjection]:
         workspace = Path(workspace)
+        built_at = self._built_at or utc_now_iso()
         candidates = read_candidates(workspace)
         projections: list[EvidenceProjection] = []
 
@@ -88,6 +94,7 @@ class EvidenceGraphBuilder:
                                 source_fingerprint=fp,
                                 review_state=ReviewState.PENDING,
                                 anchor=anchor,
+                                created_at=built_at,
                             )
                         )
                     else:
@@ -101,6 +108,7 @@ class EvidenceGraphBuilder:
                                 source_fingerprint=fp,
                                 review_state=ReviewState.PENDING,
                                 anchor=anchor,
+                                created_at=built_at,
                             )
                         )
         # deterministic order for rebuild stability

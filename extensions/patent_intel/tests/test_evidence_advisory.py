@@ -50,7 +50,7 @@ def test_projection_build_from_kernel_candidates(gold_ws: Path) -> None:
 
 
 def test_projection_rebuild_deterministic_and_cache_free(gold_ws: Path, tmp_path: Path) -> None:
-    builder = EvidenceGraphBuilder(features=FEATURES)
+    builder = EvidenceGraphBuilder(features=FEATURES, built_at="2026-10-28T00:00:00+00:00")
     first = [p.to_dict() for p in builder.build_from_workspace(gold_ws)]
     # cache → delete → rebuild must be identical (cache-deletion invariant)
     out_dir = tmp_path / "evidence"

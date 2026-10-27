@@ -448,6 +448,29 @@ def _cmd_advisory_review(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+# ── landscape group (WP-E, optional) ──────────────────────────────────
+
+
+def _cmd_landscape_report(args: argparse.Namespace) -> int:
+    """Descriptive landscape statistics over the searched sample (sidecar only)."""
+    from patent_intel.kernel_bridge import read_candidates
+    from patent_intel.landscape.report import build_landscape_report
+    from patent_intel.workspace import SidecarLayout
+
+    workspace = _workspace_or_exit(args.root, as_json=args.json)
+    state_dir = resolve_state_dir(workspace, args.state_dir)
+    SidecarLayout(state_dir).ensure(workspace=workspace)
+    paths = build_landscape_report(read_candidates(workspace), state_dir)
+    if args.json:
+        _emit_json({"ok": True, **paths})
+    else:
+        print("landscape report written (descriptive statistics over the searched sample):")
+        print(f"  csv:      {paths['csv']}")
+        print(f"  markdown: {paths['markdown']}")
+        print("  边界: 聚类稀疏/零命中≠技术空白已证实")
+    return EXIT_OK
+
+
 # ── parser assembly ───────────────────────────────────────────────────
 
 
@@ -527,6 +550,18 @@ def build_parser() -> argparse.ArgumentParser:
     _add_root_args(areview)
     areview.add_argument("--claim", default=None, help="filter proposals mentioning a claim number")
     areview.set_defaults(func=_cmd_advisory_review)
+
+    landscape = sub.add_parser(
+        "landscape",
+        help="optional descriptive landscape statistics (WP-E) — searched sample only",
+    )
+    landscape_sub = landscape.add_subparsers(dest="landscape_command", metavar="<subcommand>", required=True)
+    lreport = landscape_sub.add_parser(
+        "report",
+        help="family-deduplicated applicant/class/region/year statistics (CSV + Markdown)",
+    )
+    _add_root_args(lreport)
+    lreport.set_defaults(func=_cmd_landscape_report)
 
     return parser
 
