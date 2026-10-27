@@ -65,5 +65,6 @@ def describe_sources() -> list[dict[str, Any]]:
 # with the modules actually shipped; a planned-only adapter registers too (its
 # support_level=planned blocks execution at the base-class gate).
 from patent_intel.sources import kernel_sources as _kernel_sources  # noqa: E402,F401
+from patent_intel.sources import ops as _ops  # noqa: E402,F401
 
 _ = Capability  # re-export touchpoint for type checkers
