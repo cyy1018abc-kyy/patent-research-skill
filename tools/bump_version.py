@@ -91,6 +91,8 @@ RESIDUE_WHITELIST = (
     ("drafting/references.en/13-revision-loop.md", "「Since kernel 0.4.0」历史陈述"),
     ("research/references/05-acceptance-gates.md", "「0.6.0 起 G-S-04 普查记录」历史陈述"),
     ("research/references.en/05-acceptance-gates.md", "「Since 0.6.0」G-S-04 census history"),
+    ("drafting/references/15-claims-and-support.md", "「内核 0.8.0 起，D-019 citations」历史陈述（特性发布于 0.8.0）"),
+    ("drafting/references.en/15-claims-and-support.md", "「kernel 0.8.0」D-019 citations history"),
     ("tools/build_kernel_patch.py", "工具文档字符串里的历史补丁名示例"),
     ("tools/render_terminal_shot.py", "截图脚注按当次发布手工更新"),
     ("evals/check_terminology.py", "「3.1.0 起全部双语」历史陈述"),
@@ -220,6 +222,11 @@ def check() -> list[str]:
         problems.append(f"release/patches/README.md 的 notes 指针不是 skill-v{skill}.md")
     if not re.search(rf"patentkit-\d+\.\d+\.\d+-to-{re.escape(kernel)}\.patch", patches_readme):
         problems.append(f"release/patches/README.md 未指向当前内核补丁 -to-{kernel}.patch")
+    # 散文版本号两处（0.8.0 轮漏改「current kernel is 0.7.0 / declares version 0.7.0」的教训固化）
+    if f"current kernel is **{kernel}**" not in patches_readme:
+        problems.append(f"release/patches/README.md 的「current kernel is」散文版本不是 {kernel}")
+    if f"version `{kernel}`" not in patches_readme:
+        problems.append(f"release/patches/README.md 的「declares version」散文版本不是 {kernel}")
     for patch in ROOT.glob("release/patches/patentkit-*-to-*.patch"):
         if f"-to-{kernel}.patch" not in patch.name:
             continue
