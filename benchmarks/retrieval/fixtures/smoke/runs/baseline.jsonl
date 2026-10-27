@@ -1,0 +1,6 @@
+{"topic_id": "TP-0001", "publication_number": "ZZ1000001A1", "rank": 1, "score": 9.5, "source": "bm25", "query_id": "Q-N1-SF-001"}
+{"topic_id": "TP-0001", "publication_number": "ZZ1000002A1", "rank": 2, "score": 8.1, "source": "bm25", "query_id": "Q-N1-SF-001"}
+{"topic_id": "TP-0001", "publication_number": "ZZ4000001A1", "rank": 3, "score": 4.0, "source": "bm25", "query_id": "Q-N1-BR-001"}
+{"topic_id": "TP-0001", "publication_number": "ZZ2000001A1", "rank": 4, "score": 3.5, "source": "bm25", "query_id": "Q-N1-BR-001"}
+{"topic_id": "TP-0002", "publication_number": "ZZ3000001A1", "rank": 1, "score": 7.0, "source": "bm25", "query_id": "Q-N2-SF-001"}
+{"topic_id": "TP-0002", "publication_number": "ZZ5000001A1", "rank": 2, "score": 2.0, "source": "bm25", "query_id": "Q-N2-BR-001"}
