@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-28 · 3.8.0 / patentkit 0.9.0 — explicit-LF kernel writes (cross-platform byte stability)
+
+**Kernel 0.9.0** (patch `patentkit-0.1.2-to-0.9.0.patch`, SHA-256 `89aa48d5…`)
+
+- Explicit `newline="\n"` on all 31 previously implicit `write_text` call sites (init
+  template copies, assessment/backfill/census JSON, review CSV+JSON worksheets, fetch
+  artifacts and logs, gate trackers, report/map/provenance/figures, delivery, revise,
+  migrate, index, ingest, deadlines, chain, bibsync, cnipa). Kernel outputs are
+  byte-identical across Windows and Linux — root fix for the benchmark fixture line-ending
+  drift measured in 3.7.0 (115 files); the generator's `_force_lf()` stays as a safety net.
+- New invariant regressions: `test_init_writes_lf_only` (template copy path) and
+  `test_pipeline_writes_lf_only` (every kernel-touched byte in the golden pipeline;
+  fixture-written files excluded). Kernel suite 761 tests: 747 passed / 14 skipped /
+  0 failed. Binary write sites (mkstemp + `fdopen("wb")`, `shutil.copy2` evidence
+  originals) intentionally untouched.
+- Behavior: the review CSV worksheet (utf-8-sig) is LF on every platform now (was CRLF on
+  Windows, matching Linux/CI which already produced LF); existing CRLF files on disk are
+  not rewritten in bulk — they normalize only when the kernel itself rewrites them.
+
+**Skill 3.8.0**
+
+- Paired release for the kernel LF discipline: no skill-behavior changes, zero workspace
+  migration, assessment protocol 1 unchanged.
+- `bump_version.py --check` now also pins the two prose kernel-version statements in
+  `release/patches/README.md` ("current kernel is **x**", "declares version `x`") — the
+  0.8.0 round left both stale at 0.7.0; repaired this round.
+
 ## 2026-10-27 · 3.7.0 / patentkit 0.8.0 — revision↔conclusions linkage (V038), benchmark to 9 cases, structured support citations
 
 **Kernel 0.8.0** (patch `patentkit-0.1.2-to-0.8.0.patch`, SHA-256 `f99d0e00…`)
