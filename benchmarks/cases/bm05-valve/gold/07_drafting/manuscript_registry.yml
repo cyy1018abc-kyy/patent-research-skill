@@ -1,0 +1,10 @@
+target: TGT-9005
+drafts:
+- role: claims
+  path: 07_drafting/claims.md
+  sha256: 4fc6769ecceedfbf5740288107408361505493ba97c63e60ddf5061a2024a0e8
+  status: current
+  checked_at: '2026-10-27T04:56:32+08:00'
+  evidence_level: attested
+updated: '2026-10-27'
+last_attested_at: '2026-10-27T04:56:32+08:00'

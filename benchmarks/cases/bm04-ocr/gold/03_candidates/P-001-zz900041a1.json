@@ -1,0 +1,189 @@
+{
+  "id": "P-001",
+  "kind": "patent",
+  "target": "TGT-9004",
+  "title": "Template matching recognition method for ticket images",
+  "authors_or_applicants": [
+    "Wentong Information Processing Institute"
+  ],
+  "year": 2018,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900041A1",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N1_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N1@TGT-9004"
+  ],
+  "logged_at": "2026-02-01T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-01_N1_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900041a12018",
+  "relevance_problem": 5,
+  "relevance_means": 4,
+  "review_note": "有候选打分，但识别器是模板匹配而非轻量卷积网络；有上下文校正，但为词库匹配而非语言模型重排序",
+  "feature_mapping": {
+    "F1": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900041A1.md",
+      "locator": "L10",
+      "quote": "对二值化图像按行、列统计墨点密度，投影谷点即文本行与列的边界"
+    },
+    "F2": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900041A1.md",
+      "locator": "L11",
+      "quote": "按相似度打分并输出得分最高的若干候选字及对应分值",
+      "note": "有候选打分，但识别器是模板匹配而非轻量卷积网络"
+    },
+    "F3": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900041A1.md",
+      "locator": "L12",
+      "quote": "命中词条的字段按词库校正",
+      "note": "有上下文校正，但为词库匹配而非语言模型重排序"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:32+08:00",
+    "basis": {
+      "N1@TGT-9004": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900041A1.md",
+          "locator": "L8",
+          "quote": "直接整页识别的错误率难以接受",
+          "rationale": "同为票据识别准确率问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900041A1.md",
+          "locator": "L10",
+          "quote": "投影谷点即文本行与列的边界",
+          "rationale": "投影版面分割手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N1@TGT-9004": {
+        "problem": "[0002] 票据图像倾斜、油墨深浅不一，直接整页识别的错误率难以接受。",
+        "means": "[0004] 版面分析采用水平与垂直投影：对二值化图像按行、列统计墨点密度，投影谷点即文本行与列的边界，据此切出单行文本区域。"
+      }
+    },
+    "fingerprint": "ad4439a191475b85b47301ee7f65db1fe9326bc55fc8d2d84d8f5862cccce8a9"
+  },
+  "reviewed_at": "2026-10-27T04:56:32+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900041A1",
+        "target": "TGT-9004",
+        "tags": [
+          "N1@TGT-9004"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900041A1",
+        "target": "TGT-9004",
+        "tags": [
+          "N1@TGT-9004"
+        ],
+        "relevance": 4,
+        "relevance_problem": 5,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "有候选打分，但识别器是模板匹配而非轻量卷积网络；有上下文校正，但为词库匹配而非语言模型重排序",
+        "feature_mapping": {
+          "F1": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900041A1.md",
+            "locator": "L10",
+            "quote": "对二值化图像按行、列统计墨点密度，投影谷点即文本行与列的边界"
+          },
+          "F2": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900041A1.md",
+            "locator": "L11",
+            "quote": "按相似度打分并输出得分最高的若干候选字及对应分值",
+            "note": "有候选打分，但识别器是模板匹配而非轻量卷积网络"
+          },
+          "F3": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900041A1.md",
+            "locator": "L12",
+            "quote": "命中词条的字段按词库校正",
+            "note": "有上下文校正，但为词库匹配而非语言模型重排序"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:32+08:00",
+          "basis": {
+            "N1@TGT-9004": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900041A1.md",
+                "locator": "L8",
+                "quote": "直接整页识别的错误率难以接受",
+                "rationale": "同为票据识别准确率问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900041A1.md",
+                "locator": "L10",
+                "quote": "投影谷点即文本行与列的边界",
+                "rationale": "投影版面分割手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N1@TGT-9004": {
+              "problem": "[0002] 票据图像倾斜、油墨深浅不一，直接整页识别的错误率难以接受。",
+              "means": "[0004] 版面分析采用水平与垂直投影：对二值化图像按行、列统计墨点密度，投影谷点即文本行与列的边界，据此切出单行文本区域。"
+            }
+          },
+          "fingerprint": "ad4439a191475b85b47301ee7f65db1fe9326bc55fc8d2d84d8f5862cccce8a9"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:32+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:32+08:00",
+    "fingerprint": "ad4439a191475b85b47301ee7f65db1fe9326bc55fc8d2d84d8f5862cccce8a9"
+  }
+}

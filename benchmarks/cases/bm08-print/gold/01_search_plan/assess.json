@@ -1,0 +1,136 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "0de53ab4f72055b169ec6cf94c769cf297e5d326edf2d5b6ee89c564d124992e",
+    "relevance_problem": 4,
+    "relevance_means": 4,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "判别输出见 [0005]（断丝/堵料三类）；[0008] 自认不涉及层图像或切片比对；[0006] 判别异常仅输出告警由人工停机；[0007] 特征库由厂商离线统一发布，非在线自动入库",
+    "feature_mapping": {
+      "F1": {
+        "status": "disclosed",
+        "ref": "02_search_logs/raw/ZZ900082A1.md",
+        "locator": "L9",
+        "quote": "在挤出机电机驱动器上取样电流信号，按打印频率段做带通滤波提取纹波",
+        "note": "判别输出见 [0005]（断丝/堵料三类）"
+      },
+      "F2": {
+        "status": "absent",
+        "note": "[0008] 自认不涉及层图像或切片比对"
+      },
+      "F3": {
+        "status": "absent",
+        "note": "[0006] 判别异常仅输出告警由人工停机"
+      },
+      "F4": {
+        "status": "absent",
+        "note": "[0007] 特征库由厂商离线统一发布，非在线自动入库"
+      }
+    },
+    "basis": {
+      "N1@TGT-9008": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900082A1.md",
+          "locator": "L8",
+          "quote": "送料不畅与堵料会以电机负载波动的形式提前暴露",
+          "rationale": "同为挤出异常在线判别问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900082A1.md",
+          "locator": "L11",
+          "quote": "分类器输出正常、断丝、堵料三类判别结果及置信度",
+          "rationale": "按纹波特征判别断丝堵料的手段相同"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "9bf15b4513769201852d6a601062026cddb09990964d7a9640be23707d669c4b",
+    "relevance_problem": 4,
+    "relevance_means": 4,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "[0008] 自认不采集挤出机电机信号；[0006] 检出缺陷报警并暂停、等人工处置，不回退重打；[0007] 层图像仅按时间存档供追溯，无样本入库更新机制",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent",
+        "note": "[0008] 自认不采集挤出机电机信号"
+      },
+      "F2": {
+        "status": "disclosed",
+        "ref": "02_search_logs/raw/ZZ900081A1.md",
+        "locator": "L11",
+        "quote": "把层图像与切片软件导出的预览图逐层比对，输出轮廓偏移量与缺陷标记"
+      },
+      "F3": {
+        "status": "absent",
+        "note": "[0006] 检出缺陷报警并暂停、等人工处置，不回退重打"
+      },
+      "F4": {
+        "status": "absent",
+        "note": "[0007] 层图像仅按时间存档供追溯，无样本入库更新机制"
+      }
+    },
+    "basis": {
+      "N2@TGT-9008": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900081A1.md",
+          "locator": "L8",
+          "quote": "层间缺陷（错位、缺料、翘曲）在打印早期即可从层图像看出",
+          "rationale": "同为层缺陷在线发现问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900081A1.md",
+          "locator": "L10",
+          "quote": "层高计数器每完成一层发出拍照指令",
+          "rationale": "逐层成像与切片比对手段相同"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "ec0f73924c34b79a94c2dada402ca6d83ad1296c814fbfcc422d784b3bba0d4f",
+    "relevance_problem": 3,
+    "relevance_means": 3,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "按层号续打的机械与记录手段（[0003]/[0004]）可复用，但触发是断电而非缺陷回退",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent"
+      },
+      "F2": {
+        "status": "absent"
+      },
+      "F3": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900083A1.md",
+        "locator": "L13",
+        "quote": "续打的触发条件是断电事件，本装置不具备任何缺陷检测能力",
+        "note": "按层号续打的机械与记录手段（[0003]/[0004]）可复用，但触发是断电而非缺陷回退"
+      },
+      "F4": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N3@TGT-9008": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900083A1.md",
+          "locator": "L8",
+          "quote": "已打印部分报废重来成本高",
+          "rationale": "同为避免整件报废的问题，触发源不同故 problem 3"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900083A1.md",
+          "locator": "L9",
+          "quote": "主控周期性把当前层号与喷头坐标写入非易失存储器",
+          "rationale": "层号记录与续打执行手段相邻"
+        }
+      }
+    }
+  }
+]

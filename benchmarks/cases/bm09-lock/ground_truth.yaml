@@ -1,0 +1,75 @@
+# bm09-lock 真值（全部为编造合成数据的判断基准）
+target: TGT-9009
+axes:
+  N1@TGT-9009: {title_zh: '复用感应区唤醒', features: [F1]}
+  N2@TGT-9009: {title_zh: '双因子撤销', features: [F2]}
+  N3@TGT-9009: {title_zh: '机械旋钮优先', features: [F3]}
+  N4@TGT-9009: {title_zh: '低电禁远程', features: [F4]}
+features:
+  F1: {claim: '1', statement: '把手按压感应与指纹模组复用同一感应区按压即唤醒'}
+  F2: {claim: '1', statement: '离家模式撤销须室内指纹与室外 NFC 双因子同时生效'}
+  F3: {claim: '1', statement: '门内机械旋钮经离合直连锁体，任何时候优先于电子开锁'}
+  F4: {claim: '2', statement: '低电门限下拒绝远程开锁仅允许本地开锁'}
+candidates:
+  P-001:
+    doc_number: ZZ900091A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 5
+    relevance_means: 4
+    disclosure:
+      F1: {status: absent, note: '[0003] 指纹模组为独立感应区、与把手分体，[0005] 还承认轮询功耗——与复用感应区相反'}
+      F2: {status: partial, ref: '02_search_logs/raw/ZZ900091A1.md', locator: '[0008]', quote: '开启后撤销离家状态需要依次验证指纹与 NFC 卡两项因子', note: '双因子撤销已披露，但为可选增强且为"依次验证"而非"同时生效"'}
+      F3: {status: absent, note: '[0010] 电机驱动为常态、旋钮仅应急备用——无机械优先于电子的直连结构'}
+      F4: {status: partial, ref: '02_search_logs/raw/ZZ900091A1.md', locator: '[0009]', quote: '电量低于告警门限时，面板指示灯变红并向手机推送低电提醒', note: '有低电门限与提醒，但同段明确"远程开锁功能保持可用"——与拒绝远程相反'}
+    basis:
+      N1@TGT-9009:
+        problem: {ref: '02_search_logs/raw/ZZ900091A1.md', locator: '[0005]', quote: '周期轮询带来持续功耗，电池续航受轮询频率制约', rationale: '同为门锁功耗问题'}
+        means: {ref: '02_search_logs/raw/ZZ900091A1.md', locator: '[0004]', quote: '检测到手指触碰即唤醒主控', rationale: '触碰唤醒识别手段同域，感应区布置不同'}
+  P-002:
+    doc_number: ZZ900092A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 3
+    relevance_means: 3
+    disclosure:
+      F1: {status: partial, ref: '02_search_logs/raw/ZZ900092A1.md', locator: '[0003]', quote: '把压感层与指纹传感层叠合在同一感应区内', note: '按压唤醒+指纹同区的手段完整披露（[0004] 上电识别），但载体是移动终端侧框而非门锁把手'}
+      F2: {status: absent}
+      F3: {status: absent}
+      F4: {status: absent}
+    basis:
+      N1@TGT-9009:
+        problem: {ref: '02_search_logs/raw/ZZ900092A1.md', locator: '[0002]', quote: '双重部件，占用空间且成本高', rationale: '传感复用的动机一致，场景不同故 problem 3'}
+        means: {ref: '02_search_logs/raw/ZZ900092A1.md', locator: '[0004]', quote: '压感层检测到按压动作时立即上电指纹传感层', rationale: '按压唤醒识别手段相同'}
+  P-003:
+    doc_number: ZZ900094A1
+    role: excluded
+    novelty_check: untouched
+    relevance_problem: 1
+    relevance_means: 2
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: absent}
+      F4: {status: absent}
+    basis:
+      N2@TGT-9009:
+        problem: {ref: '02_search_logs/raw/ZZ900094A1.md', locator: '[0007]', quote: '服务于单车分时租赁流程，不涉及住宅门禁或离家模式', rationale: '自认场景无关，"锁+NFC"仅为关键词撞车'}
+        means: {ref: '02_search_logs/raw/ZZ900094A1.md', locator: '[0003]', quote: '云端下发开锁指令，锁体电机收回锁栓', rationale: '云端开锁流程与双因子撤销无交集'}
+  P-004:
+    doc_number: ZZ900093A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 2
+    relevance_means: 3
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: partial, ref: '02_search_logs/raw/ZZ900093A1.md', locator: '[0005]', quote: '无论电控处于何种状态，人力推动推杆都经离合机构直接拉开门闩', note: '机械优先结构完整披露（[0006] 纯机械件可靠性佐证），但对象是疏散推杆与门闩，非住宅锁旋钮与离合锁体'}
+      F4: {status: absent}
+    basis:
+      N3@TGT-9009:
+        problem: {ref: '02_search_logs/raw/ZZ900093A1.md', locator: '[0002]', quote: '火灾断电或电控失灵时必须保证机械开启万无一失', rationale: '机械兜底思想一致，疏散与住宅场景不同'}
+        means: {ref: '02_search_logs/raw/ZZ900093A1.md', locator: '[0006]', quote: '离合机构为纯机械件，断电、死机、电机卡死均不影响推杆开锁路径', rationale: '机械直连优先于电控的手段相同'}
+conclusions_must_cite: [P-001, P-002, P-004]
+overall_verdict: '单篇新颖性 —— 初步成立（无单篇覆盖全部特征；P-001 缺复用感应区/机械优先/低电禁远程）；创造性 —— 存疑（P-001 与 P-002 的感应区复用、P-004 的机械优先结构存在组合方向，需补充检索）'

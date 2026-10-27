@@ -1,0 +1,27 @@
+# 案例元数据与任务卡（bm07-fridge）
+id: bm07-fridge
+title: 冰箱保鲜室 —— 技术特征遗漏专项
+focus: feature_omission
+difficulty: medium
+target: TGT-9007
+metrics_weight:
+  citation_precision: 0.2
+  citation_coverage: 0.1
+  feature_omission: 0.5
+  misjudgment: 0.2
+traps:
+  - F2 的披露在"独立装置"文档 ZZ900072A1 [0006]（按需自动启停），通篇是储运容器语境——容易整篇判无关而丢披露；真值是 partial（装置独立于柜体 [0007]）
+  - F4 的披露在 ZZ900073A1 [0006]（开门后风门延时保持）+ [0007]（延时结束关闭、独立保冷空间），两段合读才完整；[0008] 自适应整定是佐证
+  - F3（双参数独立调节）无任何候选披露——真值全 absent，别被 ZZ900071A1 [0006] 的单参数湿度调节带偏
+  - ZZ900071A1 [0003]/[0004] 合起来才是 F1（密封抽屉 + 微孔均流膜）
+task: |
+  工作区已预置：3 条检索日志与 raw 工件、已 ingest 的 3 个候选（P-001..P-003，均
+  untouched）、目标 TGT-9007 的权利要求（见 07_drafting/claims.md 与本案例
+  corpus/target_claims.md）。语料是编造的合成文献，全文在 02_search_logs/raw/。
+  请按 patent-research 技能的执行顺序完成判断链：
+  1. review export → 逐候选评估：relevance_problem / relevance_means / novelty_check / role /
+     feature_mapping（状态与引文，格式见 benchmarks/README.md；F1..F4 逐个表态）；
+  2. review assess --apply → 对全部 near_prior_art 候选做显式人工确认（review confirm --apply，
+     --by 填 benchmark-operator）→ attest --apply；
+  3. 填 04_comparative_analysis/comparison_matrix.md（含每列输出，关键段落用 路径#L行：摘句 形态）；
+  4. 写 05_novelty_conclusions/conclusions.md（引用证据账本中存在的 P 编号）。

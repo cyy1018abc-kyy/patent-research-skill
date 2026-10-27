@@ -3,6 +3,9 @@ kernel-build/
 *.pyc
 dist/
 .pytest_cache/
+# CI 预演产物（每次构建重写，不入库）
+build-result.json
+release-doctor-offline.json
 
 # ── 保密红线（2.5.0）：真实申请材料与稿件永不入库 ──────────────────
 # 工作区数据目录形态（若有人把专利工作区放进本仓库）

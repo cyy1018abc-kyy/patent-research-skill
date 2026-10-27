@@ -120,10 +120,21 @@ def _strip_double_prefixes(patch_text: str) -> str:
     for line in patch_text.splitlines(keepends=True):
         if line.startswith("diff --git "):
             line = line.replace(" a/a/", " a/", 1).replace(" b/b/", " b/", 1)
+            # 新增文件的左侧 / 删除文件的右侧仍是合成路径（多出一层对侧树名，例如
+            # a/b/x.py b/x.py）。空文件没有 ---/+++ 行可消歧时 git apply 直接报
+            # "header lacks filename information"，所以按共同相对路径剥掉多出的一层。
+            head = re.match(r"^diff --git a/(\S+) b/(\S+?)(\r?\n)?$", line)
+            if head:
+                left, right, tail = head.group(1), head.group(2), head.group(3) or ""
+                if left != right and left.split("/", 1)[-1] == right:
+                    left = right
+                elif left != right and right.split("/", 1)[-1] == left:
+                    right = left
+                line = f"diff --git a/{left} b/{right}{tail}"
         elif line.startswith("--- "):
-            line = line.replace("a/a/", "a/", 1)
+            line = line.replace("a/a/", "a/", 1).replace("a/b/", "a/", 1)
         elif line.startswith("+++ "):
-            line = line.replace("b/b/", "b/", 1)
+            line = line.replace("b/b/", "b/", 1).replace("b/a/", "b/", 1)
         lines.append(line)
     return "".join(lines)
 

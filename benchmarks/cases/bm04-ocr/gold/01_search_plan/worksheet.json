@@ -1,0 +1,32 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "2e25679b3bdc2a6aa2d3c73fd4041a7ce111faefa5efdbd0f2b3c83bf031f74b",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "pool",
+    "novelty_check": "untouched",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "3aef9f2bcbbbd73e69f36d520ef06fd7eb7a71ed93102440fe3d10c4616d3132",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "pool",
+    "novelty_check": "untouched",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "b6551c55bb2a2ae61ebb66a49d0cb3a40e41db5f3d4bb9f6bfb111d7af8469ae",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "pool",
+    "novelty_check": "untouched",
+    "review_note": "",
+    "basis": {}
+  }
+]

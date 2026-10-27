@@ -1,0 +1,17 @@
+{
+  "db": "espacenet",
+  "target": "TGT-9008",
+  "actor": "benchmark",
+  "capture_mode": "live",
+  "timestamp": "2026-02-03T08:00:00+00:00",
+  "query": {
+    "id": "N3",
+    "axis": "N3@TGT-9008",
+    "text": "abstract=(缺陷回退重打)"
+  },
+  "result": {
+    "hit_count": 1,
+    "raw_export": "raw/N3_page-1.csv",
+    "complete": true
+  }
+}

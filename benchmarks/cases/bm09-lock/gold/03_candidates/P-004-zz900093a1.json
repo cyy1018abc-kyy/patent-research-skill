@@ -1,0 +1,175 @@
+{
+  "id": "P-004",
+  "kind": "patent",
+  "target": "TGT-9009",
+  "title": "Mechanical-priority opening device for fire exit doors",
+  "authors_or_applicants": [
+    "Antao Door Control Engineering Co."
+  ],
+  "year": 2021,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900093A1",
+  "summary_zh": "",
+  "relevance": 2,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N3_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N3@TGT-9009"
+  ],
+  "logged_at": "2026-02-04T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-04_N3_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900093a12021",
+  "relevance_problem": 2,
+  "relevance_means": 3,
+  "review_note": "机械优先结构完整披露（[0006] 纯机械件可靠性佐证），但对象是疏散推杆与门闩，非住宅锁旋钮与离合锁体",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900093A1.md",
+      "locator": "L11",
+      "quote": "无论电控处于何种状态，人力推动推杆都经离合机构直接拉开门闩",
+      "note": "机械优先结构完整披露（[0006] 纯机械件可靠性佐证），但对象是疏散推杆与门闩，非住宅锁旋钮与离合锁体"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:33+08:00",
+    "basis": {
+      "N3@TGT-9009": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900093A1.md",
+          "locator": "L8",
+          "quote": "火灾断电或电控失灵时必须保证机械开启万无一失",
+          "rationale": "机械兜底思想一致，疏散与住宅场景不同"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900093A1.md",
+          "locator": "L12",
+          "quote": "离合机构为纯机械件，断电、死机、电机卡死均不影响推杆开锁路径",
+          "rationale": "机械直连优先于电控的手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N3@TGT-9009": {
+        "problem": "[0002] 疏散门在火灾断电或电控失灵时必须保证机械开启万无一失。",
+        "means": "[0006] 离合机构为纯机械件，断电、死机、电机卡死均不影响推杆开锁路径。"
+      }
+    },
+    "fingerprint": "f98a24ad01a1f3244a0365107e0c87bae8ee5c2374f7a93c3c47edf21972b077"
+  },
+  "reviewed_at": "2026-10-27T04:56:33+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-004",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900093A1",
+        "target": "TGT-9009",
+        "tags": [
+          "N3@TGT-9009"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-004",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900093A1",
+        "target": "TGT-9009",
+        "tags": [
+          "N3@TGT-9009"
+        ],
+        "relevance": 2,
+        "relevance_problem": 2,
+        "relevance_means": 3,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "机械优先结构完整披露（[0006] 纯机械件可靠性佐证），但对象是疏散推杆与门闩，非住宅锁旋钮与离合锁体",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900093A1.md",
+            "locator": "L11",
+            "quote": "无论电控处于何种状态，人力推动推杆都经离合机构直接拉开门闩",
+            "note": "机械优先结构完整披露（[0006] 纯机械件可靠性佐证），但对象是疏散推杆与门闩，非住宅锁旋钮与离合锁体"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:33+08:00",
+          "basis": {
+            "N3@TGT-9009": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900093A1.md",
+                "locator": "L8",
+                "quote": "火灾断电或电控失灵时必须保证机械开启万无一失",
+                "rationale": "机械兜底思想一致，疏散与住宅场景不同"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900093A1.md",
+                "locator": "L12",
+                "quote": "离合机构为纯机械件，断电、死机、电机卡死均不影响推杆开锁路径",
+                "rationale": "机械直连优先于电控的手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N3@TGT-9009": {
+              "problem": "[0002] 疏散门在火灾断电或电控失灵时必须保证机械开启万无一失。",
+              "means": "[0006] 离合机构为纯机械件，断电、死机、电机卡死均不影响推杆开锁路径。"
+            }
+          },
+          "fingerprint": "f98a24ad01a1f3244a0365107e0c87bae8ee5c2374f7a93c3c47edf21972b077"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:33+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:33+08:00",
+    "fingerprint": "f98a24ad01a1f3244a0365107e0c87bae8ee5c2374f7a93c3c47edf21972b077"
+  }
+}

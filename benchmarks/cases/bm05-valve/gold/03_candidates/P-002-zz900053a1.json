@@ -1,0 +1,175 @@
+{
+  "id": "P-002",
+  "kind": "patent",
+  "target": "TGT-9005",
+  "title": "Magnetostrictive displacement sensor linearization method",
+  "authors_or_applicants": [
+    "Cigu Measurement Technology Co."
+  ],
+  "year": 2021,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900053A1",
+  "summary_zh": "",
+  "relevance": 3,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N1-2_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N1@TGT-9005"
+  ],
+  "logged_at": "2026-02-02T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-02_N1-2_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900053a12021",
+  "relevance_problem": 3,
+  "relevance_means": 3,
+  "review_note": "披露磁致伸缩测距本体与无磨损优点（[0007] 列举闸门开度等应用），但未与阀位反馈结合",
+  "feature_mapping": {
+    "F1": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900053A1.md",
+      "locator": "L8",
+      "quote": "以波导丝上应变脉冲的传播时间测距，量程大、无接触磨损",
+      "note": "披露磁致伸缩测距本体与无磨损优点（[0007] 列举闸门开度等应用），但未与阀位反馈结合"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "absent"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:32+08:00",
+    "basis": {
+      "N1@TGT-9005": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900053A1.md",
+          "locator": "L9",
+          "quote": "原始输出存在系统性非线性",
+          "rationale": "位移测量准确性问题，为 F1 的器件层前问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900053A1.md",
+          "locator": "L11",
+          "quote": "按标定表对原始输出做实时插值校正",
+          "rationale": "磁致伸缩信号链手段与 F1 的传感选型直接相关"
+        }
+      }
+    },
+    "materials": {
+      "N1@TGT-9005": {
+        "problem": "[0003] 波导丝材质与工艺导致传播速度沿量程非均匀，原始输出存在系统性非线性。",
+        "means": "[0005] 运行时按标定表对原始输出做实时插值校正，全量程线性误差不超过百分之零点零五。"
+      }
+    },
+    "fingerprint": "993c84ec67df616a169987c76a8f34f63389a17ed5130e118d1ab20e92ebddda"
+  },
+  "reviewed_at": "2026-10-27T04:56:32+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900053A1",
+        "target": "TGT-9005",
+        "tags": [
+          "N1@TGT-9005"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900053A1",
+        "target": "TGT-9005",
+        "tags": [
+          "N1@TGT-9005"
+        ],
+        "relevance": 3,
+        "relevance_problem": 3,
+        "relevance_means": 3,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "披露磁致伸缩测距本体与无磨损优点（[0007] 列举闸门开度等应用），但未与阀位反馈结合",
+        "feature_mapping": {
+          "F1": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900053A1.md",
+            "locator": "L8",
+            "quote": "以波导丝上应变脉冲的传播时间测距，量程大、无接触磨损",
+            "note": "披露磁致伸缩测距本体与无磨损优点（[0007] 列举闸门开度等应用），但未与阀位反馈结合"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "absent"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:32+08:00",
+          "basis": {
+            "N1@TGT-9005": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900053A1.md",
+                "locator": "L9",
+                "quote": "原始输出存在系统性非线性",
+                "rationale": "位移测量准确性问题，为 F1 的器件层前问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900053A1.md",
+                "locator": "L11",
+                "quote": "按标定表对原始输出做实时插值校正",
+                "rationale": "磁致伸缩信号链手段与 F1 的传感选型直接相关"
+              }
+            }
+          },
+          "materials": {
+            "N1@TGT-9005": {
+              "problem": "[0003] 波导丝材质与工艺导致传播速度沿量程非均匀，原始输出存在系统性非线性。",
+              "means": "[0005] 运行时按标定表对原始输出做实时插值校正，全量程线性误差不超过百分之零点零五。"
+            }
+          },
+          "fingerprint": "993c84ec67df616a169987c76a8f34f63389a17ed5130e118d1ab20e92ebddda"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:32+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:32+08:00",
+    "fingerprint": "993c84ec67df616a169987c76a8f34f63389a17ed5130e118d1ab20e92ebddda"
+  }
+}

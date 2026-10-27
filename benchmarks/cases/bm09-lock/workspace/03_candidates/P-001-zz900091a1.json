@@ -1,0 +1,28 @@
+{
+  "id": "P-001",
+  "kind": "patent",
+  "target": "TGT-9009",
+  "title": "Multi-factor smart door lock control system",
+  "authors_or_applicants": [
+    "Shoumen Smart Technology Co."
+  ],
+  "year": 2020,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900091A1",
+  "summary_zh": "",
+  "relevance": 3,
+  "novelty_check": "untouched",
+  "role": "pool",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N1_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N1@TGT-9009"
+  ],
+  "logged_at": "2026-02-01T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-01_N1_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900091a12020"
+}

@@ -1,0 +1,187 @@
+{
+  "id": "P-001",
+  "kind": "patent",
+  "target": "TGT-9005",
+  "title": "General purpose controller for motorized valves",
+  "authors_or_applicants": [
+    "Hengliu Automation Equipment Factory"
+  ],
+  "year": 2019,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900051A1",
+  "summary_zh": "",
+  "relevance": 3,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N1_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N1@TGT-9005"
+  ],
+  "logged_at": "2026-02-01T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-01_N1_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900051a12019",
+  "relevance_problem": 4,
+  "relevance_means": 3,
+  "review_note": "[0003] 反馈用电位器且 [0004] 承认磨损需标定，与磁致伸缩无接触方案不同；速度可调但单段恒速，[0005] 明言不做分段——与三段曲线相反方向；[0009] 自认不含压差检测与预测；人工两步切换，非故障时自动脱开的机械优先机构",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent",
+      "note": "[0003] 反馈用电位器且 [0004] 承认磨损需标定，与磁致伸缩无接触方案不同"
+    },
+    "F2": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900051A1.md",
+      "locator": "L11",
+      "quote": "开关过程的速度由用户在面板上设定，全程按同一速度运行",
+      "note": "速度可调但单段恒速，[0005] 明言不做分段——与三段曲线相反方向"
+    },
+    "F3": {
+      "status": "absent",
+      "note": "[0009] 自认不含压差检测与预测"
+    },
+    "F4": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900051A1.md",
+      "locator": "L14",
+      "quote": "手动操作前需先用扳手卸下传动箱的联轴器销，再装上手轮直连轴",
+      "note": "人工两步切换，非故障时自动脱开的机械优先机构"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:32+08:00",
+    "basis": {
+      "N1@TGT-9005": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900051A1.md",
+          "locator": "L8",
+          "quote": "控制器决定阀门动作的平滑性与可靠性",
+          "rationale": "同为阀门动作平滑可靠问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900051A1.md",
+          "locator": "L12",
+          "quote": "转矩超限即停止并报警",
+          "rationale": "电动执行器驱动与保护手段同域"
+        }
+      }
+    },
+    "materials": {
+      "N1@TGT-9005": {
+        "problem": "[0002] 电动阀门广泛用于供水与供热管网，控制器决定阀门动作的平滑性与可靠性。",
+        "means": "[0006] 控制器具备转矩保护：转矩超限即停止并报警，防止卡死损坏阀体。"
+      }
+    },
+    "fingerprint": "99ad0e7f368b08bf116272a73da099dda10a83f3f1b1345a312a2cd29b7fe92c"
+  },
+  "reviewed_at": "2026-10-27T04:56:32+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900051A1",
+        "target": "TGT-9005",
+        "tags": [
+          "N1@TGT-9005"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900051A1",
+        "target": "TGT-9005",
+        "tags": [
+          "N1@TGT-9005"
+        ],
+        "relevance": 3,
+        "relevance_problem": 4,
+        "relevance_means": 3,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "[0003] 反馈用电位器且 [0004] 承认磨损需标定，与磁致伸缩无接触方案不同；速度可调但单段恒速，[0005] 明言不做分段——与三段曲线相反方向；[0009] 自认不含压差检测与预测；人工两步切换，非故障时自动脱开的机械优先机构",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent",
+            "note": "[0003] 反馈用电位器且 [0004] 承认磨损需标定，与磁致伸缩无接触方案不同"
+          },
+          "F2": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900051A1.md",
+            "locator": "L11",
+            "quote": "开关过程的速度由用户在面板上设定，全程按同一速度运行",
+            "note": "速度可调但单段恒速，[0005] 明言不做分段——与三段曲线相反方向"
+          },
+          "F3": {
+            "status": "absent",
+            "note": "[0009] 自认不含压差检测与预测"
+          },
+          "F4": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900051A1.md",
+            "locator": "L14",
+            "quote": "手动操作前需先用扳手卸下传动箱的联轴器销，再装上手轮直连轴",
+            "note": "人工两步切换，非故障时自动脱开的机械优先机构"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:32+08:00",
+          "basis": {
+            "N1@TGT-9005": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900051A1.md",
+                "locator": "L8",
+                "quote": "控制器决定阀门动作的平滑性与可靠性",
+                "rationale": "同为阀门动作平滑可靠问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900051A1.md",
+                "locator": "L12",
+                "quote": "转矩超限即停止并报警",
+                "rationale": "电动执行器驱动与保护手段同域"
+              }
+            }
+          },
+          "materials": {
+            "N1@TGT-9005": {
+              "problem": "[0002] 电动阀门广泛用于供水与供热管网，控制器决定阀门动作的平滑性与可靠性。",
+              "means": "[0006] 控制器具备转矩保护：转矩超限即停止并报警，防止卡死损坏阀体。"
+            }
+          },
+          "fingerprint": "99ad0e7f368b08bf116272a73da099dda10a83f3f1b1345a312a2cd29b7fe92c"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:32+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:32+08:00",
+    "fingerprint": "99ad0e7f368b08bf116272a73da099dda10a83f3f1b1345a312a2cd29b7fe92c"
+  }
+}

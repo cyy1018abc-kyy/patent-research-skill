@@ -1,0 +1,175 @@
+{
+  "id": "P-003",
+  "kind": "patent",
+  "target": "TGT-9005",
+  "title": "Online water hammer protection system for water pipelines",
+  "authors_or_applicants": [
+    "Anliu Hydraulic Engineering Research Institute"
+  ],
+  "year": 2020,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900052A1",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N3_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N3@TGT-9005"
+  ],
+  "logged_at": "2026-02-03T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-03_N3_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900052a12020",
+  "relevance_problem": 4,
+  "relevance_means": 4,
+  "review_note": "[0005] 压差+变化率预测峰值，与 F3 的预测预收一致",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900052A1.md",
+      "locator": "L13",
+      "quote": "先小行程预收阀位，待压力波衰减后再逐步收至全关",
+      "note": "[0005] 压差+变化率预测峰值，与 F3 的预测预收一致"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:32+08:00",
+    "basis": {
+      "N3@TGT-9005": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900052A1.md",
+          "locator": "L8",
+          "quote": "产生的水锤压力波可击穿管件",
+          "rationale": "同为关阀水锤问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900052A1.md",
+          "locator": "L11",
+          "quote": "根据当前压差与压差变化率估算本次关阀将产生的水锤强度峰值",
+          "rationale": "压差预测水锤的手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N3@TGT-9005": {
+        "problem": "[0002] 管道快速关阀时动能骤变，产生的水锤压力波可击穿管件，是爆管事故的主因之一。",
+        "means": "[0005] 预测模型根据当前压差与压差变化率估算本次关阀将产生的水锤强度峰值。"
+      }
+    },
+    "fingerprint": "cce50e02fe3f1884c5e53929e6119ac26e6c5f1b62edb159bc0310b71d2ebd6e"
+  },
+  "reviewed_at": "2026-10-27T04:56:32+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900052A1",
+        "target": "TGT-9005",
+        "tags": [
+          "N3@TGT-9005"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900052A1",
+        "target": "TGT-9005",
+        "tags": [
+          "N3@TGT-9005"
+        ],
+        "relevance": 4,
+        "relevance_problem": 4,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "[0005] 压差+变化率预测峰值，与 F3 的预测预收一致",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900052A1.md",
+            "locator": "L13",
+            "quote": "先小行程预收阀位，待压力波衰减后再逐步收至全关",
+            "note": "[0005] 压差+变化率预测峰值，与 F3 的预测预收一致"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:32+08:00",
+          "basis": {
+            "N3@TGT-9005": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900052A1.md",
+                "locator": "L8",
+                "quote": "产生的水锤压力波可击穿管件",
+                "rationale": "同为关阀水锤问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900052A1.md",
+                "locator": "L11",
+                "quote": "根据当前压差与压差变化率估算本次关阀将产生的水锤强度峰值",
+                "rationale": "压差预测水锤的手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N3@TGT-9005": {
+              "problem": "[0002] 管道快速关阀时动能骤变，产生的水锤压力波可击穿管件，是爆管事故的主因之一。",
+              "means": "[0005] 预测模型根据当前压差与压差变化率估算本次关阀将产生的水锤强度峰值。"
+            }
+          },
+          "fingerprint": "cce50e02fe3f1884c5e53929e6119ac26e6c5f1b62edb159bc0310b71d2ebd6e"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:32+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:32+08:00",
+    "fingerprint": "cce50e02fe3f1884c5e53929e6119ac26e6c5f1b62edb159bc0310b71d2ebd6e"
+  }
+}

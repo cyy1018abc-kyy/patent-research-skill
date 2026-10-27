@@ -1,0 +1,60 @@
+# bm05-valve 真值（全部为编造合成数据的判断基准）
+target: TGT-9005
+axes:
+  N1@TGT-9005: {title_zh: '阀位反馈', features: [F1]}
+  N2@TGT-9005: {title_zh: '开关速度曲线', features: [F2]}
+  N3@TGT-9005: {title_zh: '水锤预测预收', features: [F3]}
+  N4@TGT-9005: {title_zh: '手动优先机构', features: [F4]}
+features:
+  F1: {claim: '1', statement: '磁致伸缩位移传感器直接测量阀杆行程'}
+  F2: {claim: '1', statement: '开关过程按缓-快-缓三段速度曲线驱动'}
+  F3: {claim: '1', statement: '按压差与变化率预测水锤并分步预收阀位'}
+  F4: {claim: '2', statement: '执行器故障时机械手动优先机构自动脱开传动链'}
+candidates:
+  P-001:
+    doc_number: ZZ900051A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 4
+    relevance_means: 3
+    disclosure:
+      F1: {status: absent, note: '[0003] 反馈用电位器且 [0004] 承认磨损需标定，与磁致伸缩无接触方案不同'}
+      F2: {status: partial, ref: '02_search_logs/raw/ZZ900051A1.md', locator: '[0005]', quote: '开关过程的速度由用户在面板上设定，全程按同一速度运行', note: '速度可调但单段恒速，[0005] 明言不做分段——与三段曲线相反方向'}
+      F3: {status: absent, note: '[0009] 自认不含压差检测与预测'}
+      F4: {status: partial, ref: '02_search_logs/raw/ZZ900051A1.md', locator: '[0008]', quote: '手动操作前需先用扳手卸下传动箱的联轴器销，再装上手轮直连轴', note: '人工两步切换，非故障时自动脱开的机械优先机构'}
+    basis:
+      N1@TGT-9005:
+        problem: {ref: '02_search_logs/raw/ZZ900051A1.md', locator: '[0002]', quote: '控制器决定阀门动作的平滑性与可靠性', rationale: '同为阀门动作平滑可靠问题'}
+        means: {ref: '02_search_logs/raw/ZZ900051A1.md', locator: '[0006]', quote: '转矩超限即停止并报警', rationale: '电动执行器驱动与保护手段同域'}
+  P-002:
+    doc_number: ZZ900053A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 3
+    relevance_means: 3
+    disclosure:
+      F1: {status: partial, ref: '02_search_logs/raw/ZZ900053A1.md', locator: '[0002]', quote: '以波导丝上应变脉冲的传播时间测距，量程大、无接触磨损', note: '披露磁致伸缩测距本体与无磨损优点（[0007] 列举闸门开度等应用），但未与阀位反馈结合'}
+      F2: {status: absent}
+      F3: {status: absent}
+      F4: {status: absent}
+    basis:
+      N1@TGT-9005:
+        problem: {ref: '02_search_logs/raw/ZZ900053A1.md', locator: '[0003]', quote: '原始输出存在系统性非线性', rationale: '位移测量准确性问题，为 F1 的器件层前问题'}
+        means: {ref: '02_search_logs/raw/ZZ900053A1.md', locator: '[0005]', quote: '按标定表对原始输出做实时插值校正', rationale: '磁致伸缩信号链手段与 F1 的传感选型直接相关'}
+  P-003:
+    doc_number: ZZ900052A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 4
+    relevance_means: 4
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: disclosed, ref: '02_search_logs/raw/ZZ900052A1.md', locator: '[0007]', quote: '先小行程预收阀位，待压力波衰减后再逐步收至全关', note: '[0005] 压差+变化率预测峰值，与 F3 的预测预收一致'}
+      F4: {status: absent}
+    basis:
+      N3@TGT-9005:
+        problem: {ref: '02_search_logs/raw/ZZ900052A1.md', locator: '[0002]', quote: '产生的水锤压力波可击穿管件', rationale: '同为关阀水锤问题'}
+        means: {ref: '02_search_logs/raw/ZZ900052A1.md', locator: '[0005]', quote: '根据当前压差与压差变化率估算本次关阀将产生的水锤强度峰值', rationale: '压差预测水锤的手段相同'}
+conclusions_must_cite: [P-001, P-003]
+overall_verdict: '单篇新颖性 —— 初步成立（无单篇覆盖全部特征；P-001 缺磁致伸缩反馈/三段曲线/水锤预测，P-003 只覆盖水锤抑制）；创造性 —— 存疑（P-001 与 P-003 组合方向明显，需补充检索执行器侧手段）'

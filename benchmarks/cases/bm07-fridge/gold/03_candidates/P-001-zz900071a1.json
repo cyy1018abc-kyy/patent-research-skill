@@ -1,0 +1,187 @@
+{
+  "id": "P-001",
+  "kind": "patent",
+  "target": "TGT-9007",
+  "title": "Zero-degree fresh-keeping drawer with flow-equalizing membrane",
+  "authors_or_applicants": [
+    "Xiansu Home Appliance Research Institute"
+  ],
+  "year": 2019,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900071A1",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N1_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N1@TGT-9007"
+  ],
+  "logged_at": "2026-02-01T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-01_N1_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900071a12019",
+  "relevance_problem": 5,
+  "relevance_means": 4,
+  "review_note": "密封抽屉见 [0003]；[0007] 自认不做氧浓度控制、不设分解模块；只有湿度单参数，无氧浓度独立气路；[0008] 开门仅靠密封唇条被动保温，无主动保冷阀",
+  "feature_mapping": {
+    "F1": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900071A1.md",
+      "locator": "L10",
+      "quote": "抽屉进气口安装微孔均流膜，把点式送风分散为面式微流",
+      "note": "密封抽屉见 [0003]"
+    },
+    "F2": {
+      "status": "absent",
+      "note": "[0007] 自认不做氧浓度控制、不设分解模块"
+    },
+    "F3": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900071A1.md",
+      "locator": "L12",
+      "quote": "湿度调节为单参数：抽屉内湿度传感器读数低于设定值时，开启水盒补湿风路",
+      "note": "只有湿度单参数，无氧浓度独立气路"
+    },
+    "F4": {
+      "status": "absent",
+      "note": "[0008] 开门仅靠密封唇条被动保温，无主动保冷阀"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:33+08:00",
+    "basis": {
+      "N1@TGT-9007": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900071A1.md",
+          "locator": "L8",
+          "quote": "局部冻伤与脱水并存",
+          "rationale": "同为保鲜室存储品质问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900071A1.md",
+          "locator": "L9",
+          "quote": "保鲜室做成独立密封抽屉，抽体与滑轨之间设密封唇条",
+          "rationale": "密封抽屉结构手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N1@TGT-9007": {
+        "problem": "[0002] 普通冷藏室风直吹果蔬表面，局部冻伤与脱水并存。",
+        "means": "[0003] 保鲜室做成独立密封抽屉，抽体与滑轨之间设密封唇条。"
+      }
+    },
+    "fingerprint": "02c0a869bf746c5c83f6e3da45be290d49ad431fa272148235ff57f480b5fa69"
+  },
+  "reviewed_at": "2026-10-27T04:56:33+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900071A1",
+        "target": "TGT-9007",
+        "tags": [
+          "N1@TGT-9007"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900071A1",
+        "target": "TGT-9007",
+        "tags": [
+          "N1@TGT-9007"
+        ],
+        "relevance": 4,
+        "relevance_problem": 5,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "密封抽屉见 [0003]；[0007] 自认不做氧浓度控制、不设分解模块；只有湿度单参数，无氧浓度独立气路；[0008] 开门仅靠密封唇条被动保温，无主动保冷阀",
+        "feature_mapping": {
+          "F1": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900071A1.md",
+            "locator": "L10",
+            "quote": "抽屉进气口安装微孔均流膜，把点式送风分散为面式微流",
+            "note": "密封抽屉见 [0003]"
+          },
+          "F2": {
+            "status": "absent",
+            "note": "[0007] 自认不做氧浓度控制、不设分解模块"
+          },
+          "F3": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900071A1.md",
+            "locator": "L12",
+            "quote": "湿度调节为单参数：抽屉内湿度传感器读数低于设定值时，开启水盒补湿风路",
+            "note": "只有湿度单参数，无氧浓度独立气路"
+          },
+          "F4": {
+            "status": "absent",
+            "note": "[0008] 开门仅靠密封唇条被动保温，无主动保冷阀"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:33+08:00",
+          "basis": {
+            "N1@TGT-9007": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900071A1.md",
+                "locator": "L8",
+                "quote": "局部冻伤与脱水并存",
+                "rationale": "同为保鲜室存储品质问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900071A1.md",
+                "locator": "L9",
+                "quote": "保鲜室做成独立密封抽屉，抽体与滑轨之间设密封唇条",
+                "rationale": "密封抽屉结构手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N1@TGT-9007": {
+              "problem": "[0002] 普通冷藏室风直吹果蔬表面，局部冻伤与脱水并存。",
+              "means": "[0003] 保鲜室做成独立密封抽屉，抽体与滑轨之间设密封唇条。"
+            }
+          },
+          "fingerprint": "02c0a869bf746c5c83f6e3da45be290d49ad431fa272148235ff57f480b5fa69"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:33+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:33+08:00",
+    "fingerprint": "02c0a869bf746c5c83f6e3da45be290d49ad431fa272148235ff57f480b5fa69"
+  }
+}

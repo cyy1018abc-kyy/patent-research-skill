@@ -1,0 +1,32 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "ad4439a191475b85b47301ee7f65db1fe9326bc55fc8d2d84d8f5862cccce8a9",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "near_prior_art",
+    "novelty_check": "partial",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "63de50119f28f742c3274113c21f15bdc29275c7e36e83506a366b2fd395c908",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "near_prior_art",
+    "novelty_check": "partial",
+    "review_note": "",
+    "basis": {}
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "216ac0da037a9d0354bc5d6fed0b919c45c4e09bef7a382e0425c7f0c209a334",
+    "relevance_problem": null,
+    "relevance_means": null,
+    "role": "near_prior_art",
+    "novelty_check": "partial",
+    "review_note": "",
+    "basis": {}
+  }
+]

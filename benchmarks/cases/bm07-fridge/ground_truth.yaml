@@ -1,0 +1,60 @@
+# bm07-fridge 真值（全部为编造合成数据的判断基准）
+target: TGT-9007
+axes:
+  N1@TGT-9007: {title_zh: '密封抽屉与均流膜', features: [F1]}
+  N2@TGT-9007: {title_zh: '乙烯自动分解', features: [F2]}
+  N3@TGT-9007: {title_zh: '双参数独立调节', features: [F3]}
+  N4@TGT-9007: {title_zh: '开门保冷阀', features: [F4]}
+features:
+  F1: {claim: '1', statement: '独立密封抽屉且进气口设微孔均流膜'}
+  F2: {claim: '1', statement: '按乙烯浓度自动启停催化分解模块'}
+  F3: {claim: '1', statement: '湿度与氧浓度由独立风路气路分别调节'}
+  F4: {claim: '2', statement: '开门时抽屉独立保冷风阀延时关闭'}
+candidates:
+  P-001:
+    doc_number: ZZ900071A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 5
+    relevance_means: 4
+    disclosure:
+      F1: {status: disclosed, ref: '02_search_logs/raw/ZZ900071A1.md', locator: '[0004]', quote: '抽屉进气口安装微孔均流膜，把点式送风分散为面式微流', note: '密封抽屉见 [0003]'}
+      F2: {status: absent, note: '[0007] 自认不做氧浓度控制、不设分解模块'}
+      F3: {status: partial, ref: '02_search_logs/raw/ZZ900071A1.md', locator: '[0006]', quote: '湿度调节为单参数：抽屉内湿度传感器读数低于设定值时，开启水盒补湿风路', note: '只有湿度单参数，无氧浓度独立气路'}
+      F4: {status: absent, note: '[0008] 开门仅靠密封唇条被动保温，无主动保冷阀'}
+    basis:
+      N1@TGT-9007:
+        problem: {ref: '02_search_logs/raw/ZZ900071A1.md', locator: '[0002]', quote: '局部冻伤与脱水并存', rationale: '同为保鲜室存储品质问题'}
+        means: {ref: '02_search_logs/raw/ZZ900071A1.md', locator: '[0003]', quote: '保鲜室做成独立密封抽屉，抽体与滑轨之间设密封唇条', rationale: '密封抽屉结构手段相同'}
+  P-002:
+    doc_number: ZZ900072A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 3
+    relevance_means: 3
+    disclosure:
+      F1: {status: absent}
+      F2: {status: partial, ref: '02_search_logs/raw/ZZ900072A1.md', locator: '[0006]', quote: '乙烯浓度超过启动门限时接通紫外灯珠，浓度回落到停止门限以下后断开', note: '按浓度自动启停的机制相同，但为独立装置而非冰箱内嵌（[0007]）'}
+      F3: {status: absent, note: '[0008] 自认不调节湿度与氧浓度'}
+      F4: {status: absent}
+    basis:
+      N2@TGT-9007:
+        problem: {ref: '02_search_logs/raw/ZZ900072A1.md', locator: '[0002]', quote: '积累会显著缩短储藏期', rationale: '同为乙烯催熟问题'}
+        means: {ref: '02_search_logs/raw/ZZ900072A1.md', locator: '[0003]', quote: '内置乙烯传感器与二氧化钛催化模块', rationale: '传感+催化分解手段相同'}
+  P-003:
+    doc_number: ZZ900073A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 4
+    relevance_means: 4
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: absent, note: '[0009] 自认不涉及气体成分调节'}
+      F4: {status: disclosed, ref: '02_search_logs/raw/ZZ900073A1.md', locator: '[0006]', quote: '本机构在开门后让风门保持开启一段延时', note: '[0007] 延时结束后关闭并形成独立保冷空间，与 F4 的开门延时关闭保冷一致；对象为整柜送风非抽屉独立阀'}
+    basis:
+      N4@TGT-9007:
+        problem: {ref: '02_search_logs/raw/ZZ900073A1.md', locator: '[0002]', quote: '每次开门冷气大量外泄', rationale: '同为开门冷量流失问题'}
+        means: {ref: '02_search_logs/raw/ZZ900073A1.md', locator: '[0007]', quote: '延时结束后风门关闭，存品区形成独立保冷空间', rationale: '延时关闭保冷的手段相同'}
+conclusions_must_cite: [P-001, P-003]
+overall_verdict: '单篇新颖性 —— 初步成立（无单篇覆盖全部特征：P-001 缺乙烯分解/保冷阀，F3 双参数独立调节无任何候选披露）；创造性 —— 存疑（P-001 与 P-002 的乙烯模块内嵌、P-003 的抽屉级保冷阀组合方向需检索确认）'

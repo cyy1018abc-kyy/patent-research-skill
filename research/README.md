@@ -63,7 +63,7 @@ SHA-256 清单，无需手工改名。三步：
 
 1. **装内核**（一次性）：
    ```powershell
-   python -m pip install ./patentkit-0.7.0-py3-none-any.whl
+   python -m pip install ./patentkit-0.8.0-py3-none-any.whl
    # 需要 docx 导出时加可选依赖：
    python -m pip install python-docx
    ```

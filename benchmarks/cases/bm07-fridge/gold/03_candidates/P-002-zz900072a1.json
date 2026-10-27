@@ -1,0 +1,177 @@
+{
+  "id": "P-002",
+  "kind": "patent",
+  "target": "TGT-9007",
+  "title": "Ethylene catalytic decomposition device for refrigerated cabinets",
+  "authors_or_applicants": [
+    "Jiexian Environmental Technology Co."
+  ],
+  "year": 2020,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900072A1",
+  "summary_zh": "",
+  "relevance": 3,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N2_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N2@TGT-9007"
+  ],
+  "logged_at": "2026-02-02T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-02_N2_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900072a12020",
+  "relevance_problem": 3,
+  "relevance_means": 3,
+  "review_note": "按浓度自动启停的机制相同，但为独立装置而非冰箱内嵌（[0007]）；[0008] 自认不调节湿度与氧浓度",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900072A1.md",
+      "locator": "L12",
+      "quote": "乙烯浓度超过启动门限时接通紫外灯珠，浓度回落到停止门限以下后断开",
+      "note": "按浓度自动启停的机制相同，但为独立装置而非冰箱内嵌（[0007]）"
+    },
+    "F3": {
+      "status": "absent",
+      "note": "[0008] 自认不调节湿度与氧浓度"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:33+08:00",
+    "basis": {
+      "N2@TGT-9007": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900072A1.md",
+          "locator": "L8",
+          "quote": "积累会显著缩短储藏期",
+          "rationale": "同为乙烯催熟问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900072A1.md",
+          "locator": "L9",
+          "quote": "内置乙烯传感器与二氧化钛催化模块",
+          "rationale": "传感+催化分解手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N2@TGT-9007": {
+        "problem": "[0002] 乙烯是果蔬后熟的催熟激素，积累会显著缩短储藏期。",
+        "means": "[0003] 本装置为独立箱体，内置乙烯传感器与二氧化钛催化模块。"
+      }
+    },
+    "fingerprint": "c9986da33a17f412ba7f0ac07fa04f895ad53b80989397f04ed11f961ec3db4a"
+  },
+  "reviewed_at": "2026-10-27T04:56:33+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900072A1",
+        "target": "TGT-9007",
+        "tags": [
+          "N2@TGT-9007"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900072A1",
+        "target": "TGT-9007",
+        "tags": [
+          "N2@TGT-9007"
+        ],
+        "relevance": 3,
+        "relevance_problem": 3,
+        "relevance_means": 3,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "按浓度自动启停的机制相同，但为独立装置而非冰箱内嵌（[0007]）；[0008] 自认不调节湿度与氧浓度",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900072A1.md",
+            "locator": "L12",
+            "quote": "乙烯浓度超过启动门限时接通紫外灯珠，浓度回落到停止门限以下后断开",
+            "note": "按浓度自动启停的机制相同，但为独立装置而非冰箱内嵌（[0007]）"
+          },
+          "F3": {
+            "status": "absent",
+            "note": "[0008] 自认不调节湿度与氧浓度"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:33+08:00",
+          "basis": {
+            "N2@TGT-9007": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900072A1.md",
+                "locator": "L8",
+                "quote": "积累会显著缩短储藏期",
+                "rationale": "同为乙烯催熟问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900072A1.md",
+                "locator": "L9",
+                "quote": "内置乙烯传感器与二氧化钛催化模块",
+                "rationale": "传感+催化分解手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N2@TGT-9007": {
+              "problem": "[0002] 乙烯是果蔬后熟的催熟激素，积累会显著缩短储藏期。",
+              "means": "[0003] 本装置为独立箱体，内置乙烯传感器与二氧化钛催化模块。"
+            }
+          },
+          "fingerprint": "c9986da33a17f412ba7f0ac07fa04f895ad53b80989397f04ed11f961ec3db4a"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:33+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:33+08:00",
+    "fingerprint": "c9986da33a17f412ba7f0ac07fa04f895ad53b80989397f04ed11f961ec3db4a"
+  }
+}

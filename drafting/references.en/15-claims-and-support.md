@@ -79,6 +79,11 @@ be non-empty (empty mapping is not coverage); `fact_refs`/`figures` must referen
 identifiers; `prior_art_diff` cites ledger document numbers; human review is recorded separately
 and the gate requires all confirmed.
 
+`citations` (optional, kernel 0.8.0, audit rule D-019): structured support citations. `source`
+must be a workspace-relative path (unresolvable, `..`-escaping or missing → error); `locator`
+must be an `L<n>[-L<m>]` line range or a `[NNNN]` paragraph tag (out of range / tag absent →
+error). Once present, a citation has to resolve — support is no longer free text only.
+
 ## 4. Review checklist (before `review_draft`)
 
 - [ ] every essential feature has claim atoms whose `fact_refs` point at confirmed facts;

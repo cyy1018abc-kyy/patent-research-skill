@@ -1,0 +1,14 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "aa828674923c56cfcf800ab464e6ef5b269b7d7cef8b4a447d148f3945f36d41"
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "09a3a1931d9bf28efe58e8607fa56064d63c5122ed5d8f3ff4680a69c9a63a20"
+  },
+  {
+    "candidate_id": "P-004",
+    "expected_fingerprint": "f98a24ad01a1f3244a0365107e0c87bae8ee5c2374f7a93c3c47edf21972b077"
+  }
+]

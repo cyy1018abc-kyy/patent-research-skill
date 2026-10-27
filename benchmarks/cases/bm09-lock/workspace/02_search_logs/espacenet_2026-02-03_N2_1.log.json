@@ -1,0 +1,17 @@
+{
+  "db": "espacenet",
+  "target": "TGT-9009",
+  "actor": "benchmark",
+  "capture_mode": "live",
+  "timestamp": "2026-02-03T08:00:00+00:00",
+  "query": {
+    "id": "N2",
+    "axis": "N2@TGT-9009",
+    "text": "abstract=(双因子撤销)"
+  },
+  "result": {
+    "hit_count": 1,
+    "raw_export": "raw/N2_page-1.csv",
+    "complete": true
+  }
+}

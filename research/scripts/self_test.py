@@ -4,7 +4,7 @@
 对标 cnipa-patent-kit 的 self_test.py。六项检查（对标发布验收的正反用例）：
 
 1. Python ≥ 3.11；
-2. patentkit 可导入，版本 ≥ 0.7.0 且评估协议 = 1；
+2. patentkit 可导入，版本 ≥ 0.8.0 且评估协议 = 1；
 3. 技能封装依赖（本目录 _env）可用；
 4. 用内核模板生成一个**合成样例工作区**（TGT-0002，无真实数据）；
 5. 正用例：`validate --strict` 在干净样例上必须 0 error / 0 warn；
@@ -28,7 +28,7 @@ from pathlib import Path
 
 import _env
 
-REQUIRED_KERNEL = "0.7.0"
+REQUIRED_KERNEL = "0.8.0"
 
 
 def _version_tuple(v: str) -> tuple[int, ...]:

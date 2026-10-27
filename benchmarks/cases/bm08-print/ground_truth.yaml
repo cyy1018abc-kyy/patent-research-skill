@@ -1,0 +1,60 @@
+# bm08-print 真值（全部为编造合成数据的判断基准）
+target: TGT-9008
+axes:
+  N1@TGT-9008: {title_zh: '电流纹波判别', features: [F1]}
+  N2@TGT-9008: {title_zh: '逐层成像比对', features: [F2]}
+  N3@TGT-9008: {title_zh: '缺陷回退重打', features: [F3]}
+  N4@TGT-9008: {title_zh: '样本入库更新', features: [F4]}
+features:
+  F1: {claim: '1', statement: '采集挤出机电机电流纹波并按纹波特征判别断丝与堵料'}
+  F2: {claim: '1', statement: '每打印层成像并与切片预览图逐层比对得偏移量'}
+  F3: {claim: '1', statement: '检出缺陷记录层号并回退到缺陷层重新打印'}
+  F4: {claim: '2', statement: '缺陷样本自动入库更新工艺参数推荐模型'}
+candidates:
+  P-001:
+    doc_number: ZZ900082A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 4
+    relevance_means: 4
+    disclosure:
+      F1: {status: disclosed, ref: '02_search_logs/raw/ZZ900082A1.md', locator: '[0003]', quote: '在挤出机电机驱动器上取样电流信号，按打印频率段做带通滤波提取纹波', note: '判别输出见 [0005]（断丝/堵料三类）'}
+      F2: {status: absent, note: '[0008] 自认不涉及层图像或切片比对'}
+      F3: {status: absent, note: '[0006] 判别异常仅输出告警由人工停机'}
+      F4: {status: absent, note: '[0007] 特征库由厂商离线统一发布，非在线自动入库'}
+    basis:
+      N1@TGT-9008:
+        problem: {ref: '02_search_logs/raw/ZZ900082A1.md', locator: '[0002]', quote: '送料不畅与堵料会以电机负载波动的形式提前暴露', rationale: '同为挤出异常在线判别问题'}
+        means: {ref: '02_search_logs/raw/ZZ900082A1.md', locator: '[0005]', quote: '分类器输出正常、断丝、堵料三类判别结果及置信度', rationale: '按纹波特征判别断丝堵料的手段相同'}
+  P-002:
+    doc_number: ZZ900081A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 4
+    relevance_means: 4
+    disclosure:
+      F1: {status: absent, note: '[0008] 自认不采集挤出机电机信号'}
+      F2: {status: disclosed, ref: '02_search_logs/raw/ZZ900081A1.md', locator: '[0005]', quote: '把层图像与切片软件导出的预览图逐层比对，输出轮廓偏移量与缺陷标记'}
+      F3: {status: absent, note: '[0006] 检出缺陷报警并暂停、等人工处置，不回退重打'}
+      F4: {status: absent, note: '[0007] 层图像仅按时间存档供追溯，无样本入库更新机制'}
+    basis:
+      N2@TGT-9008:
+        problem: {ref: '02_search_logs/raw/ZZ900081A1.md', locator: '[0002]', quote: '层间缺陷（错位、缺料、翘曲）在打印早期即可从层图像看出', rationale: '同为层缺陷在线发现问题'}
+        means: {ref: '02_search_logs/raw/ZZ900081A1.md', locator: '[0004]', quote: '层高计数器每完成一层发出拍照指令', rationale: '逐层成像与切片比对手段相同'}
+  P-003:
+    doc_number: ZZ900083A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 3
+    relevance_means: 3
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: partial, ref: '02_search_logs/raw/ZZ900083A1.md', locator: '[0007]', quote: '续打的触发条件是断电事件，本装置不具备任何缺陷检测能力', note: '按层号续打的机械与记录手段（[0003]/[0004]）可复用，但触发是断电而非缺陷回退'}
+      F4: {status: absent}
+    basis:
+      N3@TGT-9008:
+        problem: {ref: '02_search_logs/raw/ZZ900083A1.md', locator: '[0002]', quote: '已打印部分报废重来成本高', rationale: '同为避免整件报废的问题，触发源不同故 problem 3'}
+        means: {ref: '02_search_logs/raw/ZZ900083A1.md', locator: '[0003]', quote: '主控周期性把当前层号与喷头坐标写入非易失存储器', rationale: '层号记录与续打执行手段相邻'}
+conclusions_must_cite: [P-001, P-002, P-003]
+overall_verdict: '单篇新颖性 —— 初步成立（无单篇覆盖全部特征；P-001/P-002 各覆盖一条检测线但都止步于告警）；创造性 —— 存疑（两条检测线与 P-003 的层号回退机制存在组合方向，需补充检索）'

@@ -62,13 +62,32 @@ the inventor / attorney; **do not** paper over missing material with endless rev
 `revise close --round R4 --note "one-line re-verification evidence"`; close refuses while the
 chain-integrity check fails.
 
+## Revision ↔ conclusions linkage (kernel 0.8.0, V038)
+
+A patch touching the manuscript automatically marks every `05_novelty_conclusions/*.md` stale
+(kernel-generated `five_acceptance_gates_tracking.md` exempt — it is a live view recomputed by
+gates). Until each stale conclusion is processed: `revise status` exits 1, `revise close`
+refuses, and validate reports V038 errors. Two explicit ways out (the decision maker is
+always recorded):
+
+```powershell
+python -m patentkit revise reconfirm --file 05_novelty_conclusions/conclusions.md --by <name>
+python -m patentkit revise reconfirm --file <conclusion> --waive --reason <one line> --by <name>
+```
+
+A waiver is written into the ledger round that caused the staleness (`conclusion_waivers`);
+a re-confirmation binds the file sha256 — editing the conclusion afterwards is a V038 error.
+State lives in the kernel-managed `05_novelty_conclusions/conclusions_state.yml`; workspaces
+without that file need zero migration.
+
 ## Command quick reference
 
 ```powershell
 python -m patentkit revise apply patch-R4.yml   # atomic apply (any find hit-count ≠ 1 → refuse, zero writes)
-python -m patentkit revise status               # round table + chain integrity (unlogged edit → exit 1)
-python -m patentkit revise close --round R4     # close once re-verification passed
+python -m patentkit revise status               # round table + chain integrity + stale conclusions (→ exit 1)
+python -m patentkit revise reconfirm --by <name> # re-confirm stale conclusions (or --waive --reason to waive into the ledger)
+python -m patentkit revise close --round R4     # close once re-verification passed (refused while conclusions are stale)
 python -m patentkit attest --check              # drift detection (registry view; cross-checks the ledger)
-python -m patentkit validate --strict           # structural consistency (V035/V036)
+python -m patentkit validate --strict           # structural consistency (V035/V036/V038)
 python -m patentkit review export --format json --axis N1 --out re.json   # re-assessment entry
 ```

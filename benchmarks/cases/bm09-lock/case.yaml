@@ -1,0 +1,27 @@
+# 案例元数据与任务卡（bm09-lock）
+id: bm09-lock
+title: 智能门锁控制 —— 误判率专项
+focus: misjudgment
+difficulty: hard
+target: TGT-9009
+metrics_weight:
+  citation_precision: 0.2
+  citation_coverage: 0.1
+  feature_omission: 0.2
+  misjudgment: 0.5
+traps:
+  - ZZ900091A1 [0009] 是 F4 的反向披露（低电只提醒、远程保持可用）——判"低电相关→partial 依据 [0009]"时 note 必须写清方向相反；[0008] 的"可选增强"让 F2 只能 partial
+  - ZZ900092A1 是手机不是门锁——但 F1 的手段（按压+指纹同区叠合）披露就在 [0003]/[0004]，判 excluded 会丢唯一 F1 披露
+  - ZZ900093A1 的"机械优先"在 [0005]（推杆直连门闩），[0006] 是其机械可靠性佐证——别只引 [0006]
+  - ZZ900094A1（共享单车锁）是"锁+NFC"关键词撞车，真值 excluded/untouched
+task: |
+  工作区已预置：4 条检索日志与 raw 工件、已 ingest 的 4 个候选（P-001..P-004，均
+  untouched）、目标 TGT-9009 的权利要求（见 07_drafting/claims.md 与本案例
+  corpus/target_claims.md）。语料是编造的合成文献，全文在 02_search_logs/raw/。
+  请按 patent-research 技能的执行顺序完成判断链：
+  1. review export → 逐候选评估：relevance_problem / relevance_means / novelty_check / role /
+     feature_mapping（状态与引文，格式见 benchmarks/README.md；F1..F4 逐个表态）；
+  2. review assess --apply → 对全部 near_prior_art 候选做显式人工确认（review confirm --apply，
+     --by 填 benchmark-operator）→ attest --apply；
+  3. 填 04_comparative_analysis/comparison_matrix.md（含每列输出，关键段落用 路径#L行：摘句 形态）；
+  4. 写 05_novelty_conclusions/conclusions.md（引用证据账本中存在的 P 编号）。

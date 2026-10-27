@@ -1,0 +1,187 @@
+{
+  "id": "P-001",
+  "kind": "patent",
+  "target": "TGT-9009",
+  "title": "Multi-factor smart door lock control system",
+  "authors_or_applicants": [
+    "Shoumen Smart Technology Co."
+  ],
+  "year": 2020,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900091A1",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N1_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N1@TGT-9009"
+  ],
+  "logged_at": "2026-02-01T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-01_N1_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900091a12020",
+  "relevance_problem": 5,
+  "relevance_means": 4,
+  "review_note": "[0003] 指纹模组为独立感应区、与把手分体，[0005] 还承认轮询功耗——与复用感应区相反；双因子撤销已披露，但为可选增强且为\"依次验证\"而非\"同时生效\"；[0010] 电机驱动为常态、旋钮仅应急备用——无机械优先于电子的直连结构；有低电门限与提醒，但同段明确\"远程开锁功能保持可用\"——与拒绝远程相反",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent",
+      "note": "[0003] 指纹模组为独立感应区、与把手分体，[0005] 还承认轮询功耗——与复用感应区相反"
+    },
+    "F2": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900091A1.md",
+      "locator": "L14",
+      "quote": "开启后撤销离家状态需要依次验证指纹与 NFC 卡两项因子",
+      "note": "双因子撤销已披露，但为可选增强且为\"依次验证\"而非\"同时生效\""
+    },
+    "F3": {
+      "status": "absent",
+      "note": "[0010] 电机驱动为常态、旋钮仅应急备用——无机械优先于电子的直连结构"
+    },
+    "F4": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900091A1.md",
+      "locator": "L15",
+      "quote": "电量低于告警门限时，面板指示灯变红并向手机推送低电提醒",
+      "note": "有低电门限与提醒，但同段明确\"远程开锁功能保持可用\"——与拒绝远程相反"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:33+08:00",
+    "basis": {
+      "N1@TGT-9009": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900091A1.md",
+          "locator": "L11",
+          "quote": "周期轮询带来持续功耗，电池续航受轮询频率制约",
+          "rationale": "同为门锁功耗问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900091A1.md",
+          "locator": "L10",
+          "quote": "检测到手指触碰即唤醒主控",
+          "rationale": "触碰唤醒识别手段同域，感应区布置不同"
+        }
+      }
+    },
+    "materials": {
+      "N1@TGT-9009": {
+        "problem": "[0005] 周期轮询带来持续功耗，电池续航受轮询频率制约。",
+        "means": "[0004] 待机时指纹模组周期性低功耗轮询，检测到手指触碰即唤醒主控。"
+      }
+    },
+    "fingerprint": "aa828674923c56cfcf800ab464e6ef5b269b7d7cef8b4a447d148f3945f36d41"
+  },
+  "reviewed_at": "2026-10-27T04:56:33+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900091A1",
+        "target": "TGT-9009",
+        "tags": [
+          "N1@TGT-9009"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900091A1",
+        "target": "TGT-9009",
+        "tags": [
+          "N1@TGT-9009"
+        ],
+        "relevance": 4,
+        "relevance_problem": 5,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "[0003] 指纹模组为独立感应区、与把手分体，[0005] 还承认轮询功耗——与复用感应区相反；双因子撤销已披露，但为可选增强且为\"依次验证\"而非\"同时生效\"；[0010] 电机驱动为常态、旋钮仅应急备用——无机械优先于电子的直连结构；有低电门限与提醒，但同段明确\"远程开锁功能保持可用\"——与拒绝远程相反",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent",
+            "note": "[0003] 指纹模组为独立感应区、与把手分体，[0005] 还承认轮询功耗——与复用感应区相反"
+          },
+          "F2": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900091A1.md",
+            "locator": "L14",
+            "quote": "开启后撤销离家状态需要依次验证指纹与 NFC 卡两项因子",
+            "note": "双因子撤销已披露，但为可选增强且为\"依次验证\"而非\"同时生效\""
+          },
+          "F3": {
+            "status": "absent",
+            "note": "[0010] 电机驱动为常态、旋钮仅应急备用——无机械优先于电子的直连结构"
+          },
+          "F4": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900091A1.md",
+            "locator": "L15",
+            "quote": "电量低于告警门限时，面板指示灯变红并向手机推送低电提醒",
+            "note": "有低电门限与提醒，但同段明确\"远程开锁功能保持可用\"——与拒绝远程相反"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:33+08:00",
+          "basis": {
+            "N1@TGT-9009": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900091A1.md",
+                "locator": "L11",
+                "quote": "周期轮询带来持续功耗，电池续航受轮询频率制约",
+                "rationale": "同为门锁功耗问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900091A1.md",
+                "locator": "L10",
+                "quote": "检测到手指触碰即唤醒主控",
+                "rationale": "触碰唤醒识别手段同域，感应区布置不同"
+              }
+            }
+          },
+          "materials": {
+            "N1@TGT-9009": {
+              "problem": "[0005] 周期轮询带来持续功耗，电池续航受轮询频率制约。",
+              "means": "[0004] 待机时指纹模组周期性低功耗轮询，检测到手指触碰即唤醒主控。"
+            }
+          },
+          "fingerprint": "aa828674923c56cfcf800ab464e6ef5b269b7d7cef8b4a447d148f3945f36d41"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:33+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:33+08:00",
+    "fingerprint": "aa828674923c56cfcf800ab464e6ef5b269b7d7cef8b4a447d148f3945f36d41"
+  }
+}

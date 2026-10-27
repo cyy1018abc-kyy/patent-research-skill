@@ -1,0 +1,179 @@
+{
+  "id": "P-002",
+  "kind": "patent",
+  "target": "TGT-9008",
+  "title": "Online layer image quality inspection device for printing",
+  "authors_or_applicants": [
+    "Zengcai Visual Technology Co."
+  ],
+  "year": 2020,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900081A1",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N2_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N2@TGT-9008"
+  ],
+  "logged_at": "2026-02-02T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-02_N2_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900081a12020",
+  "relevance_problem": 4,
+  "relevance_means": 4,
+  "review_note": "[0008] 自认不采集挤出机电机信号；[0006] 检出缺陷报警并暂停、等人工处置，不回退重打；[0007] 层图像仅按时间存档供追溯，无样本入库更新机制",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent",
+      "note": "[0008] 自认不采集挤出机电机信号"
+    },
+    "F2": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900081A1.md",
+      "locator": "L11",
+      "quote": "把层图像与切片软件导出的预览图逐层比对，输出轮廓偏移量与缺陷标记"
+    },
+    "F3": {
+      "status": "absent",
+      "note": "[0006] 检出缺陷报警并暂停、等人工处置，不回退重打"
+    },
+    "F4": {
+      "status": "absent",
+      "note": "[0007] 层图像仅按时间存档供追溯，无样本入库更新机制"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:59:00+08:00",
+    "basis": {
+      "N2@TGT-9008": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900081A1.md",
+          "locator": "L8",
+          "quote": "层间缺陷（错位、缺料、翘曲）在打印早期即可从层图像看出",
+          "rationale": "同为层缺陷在线发现问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900081A1.md",
+          "locator": "L10",
+          "quote": "层高计数器每完成一层发出拍照指令",
+          "rationale": "逐层成像与切片比对手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N2@TGT-9008": {
+        "problem": "[0002] 层间缺陷（错位、缺料、翘曲）在打印早期即可从层图像看出。",
+        "means": "[0004] 成像触发与打印进度同步：层高计数器每完成一层发出拍照指令。"
+      }
+    },
+    "fingerprint": "15bd6c5d9327b447dfe6bb8ffbe9f7024a3f4de5c5f35328fd270d6b5ae6291c"
+  },
+  "reviewed_at": "2026-10-27T04:59:00+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:59:00+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900081A1",
+        "target": "TGT-9008",
+        "tags": [
+          "N2@TGT-9008"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:59:00+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900081A1",
+        "target": "TGT-9008",
+        "tags": [
+          "N2@TGT-9008"
+        ],
+        "relevance": 4,
+        "relevance_problem": 4,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "[0008] 自认不采集挤出机电机信号；[0006] 检出缺陷报警并暂停、等人工处置，不回退重打；[0007] 层图像仅按时间存档供追溯，无样本入库更新机制",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent",
+            "note": "[0008] 自认不采集挤出机电机信号"
+          },
+          "F2": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900081A1.md",
+            "locator": "L11",
+            "quote": "把层图像与切片软件导出的预览图逐层比对，输出轮廓偏移量与缺陷标记"
+          },
+          "F3": {
+            "status": "absent",
+            "note": "[0006] 检出缺陷报警并暂停、等人工处置，不回退重打"
+          },
+          "F4": {
+            "status": "absent",
+            "note": "[0007] 层图像仅按时间存档供追溯，无样本入库更新机制"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:59:00+08:00",
+          "basis": {
+            "N2@TGT-9008": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900081A1.md",
+                "locator": "L8",
+                "quote": "层间缺陷（错位、缺料、翘曲）在打印早期即可从层图像看出",
+                "rationale": "同为层缺陷在线发现问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900081A1.md",
+                "locator": "L10",
+                "quote": "层高计数器每完成一层发出拍照指令",
+                "rationale": "逐层成像与切片比对手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N2@TGT-9008": {
+              "problem": "[0002] 层间缺陷（错位、缺料、翘曲）在打印早期即可从层图像看出。",
+              "means": "[0004] 成像触发与打印进度同步：层高计数器每完成一层发出拍照指令。"
+            }
+          },
+          "fingerprint": "15bd6c5d9327b447dfe6bb8ffbe9f7024a3f4de5c5f35328fd270d6b5ae6291c"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:59:00+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:59:00+08:00",
+    "fingerprint": "15bd6c5d9327b447dfe6bb8ffbe9f7024a3f4de5c5f35328fd270d6b5ae6291c"
+  }
+}
