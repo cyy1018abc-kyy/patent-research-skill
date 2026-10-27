@@ -14,6 +14,7 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 import tempfile
 import zipfile
 from datetime import datetime, timezone
@@ -160,12 +161,65 @@ def build(out: Path, built_at: str) -> dict:
         "".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n"
                 for p in (full_zip, single_zip, guide, installer)),
         encoding="utf-8")
+
+    # 可选扩展 wheel：与 skill zip 明确分离的独立附件（蓝图 O-03）。
+    # 不进 manifest、不进安装器、不进 publish 名单——安装与分发完全独立；
+    # 校验信息走 extension/ 子目录里自己的 SUMS 文件。
+    extension = build_extension_wheel(out)
+
     return {
         "zips": products,
         "version": version,
         "skills": [m["name"] for m in metas],
         "checksums": str((out / f"SHA256SUMS-skill-v{version}.txt").resolve()),
         "manifest": json.loads(manifest_for(SKILL_DIRS, full_files)),
+        "extension": extension,
+    }
+
+
+def _extension_version() -> str:
+    import tomllib
+
+    data = tomllib.loads((ROOT / "extensions/patent_intel/pyproject.toml").read_text(encoding="utf-8"))
+    version = str(data["project"]["version"])
+    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        raise ValueError(f"Invalid patent_intel version: {version}")
+    return version
+
+
+def build_extension_wheel(out: Path) -> dict:
+    """Build the optional extension wheel into ``out/extension/`` + its own SUMS.
+
+    Kept strictly separate from the skill zips: the installer never sees it, the
+    manifest never lists it, and its checksums live in their own file so release
+    tooling can audit it independently.
+    """
+    extension_dir = out / "extension"
+    extension_dir.mkdir(parents=True, exist_ok=True)
+    version = _extension_version()
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "wheel", str(ROOT / "extensions/patent_intel"),
+         "--no-deps", "--wheel-dir", str(extension_dir)],
+        cwd=ROOT, capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0:
+        raise ValueError(f"patent_intel wheel build failed: {result.stderr[-2000:]}")
+    wheels = sorted(extension_dir.glob("patent_intel-*.whl"))
+    if len(wheels) != 1:
+        raise ValueError(f"expected exactly one extension wheel, got {[w.name for w in wheels]}")
+    wheel = wheels[0]
+    expected_name = f"patent_intel-{version}-py3-none-any.whl"
+    if wheel.name != expected_name:
+        raise ValueError(f"wheel name {wheel.name!r} does not match extension version {version}")
+    sums_path = extension_dir / f"SHA256SUMS-patent-intel-v{version}.txt"
+    sums_path.write_text(
+        f"{hashlib.sha256(wheel.read_bytes()).hexdigest()}  {wheel.name}\n", encoding="utf-8"
+    )
+    return {
+        "wheel": str(wheel.resolve()),
+        "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+        "version": version,
+        "checksums": str(sums_path.resolve()),
     }
 
 

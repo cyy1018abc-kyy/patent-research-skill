@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
 
     plan = sub.add_parser("plan", help="query-family proposals for one axis (printed, nothing written)")
     _env.add_common_args(plan)
-    plan.add_argument("--axis", required=True, help="axis id, bare (N1) or target-qualified (N1@TGT-0001)")
+    plan.add_argument("--axis", required=True, help="axis id, bare (N1) or target-qualified (N1@TGT-9001)")
 
     args = parser.parse_args(argv)
     _env.configure_stdio()

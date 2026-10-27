@@ -58,6 +58,10 @@ jobs:
           python -m build ./kernel-build/patentkit-0.1.2 --outdir dist
           python -m pip install dist/patentkit-0.9.0-py3-none-any.whl python-docx
           python -c "import patentkit; from patentkit.assessment import PROTOCOL_VERSION; assert patentkit.__version__ == '0.9.0' and PROTOCOL_VERSION == 1; assert 'site-packages' in patentkit.__file__"
+      - name: Install the optional patent_intel extension (stdlib-only base)
+        run: |
+          python -m pip install -e extensions/patent_intel --no-deps
+          python -m patent_intel doctor --json
       - name: Kernel assessment and delivery-safety regressions
         run: python -m pytest kernel-build/patentkit-0.1.2/regression_tests -o addopts= -q
       - name: Kernel full suite from the patched tree
@@ -97,6 +101,8 @@ jobs:
           PY
       - name: Skill protocol and installation acceptance
         run: python -m unittest discover -s tests -v
+      - name: Extension and boundary regression suite (pytest)
+        run: python -m pytest tests extensions/patent_intel/tests -o addopts= -q
       - name: Benchmark gold solutions score perfect (scorer semantics locked)
         run: python tools/score_benchmark.py --suite benchmarks/cases --gold --gate perfect
       - name: Release doctor offline preflight (pairing + guards + build + installers)

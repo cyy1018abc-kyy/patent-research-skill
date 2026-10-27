@@ -80,12 +80,21 @@ def parse_patent_xml(path: Path, *, source_document: str | None = None) -> Struc
         parser_version=PARSER_VERSION,
     )
 
-    # publication number: publication-reference / doc-number
-    for el in _iter_local(root, "publication-reference"):
-        num = _first_local_text(el, "doc-number")
-        if num:
-            doc.publication_number = num.strip()
+    # publication number: exchange-document attributes first (OPS form:
+    # country/doc-number/kind), then nested publication-reference/doc-number text
+    for el in _iter_local(root, "exchange-document"):
+        country = str(el.get("country") or "")
+        number = str(el.get("doc-number") or "")
+        kind = str(el.get("kind") or "")
+        if country and number:
+            doc.publication_number = f"{country}{number}{kind}"
             break
+    if doc.publication_number is None:
+        for el in _iter_local(root, "publication-reference"):
+            num = _first_local_text(el, "doc-number")
+            if num:
+                doc.publication_number = num.strip()
+                break
     if doc.publication_number is None:
         doc.publication_number = _first_local_text(root, "doc-number")
 

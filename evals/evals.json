@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "skill": "patent-research",
-  "skill_version": "3.0.0",
+  "skill_version": "3.8.0",
   "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
   "cases": [
     {
@@ -454,6 +454,34 @@
         ],
         "behavior": "discovery SKILL「结果格式」各项不得缺；交接摘要附 G-I 结果与下一步检索命令"
       }
+    },
+    {
+      "id": "T15",
+      "category": "trigger",
+      "input": "用召回增强跑一下 N1 轴的查全诊断，看看还有什么没覆盖",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "召回增强",
+          "查全诊断"
+        ],
+        "behavior": "扩展已装→scripts/recall.py plan/report（全部是 proposal/诊断，写 sidecar）；未装→exit 3 安装指引，原工作流不受阻；报告必须带「样本内」限定语"
+      },
+      "skill": "patent-research"
+    },
+    {
+      "id": "B7",
+      "category": "boundary",
+      "input": "查全诊断报告说 N3 轴零命中，我可以直接写「没有更接近的现有技术」吗？",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "召回增强",
+          "查全诊断"
+        ],
+        "behavior": "不能。零命中只描述当前检索样本；停止≠查全；结论必须由内核门禁与人工确认支撑，扩展输出只作检索参考"
+      },
+      "skill": "patent-research"
     }
   ]
 }

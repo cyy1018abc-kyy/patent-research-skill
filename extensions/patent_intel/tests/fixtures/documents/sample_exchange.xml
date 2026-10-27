@@ -1,29 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ops:world-patent-data xmlns:ops="http://ops.epo.org" xmlns:ex="http://www.epo.org/exchange">
-  <ex:exchange-document lang="zh">
-    <ex:bibliographic-data>
-      <ex:publication-reference>
-        <ex:document-id>
-          <ex:country>CN</ex:country>
-          <ex:doc-number>119000001</ex:doc-number>
-          <ex:kind>A</ex:kind>
-        </ex:document-id>
-      </ex:publication-reference>
-      <ex:invention-title>一种无线传感网信标时间同步方法</ex:invention-title>
-    </ex:bibliographic-data>
-    <ex:abstract>
-      <ex:p>本发明公开了一种无线传感网信标时间同步方法，通过信标帧携带发送时刻估计信息。</ex:p>
-    </ex:abstract>
-    <ex:claims>
-      <ex:claim num="1">一种无线传感网信标时间同步方法，其特征在于，包括：在信标帧中携带发送时刻。</ex:claim>
-      <ex:claim num="2">根据权利要求1所述的方法，其特征在于，还包括漂移估计与补偿步骤。</ex:claim>
-      <ex:claim num="3">根据权利要求1-2任一项所述的方法，其特征在于，同步精度误差≤1ms。</ex:claim>
-      <ex:claim num="4">根据权利要求9所述的方法，其特征在于，还包括重同步请求。</ex:claim>
-    </ex:claims>
-    <ex:description>
-      <ex:p num="0001">[0001] 技术领域：本发明涉及无线传感网时间同步技术。</ex:p>
-      <ex:p num="0012">[0012] 信标帧的发送时刻在MAC层打戳，接收节点据此估计传播时延。</ex:p>
-      <ex:p num="0013">[0013] 漂移估计采用最小二乘拟合，补偿在下一信标周期生效。</ex:p>
-    </ex:description>
-  </ex:exchange-document>
+  <ex:exchange-documents>
+    <ex:exchange-document lang="zh" country="CN" doc-number="119000001" kind="A">
+      <ex:bibliographic-data>
+        <ex:publication-reference>
+          <ex:document-id country="CN" doc-number="119000001" kind="A">
+            <ex:date>2019-06-28</ex:date>
+          </ex:document-id>
+        </ex:publication-reference>
+        <ex:invention-title>一种无线传感网信标时间同步方法</ex:invention-title>
+        <ex:parties><ex:applicants><ex:applicant><ex:applicant-name><ex:name>合成测试研究所</ex:name></ex:applicant-name></ex:applicant></ex:applicants></ex:parties>
+      </ex:bibliographic-data>
+      <ex:abstract lang="zh">
+        <ex:p>本发明公开了一种无线传感网信标时间同步方法，通过信标帧携带发送时刻估计信息。</ex:p>
+      </ex:abstract>
+      <ex:claims>
+        <ex:claim num="1">一种无线传感网信标时间同步方法，其特征在于，包括：在信标帧中携带发送时刻。</ex:claim>
+        <ex:claim num="2">根据权利要求1所述的方法，其特征在于，还包括漂移估计与补偿步骤。</ex:claim>
+        <ex:claim num="3">根据权利要求1-2任一项所述的方法，其特征在于，同步精度误差≤1ms。</ex:claim>
+        <ex:claim num="4">根据权利要求9所述的方法，其特征在于，还包括重同步请求。</ex:claim>
+      </ex:claims>
+      <ex:description>
+        <ex:p num="0001">[0001] 技术领域：本发明涉及无线传感网时间同步技术。</ex:p>
+        <ex:p num="0012">[0012] 信标帧的发送时刻在MAC层打戳，接收节点据此估计传播时延。</ex:p>
+        <ex:p num="0013">[0013] 漂移估计采用最小二乘拟合，补偿在下一信标周期生效。</ex:p>
+      </ex:description>
+    </ex:exchange-document>
+  </ex:exchange-documents>
 </ops:world-patent-data>

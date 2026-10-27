@@ -28,7 +28,7 @@ def xml_doc() -> object:
 
 def test_parse_xml_multi_namespace_and_native_ids(xml_doc: object) -> None:
     doc = xml_doc  # type: ignore[union-attr]
-    assert doc.publication_number == "119000001"  # from publication-reference/doc-number
+    assert doc.publication_number == "CN119000001A"  # from exchange-document attributes (OPS form)
     assert doc.title and "时间同步" in doc.title
     assert doc.language == "zh"
     sections = {p.section for p in doc.paragraphs}

@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-10-28 · Unreleased — Patent Research Skill 4.0 WP-0..WP-F：可选扩展 patent_intel（对应蓝图 F/T/B/A/C/D/E/O 各工作包）
+
+**新增 `extensions/patent_intel`（独立可选 wheel，最小安装零第三方依赖）**
+
+- WP-0 边界层：版本化记录契约（schema_version/owner/created_at/extra 保留）、
+  sidecar 状态目录（`.patent-intel/`，绑定工作区、删除即卸载且内核校验不变）、
+  safe IO（原子写/UTF-8/LF/路径禁越界/大小上限/文件锁）、只读 kernel_bridge
+  （动词白名单 + 写入型旗标拒绝，ADR 0001 机器校验）。
+- WP-A 检索闭环：特征抽取（否定/数值/可选分级）、受控扩词（来源+关系全程
+  provenance，LLM 挂点可选且不内置）、查询族规划（CNIPA ≤3 AND 仅在 CNIPA
+  渲染层施加）、确定性 BM25 + RRF + 家族坍缩、覆盖/增量收益诊断、引证扩展
+  任务、自适应控制器（停止原因如实记录，停止≠查全）、CLI `query plan/validate`
+  与 `recall report`。
+- WP-B 来源治理：能力矩阵（不支持字段报错不伪造）、cnipa/crossref 适配器复用
+  内核 fetch 契约、号位归一（原文保留）、家族视图（未知家族不合并）、令牌桶
+  + 指数退避（403/429 即停）、断点续采（页指纹幂等）、raw SHA-256 审计账本、
+  OPS 适配器（OAuth/限速/断点，契约级测试、未实测联网，support_level=partial）、
+  NPL 证据链（书目元数据≠披露证据，预印本/正式版分离）。
+- WP-C 文档理解：命名空间无关 XML（DOCTYPE/ENTITY 一律拒绝）、权项从属树
+  （悬空引用进 unresolved）、锚点四重绑定（raw_sha256/段落/text_hash/解析器
+  版本，漂移即 stale）、OCR 低质降级不可自动引用、PDF 走 docling 选装。
+- WP-D 证据与建议：特征×对比文件×证据矩阵（supported/linked/no_evidence 显式
+  分格）、指纹变更→投影 stale、claim chart 草稿（组合假设≠创造性结论）、修改
+  提案强制 requires_human_review + 内核门引用；CLI `evidence build` /
+  `advisory review`。
+- WP-E 态势（可选）：家族去重聚合（家族数与文献数分开）、缺失字段显式桶、
+  离线 CSV/Markdown 报告、边界声明固定（稀疏≠技术空白）；CLI `landscape report`。
+- WP-F：检索基准协议（`benchmarks/retrieval/` manifest schema + 冒烟夹具）、
+  家族级评分器 `tools/score_retrieval.py`（空 gold 不默认满分、审计失败 exit 1、
+  主题级 bootstrap CI）、统计单源 `tools/report_benchmark_stats.py`、安全/隐私
+  边界测试、回放稳定性测试。
+- 发行（O）：扩展 wheel 由 `build_skill_release.py` 产出到 `dist/extension/`（独立
+  SUMS，不进 manifest/安装器/publish 名单）；release doctor 增 `extension-wheel`
+  检查；CI 装 torch-free 扩展并跑 pytest 回归套件；`research/scripts/recall.py`
+  薄封装（缺扩展 exit 3 + 安装指引）；SKILL/evals 新增召回增强意图与零命中
+  边界用例（旧用例不误路由）。
+- 参考：`docs/architecture/`（4.0-system/contracts/source-capabilities/
+  document-model）、`docs/adr/0001 内核边界`、`0002 sidecar`、
+  `docs/retrieval-evaluation.md`、skill references research 09/10、drafting 18、
+  discovery 04（中英镜像齐备）。
+- 兼容矩阵：skill 3.8.0 / kernel 0.9.0（protocol 1）不变；扩展兼容
+  `patentkit >= 0.8.0`；扩展自身版本独立（当前 0.1.0），不参与 skill↔kernel
+  版本配对。
+
+
 ## 2026-10-28 · 3.8.0 / patentkit 0.9.0 — explicit-LF kernel writes (cross-platform byte stability)
 
 **Kernel 0.9.0** (patch `patentkit-0.1.2-to-0.9.0.patch`, SHA-256 `89aa48d5…`)
