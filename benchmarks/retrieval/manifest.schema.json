@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cyy1018abc-kyy/patent-research-skill/benchmarks/retrieval/manifest.schema.json",
+  "title": "Retrieval benchmark suite manifest",
+  "description": "Declares the topics, gold families, splits and provenance of a retrieval evaluation suite. The suite directory must contain this manifest (manifest.json) and run outputs are scored against it by tools/score_retrieval.py. Restricted raw corpora (CLEF-IP, DAPFAM originals) are NEVER bundled - only derived family IDs with license notes.",
+  "type": "object",
+  "required": ["suite", "version", "qrels_version", "gold_completeness", "topics"],
+  "additionalProperties": false,
+  "properties": {
+    "suite": {"type": "string", "minLength": 1, "description": "Suite name, e.g. 'synthetic-smoke' or 'clef-ip-2011-c-derive'."},
+    "version": {"type": "string", "minLength": 1, "description": "Manifest version (semver). Bump on any gold change."},
+    "qrels_version": {"type": "string", "minLength": 1, "description": "Version tag of the relevance judgements; evaluation reports reference this."},
+    "gold_completeness": {
+      "enum": ["complete", "pool_biased", "unknown"],
+      "description": "Whether gold families are a complete prior-art set. 'pool_biased' means judged only against a pooled candidate set (CLEF-IP-style proxy labels); critical_recall reports must carry the known-incomplete caveat."
+    },
+    "license": {"type": "string", "description": "Overall data license / redistribution statement for derived IDs."},
+    "provenance": {"type": "string", "description": "Where the topics and gold came from; how they were adjudicated."},
+    "families": {
+      "type": "object",
+      "description": "Optional publication_number -> family_id mapping so run files may cite publications. Family IDs must be stable across manifest versions within the same qrels_version.",
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "topics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["topic_id", "split"],
+        "additionalProperties": false,
+        "properties": {
+          "topic_id": {"type": "string", "pattern": "^TP-[0-9]{4}$"},
+          "split": {"enum": ["train", "val", "test"]},
+          "language": {"type": "string", "description": "BCP-47 or 'zh+en' style composite tags."},
+          "domain": {"type": "string", "description": "Technology domain tag for slice reporting."},
+          "in_domain_of_engine": {"type": "boolean", "description": "false marks OUT-domain topics for cross-domain transfer evaluation."},
+          "gold_families": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1},
+            "description": "Relevant family IDs (any relevance level). May be empty only when gold_known_incomplete is true and the topic is reported separately (never in the recall denominator)."
+          },
+          "critical_families": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1},
+            "description": "Human-confirmed critical prior-art family subset for Critical Prior-art Recall."
+          },
+          "relevance_levels": {
+            "type": "object",
+            "description": "family_id -> graded relevance (int, >=0; e.g. 3=blocking, 2=partial, 1=tangential) used by nDCG.",
+            "additionalProperties": {"type": "integer", "minimum": 0}
+          },
+          "gold_known_incomplete": {"type": "boolean", "default": false},
+          "adjudication": {"type": "string", "description": "Who labeled this topic and when (EX-01 requires at least two reviewers for the private expert set)."},
+          "license_note": {"type": "string"},
+          "time_split_key": {"type": "string", "description": "Filing/publication date used for chronological splits (anti-leakage, blueprint §12)."}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"gold_families": {"maxItems": 0}}, "required": ["gold_families"]},
+            "then": {"required": ["gold_known_incomplete"], "properties": {"gold_known_incomplete": {"const": true}}}
+          }
+        ]
+      }
+    }
+  }
+}
