@@ -68,7 +68,10 @@
       "paragraphs": ["0005"],
       "fact_refs": ["FACT-001"],
       "figures": ["FIG-1"],
-      "prior_art_diff": "D1 未公开负载变化率触发条件"
+      "prior_art_diff": "D1 未公开负载变化率触发条件",
+      "citations": [
+        {"source": "10_discovery/sources/ZZ900099A1.md", "locator": "[0001]", "note": "负载检测手段"}
+      ]
     }
   ],
   "review_status": "pending"
@@ -79,6 +82,7 @@
 |---|---|
 | 行键 | `(claim_no, atom_id)` 唯一；该原子必须属于该权项 |
 | `paragraphs` | ≥1；说明书段落号（与稿件一致），空映射不算覆盖 |
+| `citations` | 可选；结构化引用（内核 0.8.0 起，D-019）：`source` 为工作区相对路径（越界/不存在即 error），`locator` 为 `L<n>[-L<m>]` 行区间或 `[NNNN]` 段落号（越界/段落号不存在即 error）。写了就必须可解析——支持性引用不再只是自由文本 |
 | `fact_refs` | 支持该特征的事实编号（与原子/事实库一致） |
 | `figures` | 相关附图编号（P3 前可先按规划填，P3 校验图文一致） |
 | `prior_art_diff` | 与对比文献的区别说明（引用账本内编号） |

@@ -1,0 +1,175 @@
+{
+  "id": "P-003",
+  "kind": "patent",
+  "target": "TGT-9004",
+  "title": "Human annotation feedback system for recognition models",
+  "authors_or_applicants": [
+    "Zhongzhi Data Service Co."
+  ],
+  "year": 2021,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900043A1",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N4_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N4@TGT-9004"
+  ],
+  "logged_at": "2026-02-03T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-03_N4_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900043a12021",
+  "relevance_problem": 4,
+  "relevance_means": 4,
+  "review_note": "[0006] 增量更新与自动回归测试补全闭环",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "absent"
+    },
+    "F4": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900043A1.md",
+      "locator": "L11",
+      "quote": "截留样本进入人工标注队列，标注员在标注界面上给出正确结果并提交",
+      "note": "[0006] 增量更新与自动回归测试补全闭环"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:32+08:00",
+    "basis": {
+      "N4@TGT-9004": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900043A1.md",
+          "locator": "L8",
+          "quote": "仅靠离线重训难以针对性提升",
+          "rationale": "同为低置信样本难改进的问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900043A1.md",
+          "locator": "L12",
+          "quote": "触发模型的增量更新任务",
+          "rationale": "标注回流与增量更新手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N4@TGT-9004": {
+        "problem": "[0002] 上线模型对长尾样本的识别置信度偏低，仅靠离线重训难以针对性提升。",
+        "means": "[0006] 已标注样本写入增量训练集，触发模型的增量更新任务，更新后自动回归测试。"
+      }
+    },
+    "fingerprint": "216ac0da037a9d0354bc5d6fed0b919c45c4e09bef7a382e0425c7f0c209a334"
+  },
+  "reviewed_at": "2026-10-27T04:56:32+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900043A1",
+        "target": "TGT-9004",
+        "tags": [
+          "N4@TGT-9004"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900043A1",
+        "target": "TGT-9004",
+        "tags": [
+          "N4@TGT-9004"
+        ],
+        "relevance": 4,
+        "relevance_problem": 4,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "[0006] 增量更新与自动回归测试补全闭环",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "absent"
+          },
+          "F4": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900043A1.md",
+            "locator": "L11",
+            "quote": "截留样本进入人工标注队列，标注员在标注界面上给出正确结果并提交",
+            "note": "[0006] 增量更新与自动回归测试补全闭环"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:32+08:00",
+          "basis": {
+            "N4@TGT-9004": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900043A1.md",
+                "locator": "L8",
+                "quote": "仅靠离线重训难以针对性提升",
+                "rationale": "同为低置信样本难改进的问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900043A1.md",
+                "locator": "L12",
+                "quote": "触发模型的增量更新任务",
+                "rationale": "标注回流与增量更新手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N4@TGT-9004": {
+              "problem": "[0002] 上线模型对长尾样本的识别置信度偏低，仅靠离线重训难以针对性提升。",
+              "means": "[0006] 已标注样本写入增量训练集，触发模型的增量更新任务，更新后自动回归测试。"
+            }
+          },
+          "fingerprint": "216ac0da037a9d0354bc5d6fed0b919c45c4e09bef7a382e0425c7f0c209a334"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:32+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:32+08:00",
+    "fingerprint": "216ac0da037a9d0354bc5d6fed0b919c45c4e09bef7a382e0425c7f0c209a334"
+  }
+}

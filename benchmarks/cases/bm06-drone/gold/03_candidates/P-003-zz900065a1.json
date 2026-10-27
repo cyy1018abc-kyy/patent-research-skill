@@ -1,0 +1,99 @@
+{
+  "id": "P-003",
+  "kind": "patent",
+  "target": "TGT-9006",
+  "title": "Radar RF evasion method for scout UAVs",
+  "authors_or_applicants": [
+    "Yingyan Defense Electronics Institute"
+  ],
+  "year": 2022,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900065A1",
+  "summary_zh": "",
+  "relevance": 1,
+  "novelty_check": "untouched",
+  "role": "excluded",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N2-2_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N2@TGT-9006"
+  ],
+  "logged_at": "2026-02-03T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-03_N2-2_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900065a12022",
+  "relevance_problem": 1,
+  "relevance_means": 1,
+  "review_note": "benchmark gold",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "absent"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:32+08:00",
+    "basis": {
+      "N2@TGT-9006": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900065A1.md",
+          "locator": "L12",
+          "quote": "不涉及编队图案、灯光或娱乐表演",
+          "rationale": "自认领域无关，\"集群\"仅为关键词撞车"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900065A1.md",
+          "locator": "L10",
+          "quote": "集群按预定策略分散脱离",
+          "rationale": "射频规避策略与表演控制无手段交集"
+        }
+      }
+    },
+    "materials": {
+      "N2@TGT-9006": {
+        "problem": "[0006] 本方法的所有逻辑服务于雷达探测任务，不涉及编队图案、灯光或娱乐表演。",
+        "means": "[0004] 当目标区域出现对方射频侦测活动时，集群按预定策略分散脱离。"
+      }
+    },
+    "fingerprint": "1c146ff563205aa7294f591f83cd38d3c0777ee8f240667c84f745763bad0080"
+  },
+  "reviewed_at": "2026-10-27T04:56:32+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900065A1",
+        "target": "TGT-9006",
+        "tags": [
+          "N2@TGT-9006"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    }
+  ]
+}

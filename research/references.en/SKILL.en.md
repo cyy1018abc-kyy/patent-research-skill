@@ -13,12 +13,12 @@ description: >
   "can asserted be used as evidence", or "evidence level".
 license: Apache-2.0
 metadata:
-  version: 3.6.0
+  version: 3.7.0
 ---
 
 # Patent Research
 
-> **Companion**: `patentkit >= 0.7.0` with assessment protocol 1 (the single implementation of rules) + this package's `scripts/` (thin wrappers).
+> **Companion**: `patentkit >= 0.8.0` with assessment protocol 1 (the single implementation of rules) + this package's `scripts/` (thin wrappers).
 > **Note**: this file mirrors the authoritative Chinese `../SKILL.md` (Chinese-primary since 2.5.0;
 > since 3.0.0 the drafting/OA references live in the sibling patent-drafting skill,
 > mirrored under `../../drafting/references.en/`).

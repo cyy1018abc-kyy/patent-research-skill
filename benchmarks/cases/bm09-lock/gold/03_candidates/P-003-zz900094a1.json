@@ -1,0 +1,99 @@
+{
+  "id": "P-003",
+  "kind": "patent",
+  "target": "TGT-9009",
+  "title": "Smart lock for shared bicycles",
+  "authors_or_applicants": [
+    "Qiji Mobility Technology Co."
+  ],
+  "year": 2020,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900094A1",
+  "summary_zh": "",
+  "relevance": 1,
+  "novelty_check": "untouched",
+  "role": "excluded",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N2_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N2@TGT-9009"
+  ],
+  "logged_at": "2026-02-03T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-03_N2_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900094a12020",
+  "relevance_problem": 1,
+  "relevance_means": 2,
+  "review_note": "benchmark gold",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "absent"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:33+08:00",
+    "basis": {
+      "N2@TGT-9009": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900094A1.md",
+          "locator": "L13",
+          "quote": "服务于单车分时租赁流程，不涉及住宅门禁或离家模式",
+          "rationale": "自认场景无关，\"锁+NFC\"仅为关键词撞车"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900094A1.md",
+          "locator": "L9",
+          "quote": "云端下发开锁指令，锁体电机收回锁栓",
+          "rationale": "云端开锁流程与双因子撤销无交集"
+        }
+      }
+    },
+    "materials": {
+      "N2@TGT-9009": {
+        "problem": "[0007] 本锁具的电子功能服务于单车分时租赁流程，不涉及住宅门禁或离家模式。",
+        "means": "[0003] 用户扫码后云端下发开锁指令，锁体电机收回锁栓。"
+      }
+    },
+    "fingerprint": "08341060b7257121607fed1d92c0942cf4cd5243ab6e4027bc8ca81beb983077"
+  },
+  "reviewed_at": "2026-10-27T04:56:33+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900094A1",
+        "target": "TGT-9009",
+        "tags": [
+          "N2@TGT-9009"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    }
+  ]
+}

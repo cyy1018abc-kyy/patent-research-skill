@@ -1,0 +1,179 @@
+{
+  "id": "P-001",
+  "kind": "patent",
+  "target": "TGT-9006",
+  "title": "UAV formation flight animation generation system",
+  "authors_or_applicants": [
+    "Tianmu Formation Technology Co."
+  ],
+  "year": 2020,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900061A1",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N1_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N1@TGT-9006"
+  ],
+  "logged_at": "2026-02-01T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-01_N1_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900061a12020",
+  "relevance_problem": 5,
+  "relevance_means": 4,
+  "review_note": "分配的是变化指令表而非灯色时序表，且 [0008] 自认不涉及灯光载荷；[0006] 失效后剩余飞机原位不动、缺口人工评估——与动态补位相反；[0007] 越界执行自动返航，不是就近垂直降落",
+  "feature_mapping": {
+    "F1": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900061A1.md",
+      "locator": "L11",
+      "quote": "地面站为每架无人机生成随坐标序列同步的变化指令表",
+      "note": "分配的是变化指令表而非灯色时序表，且 [0008] 自认不涉及灯光载荷"
+    },
+    "F2": {
+      "status": "absent",
+      "note": "[0006] 失效后剩余飞机原位不动、缺口人工评估——与动态补位相反"
+    },
+    "F3": {
+      "status": "absent",
+      "note": "[0007] 越界执行自动返航，不是就近垂直降落"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:32+08:00",
+    "basis": {
+      "N1@TGT-9006": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900061A1.md",
+          "locator": "L8",
+          "quote": "数百架无人机在空中保持图案，人工逐机设定不可行",
+          "rationale": "同为大型编队表演控制问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900061A1.md",
+          "locator": "L9",
+          "quote": "按时间轴插值出每架无人机的三维表演坐标序列",
+          "rationale": "地面站按三维坐标逐机分配的手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N1@TGT-9006": {
+        "problem": "[0002] 大型编队表演需数百架无人机在空中保持图案，人工逐机设定不可行。",
+        "means": "[0003] 地面站导入三维图案关键帧，按时间轴插值出每架无人机的三维表演坐标序列。"
+      }
+    },
+    "fingerprint": "231f91e1564f0dfe7abe882f60d751824c684612e9f3069f72377c0410370ec5"
+  },
+  "reviewed_at": "2026-10-27T04:56:32+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900061A1",
+        "target": "TGT-9006",
+        "tags": [
+          "N1@TGT-9006"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-001",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900061A1",
+        "target": "TGT-9006",
+        "tags": [
+          "N1@TGT-9006"
+        ],
+        "relevance": 4,
+        "relevance_problem": 5,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "分配的是变化指令表而非灯色时序表，且 [0008] 自认不涉及灯光载荷；[0006] 失效后剩余飞机原位不动、缺口人工评估——与动态补位相反；[0007] 越界执行自动返航，不是就近垂直降落",
+        "feature_mapping": {
+          "F1": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900061A1.md",
+            "locator": "L11",
+            "quote": "地面站为每架无人机生成随坐标序列同步的变化指令表",
+            "note": "分配的是变化指令表而非灯色时序表，且 [0008] 自认不涉及灯光载荷"
+          },
+          "F2": {
+            "status": "absent",
+            "note": "[0006] 失效后剩余飞机原位不动、缺口人工评估——与动态补位相反"
+          },
+          "F3": {
+            "status": "absent",
+            "note": "[0007] 越界执行自动返航，不是就近垂直降落"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:32+08:00",
+          "basis": {
+            "N1@TGT-9006": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900061A1.md",
+                "locator": "L8",
+                "quote": "数百架无人机在空中保持图案，人工逐机设定不可行",
+                "rationale": "同为大型编队表演控制问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900061A1.md",
+                "locator": "L9",
+                "quote": "按时间轴插值出每架无人机的三维表演坐标序列",
+                "rationale": "地面站按三维坐标逐机分配的手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N1@TGT-9006": {
+              "problem": "[0002] 大型编队表演需数百架无人机在空中保持图案，人工逐机设定不可行。",
+              "means": "[0003] 地面站导入三维图案关键帧，按时间轴插值出每架无人机的三维表演坐标序列。"
+            }
+          },
+          "fingerprint": "231f91e1564f0dfe7abe882f60d751824c684612e9f3069f72377c0410370ec5"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:32+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:32+08:00",
+    "fingerprint": "231f91e1564f0dfe7abe882f60d751824c684612e9f3069f72377c0410370ec5"
+  }
+}

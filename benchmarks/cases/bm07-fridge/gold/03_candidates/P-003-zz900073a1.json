@@ -1,0 +1,177 @@
+{
+  "id": "P-003",
+  "kind": "patent",
+  "target": "TGT-9007",
+  "title": "Air damper delay closing mechanism for freezers",
+  "authors_or_applicants": [
+    "Ningshi Refrigeration Equipment Factory"
+  ],
+  "year": 2021,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900073A1",
+  "summary_zh": "",
+  "relevance": 4,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N4_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N4@TGT-9007"
+  ],
+  "logged_at": "2026-02-03T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-03_N4_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900073a12021",
+  "relevance_problem": 4,
+  "relevance_means": 4,
+  "review_note": "[0009] 自认不涉及气体成分调节；[0007] 延时结束后关闭并形成独立保冷空间，与 F4 的开门延时关闭保冷一致；对象为整柜送风非抽屉独立阀",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "absent",
+      "note": "[0009] 自认不涉及气体成分调节"
+    },
+    "F4": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900073A1.md",
+      "locator": "L12",
+      "quote": "本机构在开门后让风门保持开启一段延时",
+      "note": "[0007] 延时结束后关闭并形成独立保冷空间，与 F4 的开门延时关闭保冷一致；对象为整柜送风非抽屉独立阀"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:33+08:00",
+    "basis": {
+      "N4@TGT-9007": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900073A1.md",
+          "locator": "L8",
+          "quote": "每次开门冷气大量外泄",
+          "rationale": "同为开门冷量流失问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900073A1.md",
+          "locator": "L13",
+          "quote": "延时结束后风门关闭，存品区形成独立保冷空间",
+          "rationale": "延时关闭保冷的手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N4@TGT-9007": {
+        "problem": "[0002] 卧式冷柜开门频繁，每次开门冷气大量外泄，压缩机频繁启动。",
+        "means": "[0007] 延时结束后风门关闭，存品区形成独立保冷空间，温度回升速率实测下降约四成。"
+      }
+    },
+    "fingerprint": "e0a0e99eb85dc9a402514ffb931c30db424e604fe620f94d0b8de8305827a255"
+  },
+  "reviewed_at": "2026-10-27T04:56:33+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900073A1",
+        "target": "TGT-9007",
+        "tags": [
+          "N4@TGT-9007"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:33+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900073A1",
+        "target": "TGT-9007",
+        "tags": [
+          "N4@TGT-9007"
+        ],
+        "relevance": 4,
+        "relevance_problem": 4,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "[0009] 自认不涉及气体成分调节；[0007] 延时结束后关闭并形成独立保冷空间，与 F4 的开门延时关闭保冷一致；对象为整柜送风非抽屉独立阀",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "absent",
+            "note": "[0009] 自认不涉及气体成分调节"
+          },
+          "F4": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900073A1.md",
+            "locator": "L12",
+            "quote": "本机构在开门后让风门保持开启一段延时",
+            "note": "[0007] 延时结束后关闭并形成独立保冷空间，与 F4 的开门延时关闭保冷一致；对象为整柜送风非抽屉独立阀"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:33+08:00",
+          "basis": {
+            "N4@TGT-9007": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900073A1.md",
+                "locator": "L8",
+                "quote": "每次开门冷气大量外泄",
+                "rationale": "同为开门冷量流失问题"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900073A1.md",
+                "locator": "L13",
+                "quote": "延时结束后风门关闭，存品区形成独立保冷空间",
+                "rationale": "延时关闭保冷的手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N4@TGT-9007": {
+              "problem": "[0002] 卧式冷柜开门频繁，每次开门冷气大量外泄，压缩机频繁启动。",
+              "means": "[0007] 延时结束后风门关闭，存品区形成独立保冷空间，温度回升速率实测下降约四成。"
+            }
+          },
+          "fingerprint": "e0a0e99eb85dc9a402514ffb931c30db424e604fe620f94d0b8de8305827a255"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:33+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:33+08:00",
+    "fingerprint": "e0a0e99eb85dc9a402514ffb931c30db424e604fe620f94d0b8de8305827a255"
+  }
+}

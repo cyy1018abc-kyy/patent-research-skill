@@ -65,6 +65,19 @@ def _locator(para: str, lines: dict[str, int]) -> str:
     return f"L{lines[para]}"
 
 
+def _force_lf(root: Path) -> None:
+    """夹具按字节入库（.gitattributes `benchmarks/** -text`），不随平台变化。
+
+    内核写文件走文本模式，Windows 上落 CRLF；生成器自己写的是 LF。两半混在一棵树里
+    会让同一案例在 Windows 与 CI 上逐字节不同——生成末尾统一成 LF。
+    """
+    for path in root.rglob("*"):
+        if path.is_file():
+            data = path.read_bytes()
+            if b"\r\n" in data:
+                path.write_bytes(data.replace(b"\r\n", b"\n"))
+
+
 def _rebuild_dir(path: Path) -> None:
     if path.exists():
         shutil.rmtree(path)
@@ -176,9 +189,15 @@ def build_gold(case_dir: Path, meta: dict, gt: dict, scaffold: Path, out: Path) 
     fulltext_lines = {doc.name: _para_lines(doc)
                       for doc in sorted((case_dir / "corpus/prior_art").glob("*.md"))}
 
+    def _must(main_fn, argv: list[str]) -> None:
+        """内核命令返回非零即中止——评估/确认失败绝不允许静默吞掉。"""
+        rc = main_fn(argv)
+        if rc != 0:
+            raise SystemExit(f"{case_dir.name}: {' '.join(argv[:2])} 以 {rc} 退出（见上方内核输出）")
+
     # 1) 评估：真值 → assess sheet（feature_mapping + basis，段落号→L 行号）
     export_path = out / "01_search_plan" / "worksheet.json"
-    review.main(["export", "--format", "json", "--out", str(export_path), "--root", str(out)])
+    _must(review.main, ["export", "--format", "json", "--out", str(export_path), "--root", str(out)])
     fingerprints = {row["candidate_id"]: row["expected_fingerprint"]
                     for row in json.loads(export_path.read_text(encoding="utf-8"))}
 
@@ -207,26 +226,28 @@ def build_gold(case_dir: Path, meta: dict, gt: dict, scaffold: Path, out: Path) 
                      "feature_mapping": feature_mapping, "basis": basis})
     assess_path = out / "01_search_plan" / "assess.json"
     assess_path.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
-    review.main(["assess", str(assess_path), "--actor", "ai", "--by", "benchmark-gold",
-                 "--apply", "--root", str(out)])
+    _must(review.main, ["assess", str(assess_path), "--actor", "ai", "--by", "benchmark-gold",
+                        "--apply", "--root", str(out)])
 
     # 2) 人工确认：全部 near_prior_art 候选（评估改变指纹，须重取）
     export2 = out / "01_search_plan" / "worksheet-post-assess.json"
-    review.main(["export", "--format", "json", "--out", str(export2), "--root", str(out)])
+    _must(review.main, ["export", "--format", "json", "--out", str(export2), "--root", str(out)])
     fp2 = {row["candidate_id"]: row["expected_fingerprint"]
            for row in json.loads(export2.read_text(encoding="utf-8"))}
     confirm_rows = [{"candidate_id": cid, "expected_fingerprint": fp2[cid]}
                     for cid, truth in sorted(gt["candidates"].items()) if truth["role"] == "near_prior_art"]
     confirm_path = out / "01_search_plan" / "confirm.json"
     confirm_path.write_text(json.dumps(confirm_rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
-    review.main(["confirm", str(confirm_path), "--by", "benchmark-operator", "--apply", "--root", str(out)])
+    _must(review.main, ["confirm", str(confirm_path), "--by", "benchmark-operator", "--apply", "--root", str(out)])
     # attest 的稿件路径按 CWD 解析（内核行为），临时切到工作区再绑定
     cwd = Path.cwd()
     os.chdir(out)
     try:
-        attest.main(["--apply", "--root", str(out)])
+        rc = attest.main(["--apply", "--root", str(out)])
     finally:
         os.chdir(cwd)
+    if rc != 0:
+        raise SystemExit(f"{case_dir.name}: attest 以 {rc} 退出")
 
     # 3) 对比矩阵：期望格由披露状态聚合（轴内任一 disclosed→●，否则 partial→○，否则—）
     candidates = {}
@@ -310,6 +331,8 @@ def main() -> int:
         build_scaffold(case_dir, meta, gt, case_dir / "workspace")
         print(f"· {case_dir.name}: 生成金解…")
         build_gold(case_dir, meta, gt, case_dir / "workspace", case_dir / "gold")
+        _force_lf(case_dir / "workspace")
+        _force_lf(case_dir / "gold")
         print(f"· {case_dir.name}: 完成")
     print("全部案例构建完成")
     return 0

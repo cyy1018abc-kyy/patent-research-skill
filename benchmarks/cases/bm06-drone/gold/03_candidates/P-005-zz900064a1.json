@@ -1,0 +1,175 @@
+{
+  "id": "P-005",
+  "kind": "patent",
+  "target": "TGT-9006",
+  "title": "Stage lighting and music beat synchronization system",
+  "authors_or_applicants": [
+    "Shengguang Stage Equipment Co."
+  ],
+  "year": 2018,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900064A1",
+  "summary_zh": "",
+  "relevance": 2,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N4_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N4@TGT-9006"
+  ],
+  "logged_at": "2026-02-05T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-05_N4_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900064a12018",
+  "relevance_problem": 2,
+  "relevance_means": 3,
+  "review_note": "节拍对齐手段完整披露，但载体是地面舞台灯（[0007]），无无人机",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "absent"
+    },
+    "F4": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900064A1.md",
+      "locator": "L11",
+      "quote": "时序引擎按节拍时间轴排布灯效队列，使每次灯光颜色与亮度变化落在节拍点上",
+      "note": "节拍对齐手段完整披露，但载体是地面舞台灯（[0007]），无无人机"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:32+08:00",
+    "basis": {
+      "N4@TGT-9006": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900064A1.md",
+          "locator": "L8",
+          "quote": "难以保证灯效与鼓点一致",
+          "rationale": "灯效与节拍脱节的问题相同，载体不同故 problem 仅 2"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900064A1.md",
+          "locator": "L9",
+          "quote": "节拍点由离线节拍分析或人工标记得到",
+          "rationale": "节拍时间轴驱动灯效的手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N4@TGT-9006": {
+        "problem": "[0002] 人工对拍的方式在快节奏曲目中难以保证灯效与鼓点一致。",
+        "means": "[0003] 控制系统导入曲目的节拍时间轴，节拍点由离线节拍分析或人工标记得到。"
+      }
+    },
+    "fingerprint": "a45ebedc8bb29f5be30bca9f55297c47a96ec70ebd46575e5a7900e9ed249363"
+  },
+  "reviewed_at": "2026-10-27T04:56:32+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-005",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900064A1",
+        "target": "TGT-9006",
+        "tags": [
+          "N4@TGT-9006"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-005",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900064A1",
+        "target": "TGT-9006",
+        "tags": [
+          "N4@TGT-9006"
+        ],
+        "relevance": 2,
+        "relevance_problem": 2,
+        "relevance_means": 3,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "节拍对齐手段完整披露，但载体是地面舞台灯（[0007]），无无人机",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "absent"
+          },
+          "F4": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900064A1.md",
+            "locator": "L11",
+            "quote": "时序引擎按节拍时间轴排布灯效队列，使每次灯光颜色与亮度变化落在节拍点上",
+            "note": "节拍对齐手段完整披露，但载体是地面舞台灯（[0007]），无无人机"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:32+08:00",
+          "basis": {
+            "N4@TGT-9006": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900064A1.md",
+                "locator": "L8",
+                "quote": "难以保证灯效与鼓点一致",
+                "rationale": "灯效与节拍脱节的问题相同，载体不同故 problem 仅 2"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900064A1.md",
+                "locator": "L9",
+                "quote": "节拍点由离线节拍分析或人工标记得到",
+                "rationale": "节拍时间轴驱动灯效的手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N4@TGT-9006": {
+              "problem": "[0002] 人工对拍的方式在快节奏曲目中难以保证灯效与鼓点一致。",
+              "means": "[0003] 控制系统导入曲目的节拍时间轴，节拍点由离线节拍分析或人工标记得到。"
+            }
+          },
+          "fingerprint": "a45ebedc8bb29f5be30bca9f55297c47a96ec70ebd46575e5a7900e9ed249363"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:32+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:32+08:00",
+    "fingerprint": "a45ebedc8bb29f5be30bca9f55297c47a96ec70ebd46575e5a7900e9ed249363"
+  }
+}

@@ -1,0 +1,6 @@
+target: TGT-9005
+drafts:
+- role: claims
+  path: 07_drafting/claims.md
+  sha256: null
+  status: current

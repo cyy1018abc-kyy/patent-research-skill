@@ -1,0 +1,137 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "5117097d8bbd83be6a8f77f07d95fb1279824e2a415e6638b9c50541ab7f1027",
+    "relevance_problem": 4,
+    "relevance_means": 3,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "[0003] 反馈用电位器且 [0004] 承认磨损需标定，与磁致伸缩无接触方案不同；速度可调但单段恒速，[0005] 明言不做分段——与三段曲线相反方向；[0009] 自认不含压差检测与预测；人工两步切换，非故障时自动脱开的机械优先机构",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent",
+        "note": "[0003] 反馈用电位器且 [0004] 承认磨损需标定，与磁致伸缩无接触方案不同"
+      },
+      "F2": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900051A1.md",
+        "locator": "L11",
+        "quote": "开关过程的速度由用户在面板上设定，全程按同一速度运行",
+        "note": "速度可调但单段恒速，[0005] 明言不做分段——与三段曲线相反方向"
+      },
+      "F3": {
+        "status": "absent",
+        "note": "[0009] 自认不含压差检测与预测"
+      },
+      "F4": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900051A1.md",
+        "locator": "L14",
+        "quote": "手动操作前需先用扳手卸下传动箱的联轴器销，再装上手轮直连轴",
+        "note": "人工两步切换，非故障时自动脱开的机械优先机构"
+      }
+    },
+    "basis": {
+      "N1@TGT-9005": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900051A1.md",
+          "locator": "L8",
+          "quote": "控制器决定阀门动作的平滑性与可靠性",
+          "rationale": "同为阀门动作平滑可靠问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900051A1.md",
+          "locator": "L12",
+          "quote": "转矩超限即停止并报警",
+          "rationale": "电动执行器驱动与保护手段同域"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "b71ec072412cdfc2a8c68784bb510e5cb94cb424e76bd8b2b5e316bfa25e3be3",
+    "relevance_problem": 3,
+    "relevance_means": 3,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "披露磁致伸缩测距本体与无磨损优点（[0007] 列举闸门开度等应用），但未与阀位反馈结合",
+    "feature_mapping": {
+      "F1": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900053A1.md",
+        "locator": "L8",
+        "quote": "以波导丝上应变脉冲的传播时间测距，量程大、无接触磨损",
+        "note": "披露磁致伸缩测距本体与无磨损优点（[0007] 列举闸门开度等应用），但未与阀位反馈结合"
+      },
+      "F2": {
+        "status": "absent"
+      },
+      "F3": {
+        "status": "absent"
+      },
+      "F4": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N1@TGT-9005": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900053A1.md",
+          "locator": "L9",
+          "quote": "原始输出存在系统性非线性",
+          "rationale": "位移测量准确性问题，为 F1 的器件层前问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900053A1.md",
+          "locator": "L11",
+          "quote": "按标定表对原始输出做实时插值校正",
+          "rationale": "磁致伸缩信号链手段与 F1 的传感选型直接相关"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "748388fe7f5d92dcb2c34e38cf9bc1c40d31b4a1bff7103269c1d22909cf116b",
+    "relevance_problem": 4,
+    "relevance_means": 4,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "[0005] 压差+变化率预测峰值，与 F3 的预测预收一致",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent"
+      },
+      "F2": {
+        "status": "absent"
+      },
+      "F3": {
+        "status": "disclosed",
+        "ref": "02_search_logs/raw/ZZ900052A1.md",
+        "locator": "L13",
+        "quote": "先小行程预收阀位，待压力波衰减后再逐步收至全关",
+        "note": "[0005] 压差+变化率预测峰值，与 F3 的预测预收一致"
+      },
+      "F4": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N3@TGT-9005": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900052A1.md",
+          "locator": "L8",
+          "quote": "产生的水锤压力波可击穿管件",
+          "rationale": "同为关阀水锤问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900052A1.md",
+          "locator": "L11",
+          "quote": "根据当前压差与压差变化率估算本次关阀将产生的水锤强度峰值",
+          "rationale": "压差预测水锤的手段相同"
+        }
+      }
+    }
+  }
+]

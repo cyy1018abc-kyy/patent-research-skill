@@ -1,0 +1,139 @@
+[
+  {
+    "candidate_id": "P-001",
+    "expected_fingerprint": "2e25679b3bdc2a6aa2d3c73fd4041a7ce111faefa5efdbd0f2b3c83bf031f74b",
+    "relevance_problem": 5,
+    "relevance_means": 4,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "有候选打分，但识别器是模板匹配而非轻量卷积网络；有上下文校正，但为词库匹配而非语言模型重排序",
+    "feature_mapping": {
+      "F1": {
+        "status": "disclosed",
+        "ref": "02_search_logs/raw/ZZ900041A1.md",
+        "locator": "L10",
+        "quote": "对二值化图像按行、列统计墨点密度，投影谷点即文本行与列的边界"
+      },
+      "F2": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900041A1.md",
+        "locator": "L11",
+        "quote": "按相似度打分并输出得分最高的若干候选字及对应分值",
+        "note": "有候选打分，但识别器是模板匹配而非轻量卷积网络"
+      },
+      "F3": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900041A1.md",
+        "locator": "L12",
+        "quote": "命中词条的字段按词库校正",
+        "note": "有上下文校正，但为词库匹配而非语言模型重排序"
+      },
+      "F4": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N1@TGT-9004": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900041A1.md",
+          "locator": "L8",
+          "quote": "直接整页识别的错误率难以接受",
+          "rationale": "同为票据识别准确率问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900041A1.md",
+          "locator": "L10",
+          "quote": "投影谷点即文本行与列的边界",
+          "rationale": "投影版面分割手段相同"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-002",
+    "expected_fingerprint": "3aef9f2bcbbbd73e69f36d520ef06fd7eb7a71ed93102440fe3d10c4616d3132",
+    "relevance_problem": 3,
+    "relevance_means": 3,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "[0006] 端到端整行识别，无显式版面切分；同为网络识别，但整行输出、无单字 Top-K 候选（[0006]）",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent",
+        "note": "[0006] 端到端整行识别，无显式版面切分"
+      },
+      "F2": {
+        "status": "partial",
+        "ref": "02_search_logs/raw/ZZ900042A1.md",
+        "locator": "L13",
+        "quote": "整行识别准确率优于主流分切方法",
+        "note": "同为网络识别，但整行输出、无单字 Top-K 候选（[0006]）"
+      },
+      "F3": {
+        "status": "absent"
+      },
+      "F4": {
+        "status": "absent"
+      }
+    },
+    "basis": {
+      "N2@TGT-9004": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900042A1.md",
+          "locator": "L8",
+          "quote": "传统分切识别的误差在切分阶段即被放大",
+          "rationale": "同领域识别准确率问题，但解决路线相反"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900042A1.md",
+          "locator": "L9",
+          "quote": "将整行图像直接送入卷积循环网络",
+          "rationale": "网络识别手段相似，单字候选维度不同"
+        }
+      }
+    }
+  },
+  {
+    "candidate_id": "P-003",
+    "expected_fingerprint": "b6551c55bb2a2ae61ebb66a49d0cb3a40e41db5f3d4bb9f6bfb111d7af8469ae",
+    "relevance_problem": 4,
+    "relevance_means": 4,
+    "novelty_check": "partial",
+    "role": "near_prior_art",
+    "review_note": "[0006] 增量更新与自动回归测试补全闭环",
+    "feature_mapping": {
+      "F1": {
+        "status": "absent"
+      },
+      "F2": {
+        "status": "absent"
+      },
+      "F3": {
+        "status": "absent"
+      },
+      "F4": {
+        "status": "disclosed",
+        "ref": "02_search_logs/raw/ZZ900043A1.md",
+        "locator": "L11",
+        "quote": "截留样本进入人工标注队列，标注员在标注界面上给出正确结果并提交",
+        "note": "[0006] 增量更新与自动回归测试补全闭环"
+      }
+    },
+    "basis": {
+      "N4@TGT-9004": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900043A1.md",
+          "locator": "L8",
+          "quote": "仅靠离线重训难以针对性提升",
+          "rationale": "同为低置信样本难改进的问题"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900043A1.md",
+          "locator": "L12",
+          "quote": "触发模型的增量更新任务",
+          "rationale": "标注回流与增量更新手段相同"
+        }
+      }
+    }
+  }
+]

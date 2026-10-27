@@ -52,13 +52,30 @@ changes:
 **不要**用反复改稿掩盖材料缺失（对应 [09](09-disclosure-drafting.md) 的 open_questions）。
 关闭某轮用 `revise close --round R4 --note "重验证据一句话"`；链条完整性检查不过时 close 会拒绝。
 
+## 改稿 ↔ 结论联动（内核 0.8.0 起，V038）
+
+稿件被补丁改动 ⇒ `05_novelty_conclusions/*.md` 全部自动标 stale（内核生成的
+`five_acceptance_gates_tracking.md` 除外——它是 gates 按需重算的活视图）。在重确认或
+豁免之前：`revise status` exit 1、`revise close` 拒绝、validate 报 V038 error。
+处理方式二选一（都要显式记录判断主体）：
+
+```powershell
+python -m patentkit revise reconfirm --file 05_novelty_conclusions/conclusions.md --by <人名>
+python -m patentkit revise reconfirm --file <结论> --waive --reason <理由一句话> --by <人名>
+```
+
+豁免写入使其 stale 的那一轮台账（`conclusion_waivers`）；重确认绑定文件 sha256——
+之后再改结论文件会被 V038 拦下（改过就得重新确认）。状态存于内核管理的
+`05_novelty_conclusions/conclusions_state.yml`；没有该文件的旧工作区零迁移。
+
 ## 命令速查
 
 ```powershell
 python -m patentkit revise apply patch-R4.yml   # 原子应用（任一 find 命中数≠1 则整包拒绝、零写入）
-python -m patentkit revise status               # 轮次表 + 链条完整性（改了没登记 → exit 1）
-python -m patentkit revise close --round R4     # 重验通过后关闭
+python -m patentkit revise status               # 轮次表 + 链条完整性 + stale 结论清单（→ exit 1）
+python -m patentkit revise reconfirm --by <人名> # stale 结论重确认（或 --waive --reason 豁免入台账）
+python -m patentkit revise close --round R4     # 重验通过后关闭（有 stale 结论时拒绝）
 python -m patentkit attest --check              # 漂移检测（登记表视角，与台账互为印证）
-python -m patentkit validate --strict           # 结构一致性（V035/V036）
+python -m patentkit validate --strict           # 结构一致性（V035/V036/V038）
 python -m patentkit review export --format json --axis N1 --out re.json   # 重新评估入口
 ```

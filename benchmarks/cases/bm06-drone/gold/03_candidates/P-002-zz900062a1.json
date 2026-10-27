@@ -1,0 +1,175 @@
+{
+  "id": "P-002",
+  "kind": "patent",
+  "target": "TGT-9006",
+  "title": "Cooperative replacement method for plant protection UAV swarm",
+  "authors_or_applicants": [
+    "Woye Agricultural Equipment Co."
+  ],
+  "year": 2021,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900062A1",
+  "summary_zh": "",
+  "relevance": 3,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N2_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N2@TGT-9006"
+  ],
+  "logged_at": "2026-02-02T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-02_N2_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900062a12021",
+  "relevance_problem": 3,
+  "relevance_means": 4,
+  "review_note": "补位对象是作业条带而非表演位形，机制相同",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "disclosed",
+      "ref": "02_search_logs/raw/ZZ900062A1.md",
+      "locator": "L12",
+      "quote": "邻近的完好作业机按实时相对位置就近认领待分配条带",
+      "note": "补位对象是作业条带而非表演位形，机制相同"
+    },
+    "F3": {
+      "status": "absent"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:56:32+08:00",
+    "basis": {
+      "N2@TGT-9006": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900062A1.md",
+          "locator": "L8",
+          "quote": "单机中途失效会留下未喷洒条带",
+          "rationale": "失效留缺需补位的问题同构，场景不同"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900062A1.md",
+          "locator": "L12",
+          "quote": "按实时相对位置就近认领",
+          "rationale": "按实时相对位置就近补位的手段相同"
+        }
+      }
+    },
+    "materials": {
+      "N2@TGT-9006": {
+        "problem": "[0002] 大田植保作业区面积大，单机中途失效会留下未喷洒条带。",
+        "means": "[0006] 邻近的完好作业机按实时相对位置就近认领待分配条带，补位飞行路径自动生成。"
+      }
+    },
+    "fingerprint": "498dc458901e300e647afd9fa80cdab81cadb97290e26137be83f9b2ef086ecd"
+  },
+  "reviewed_at": "2026-10-27T04:56:32+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900062A1",
+        "target": "TGT-9006",
+        "tags": [
+          "N2@TGT-9006"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:56:32+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-002",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900062A1",
+        "target": "TGT-9006",
+        "tags": [
+          "N2@TGT-9006"
+        ],
+        "relevance": 3,
+        "relevance_problem": 3,
+        "relevance_means": 4,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "补位对象是作业条带而非表演位形，机制相同",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "disclosed",
+            "ref": "02_search_logs/raw/ZZ900062A1.md",
+            "locator": "L12",
+            "quote": "邻近的完好作业机按实时相对位置就近认领待分配条带",
+            "note": "补位对象是作业条带而非表演位形，机制相同"
+          },
+          "F3": {
+            "status": "absent"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:56:32+08:00",
+          "basis": {
+            "N2@TGT-9006": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900062A1.md",
+                "locator": "L8",
+                "quote": "单机中途失效会留下未喷洒条带",
+                "rationale": "失效留缺需补位的问题同构，场景不同"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900062A1.md",
+                "locator": "L12",
+                "quote": "按实时相对位置就近认领",
+                "rationale": "按实时相对位置就近补位的手段相同"
+              }
+            }
+          },
+          "materials": {
+            "N2@TGT-9006": {
+              "problem": "[0002] 大田植保作业区面积大，单机中途失效会留下未喷洒条带。",
+              "means": "[0006] 邻近的完好作业机按实时相对位置就近认领待分配条带，补位飞行路径自动生成。"
+            }
+          },
+          "fingerprint": "498dc458901e300e647afd9fa80cdab81cadb97290e26137be83f9b2ef086ecd"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:56:32+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:56:32+08:00",
+    "fingerprint": "498dc458901e300e647afd9fa80cdab81cadb97290e26137be83f9b2ef086ecd"
+  }
+}

@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-27 · 3.7.0 / patentkit 0.8.0 — revision↔conclusions linkage (V038), benchmark to 9 cases, structured support citations
+
+**Kernel 0.8.0** (patch `patentkit-0.1.2-to-0.8.0.patch`, SHA-256 `f99d0e00…`)
+
+- V038 revision↔conclusions linkage: `revise apply` marks existing conclusions stale
+  (generated trackers exempt), `revise status` exits 1 while stale, `revise close` refuses
+  until re-confirmed (`revise reconfirm --by`) or waived with a reason (`--waive --reason`,
+  recorded in the ledger round); validate reports unprocessed stale / edited-after-reconfirm /
+  waiver-not-in-ledger as errors. State in `05_novelty_conclusions/conclusions_state.yml`
+  (zero migration).
+- D-019 structured support citations: optional `citations` on `support_mapping` rows
+  (confined `source` + `L`-range/`[NNNN]` `locator`); the drafting audit fails citations
+  that do not resolve. Backward compatible.
+- `build_kernel_patch`: normalize synthetic `a/b/`+`b/a/` paths for added/deleted files —
+  empty new files previously produced headers `git apply` cannot parse.
+
+**Skill 3.7.0**
+
+- Benchmark expanded to 9 synthetic cases (review P1-1 range 8–12): new bm04 OCR (citation),
+  bm05 valve (omission), bm06 drone light show (misjudgment, 5 docs), bm07 fridge (omission),
+  bm08 3D-print monitoring (citation), bm09 smart lock (misjudgment, 4 docs). Totals: 37 features /
+  417 judgment points / 142 citations (scorer vocabulary), gold gate `--gate perfect` green.
+- Drafting references 13/15 updated in zh + en (V038 flow, structured citations);
+  release notes and pairing updated for 3.7.0 / 0.8.0.
+- Full verification: kernel 745 passed / 14 skipped on the dev tree and again on the
+  CI-reconstructed patched tree; benchmark gold gate 9/9; pairing/evals/terminology/
+  confidentiality guards green.
+
 ## 2026-10-27 · 3.6.0 / patentkit 0.7.0 — release doctor + synthetic patent benchmark
 
 > Kernel unchanged (0.7.0; no rule or protocol changes). Pure release-engineering and

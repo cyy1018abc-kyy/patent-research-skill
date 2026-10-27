@@ -1,0 +1,27 @@
+# 案例元数据与任务卡（bm08-print）
+id: bm08-print
+title: 3D 打印在线监测 —— 引用准确性专项
+focus: citation
+difficulty: medium
+target: TGT-9008
+metrics_weight:
+  citation_precision: 0.6
+  citation_coverage: 0.2
+  feature_omission: 0.1
+  misjudgment: 0.1
+traps:
+  - F3（缺陷回退重打）的正确引文在 ZZ900083A1 [0007]，且 [0007] 同时是"反向披露"（自认不会因质量回退）——引文与 note 必须双落
+  - ZZ900081A1 的 [0005]（逐层比对）与 [0006]（报警停机）相邻；F2 引 [0005]，[0006] 是 F3 的反面证据，别混
+  - F1 的判别器输出在 ZZ900082A1 [0005]，但采集与滤波在 [0003]——引用至少要落在其一并说清链路
+  - F4 无任何候选披露（样本入库更新为真值 absent），不要硬凑
+task: |
+  工作区已预置：3 条检索日志与 raw 工件、已 ingest 的 3 个候选（P-001..P-003，均
+  untouched）、目标 TGT-9008 的权利要求（见 07_drafting/claims.md 与本案例
+  corpus/target_claims.md）。语料是编造的合成文献，全文在 02_search_logs/raw/。
+  请按 patent-research 技能的执行顺序完成判断链：
+  1. review export → 逐候选评估：relevance_problem / relevance_means / novelty_check / role /
+     feature_mapping（状态与引文，格式见 benchmarks/README.md；F1..F4 逐个表态）；
+  2. review assess --apply → 对全部 near_prior_art 候选做显式人工确认（review confirm --apply，
+     --by 填 benchmark-operator）→ attest --apply；
+  3. 填 04_comparative_analysis/comparison_matrix.md（含每列输出，关键段落用 路径#L行：摘句 形态）；
+  4. 写 05_novelty_conclusions/conclusions.md（引用证据账本中存在的 P 编号）。

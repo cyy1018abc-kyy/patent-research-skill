@@ -1,0 +1,26 @@
+# 案例元数据与任务卡（bm04-ocr）
+id: bm04-ocr
+title: 票据字符识别 —— 引用准确性专项
+focus: citation
+difficulty: medium
+target: TGT-9004
+metrics_weight:
+  citation_precision: 0.6
+  citation_coverage: 0.2
+  feature_omission: 0.1
+  misjudgment: 0.1
+traps:
+  - ZZ900041A1 的 [0005]（模板匹配打分）与 [0006]（词库校正）相邻且都涉及"识别结果"，F2 的正确引文在 [0005]、F3 只能引 [0006]；把 [0006] 当 F2 的依据即失分
+  - ZZ900042A1 [0006] 明言"不存在单字候选的概念"，是 F2 的反面证据，note 里必须点出
+  - F4 的披露在 ZZ900043A1 的 [0005]（人工标注）与 [0006]（增量更新），两段合起来才完整
+task: |
+  工作区已预置：3 条检索日志与 raw 工件、已 ingest 的 3 个候选（P-001..P-003，均
+  untouched）、目标 TGT-9004 的权利要求（见 07_drafting/claims.md 与本案例
+  corpus/target_claims.md）。语料是编造的合成文献，全文在 02_search_logs/raw/。
+  请按 patent-research 技能的执行顺序完成判断链：
+  1. review export → 逐候选评估：relevance_problem / relevance_means / novelty_check / role /
+     feature_mapping（状态与引文，格式见 benchmarks/README.md；F1..F4 逐个表态）；
+  2. review assess --apply → 对全部 near_prior_art 候选做显式人工确认（review confirm --apply，
+     --by 填 benchmark-operator）→ attest --apply；
+  3. 填 04_comparative_analysis/comparison_matrix.md（含每列输出，关键段落用 路径#L行：摘句 形态）；
+  4. 写 05_novelty_conclusions/conclusions.md（引用证据账本中存在的 P 编号）。

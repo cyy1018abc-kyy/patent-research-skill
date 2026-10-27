@@ -1,0 +1,175 @@
+{
+  "id": "P-003",
+  "kind": "patent",
+  "target": "TGT-9008",
+  "title": "Power-failure resume printing control device",
+  "authors_or_applicants": [
+    "Hengceng Intelligent Manufacturing Equipment Co."
+  ],
+  "year": 2019,
+  "source_db": "Espacenet",
+  "url_or_doc_number": "ZZ900083A1",
+  "summary_zh": "",
+  "relevance": 3,
+  "novelty_check": "partial",
+  "role": "near_prior_art",
+  "evidence_level": "verified",
+  "evidence_ref": "../02_search_logs/raw/N3_page-1.csv",
+  "evidence_sha256": null,
+  "tags": [
+    "N3@TGT-9008"
+  ],
+  "logged_at": "2026-02-03T08:00:00+00:00",
+  "source_log": "../02_search_logs/espacenet_2026-02-03_N3_1.log.json",
+  "family": [],
+  "cited_by": [],
+  "pdf_path": null,
+  "bibtex_key": "zz900083a12019",
+  "relevance_problem": 3,
+  "relevance_means": 3,
+  "review_note": "按层号续打的机械与记录手段（[0003]/[0004]）可复用，但触发是断电而非缺陷回退",
+  "feature_mapping": {
+    "F1": {
+      "status": "absent"
+    },
+    "F2": {
+      "status": "absent"
+    },
+    "F3": {
+      "status": "partial",
+      "ref": "02_search_logs/raw/ZZ900083A1.md",
+      "locator": "L13",
+      "quote": "续打的触发条件是断电事件，本装置不具备任何缺陷检测能力",
+      "note": "按层号续打的机械与记录手段（[0003]/[0004]）可复用，但触发是断电而非缺陷回退"
+    },
+    "F4": {
+      "status": "absent"
+    }
+  },
+  "assessment": {
+    "actor": "ai",
+    "by": "benchmark-gold",
+    "at": "2026-10-27T04:59:00+08:00",
+    "basis": {
+      "N3@TGT-9008": {
+        "problem": {
+          "ref": "02_search_logs/raw/ZZ900083A1.md",
+          "locator": "L8",
+          "quote": "已打印部分报废重来成本高",
+          "rationale": "同为避免整件报废的问题，触发源不同故 problem 3"
+        },
+        "means": {
+          "ref": "02_search_logs/raw/ZZ900083A1.md",
+          "locator": "L9",
+          "quote": "主控周期性把当前层号与喷头坐标写入非易失存储器",
+          "rationale": "层号记录与续打执行手段相邻"
+        }
+      }
+    },
+    "materials": {
+      "N3@TGT-9008": {
+        "problem": "[0002] 长时打印中途断电后，已打印部分报废重来成本高。",
+        "means": "[0003] 主控周期性把当前层号与喷头坐标写入非易失存储器。"
+      }
+    },
+    "fingerprint": "22593fe0d40bfc0b282e5e2386fc3bd925bab59748e89f0fbb798313ef748e51"
+  },
+  "reviewed_at": "2026-10-27T04:59:00+08:00",
+  "review_history": [
+    {
+      "at": "2026-10-27T04:59:00+08:00",
+      "action": "assess:ai",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900083A1",
+        "target": "TGT-9008",
+        "tags": [
+          "N3@TGT-9008"
+        ],
+        "relevance": 3,
+        "relevance_problem": null,
+        "relevance_means": null,
+        "role": "pool",
+        "novelty_check": "untouched",
+        "review_note": null,
+        "feature_mapping": null,
+        "assessment": null,
+        "human_confirmation": null,
+        "reviewed_at": null
+      }
+    },
+    {
+      "at": "2026-10-27T04:59:00+08:00",
+      "action": "confirm:human",
+      "before": {
+        "id": "P-003",
+        "kind": "patent",
+        "url_or_doc_number": "ZZ900083A1",
+        "target": "TGT-9008",
+        "tags": [
+          "N3@TGT-9008"
+        ],
+        "relevance": 3,
+        "relevance_problem": 3,
+        "relevance_means": 3,
+        "role": "near_prior_art",
+        "novelty_check": "partial",
+        "review_note": "按层号续打的机械与记录手段（[0003]/[0004]）可复用，但触发是断电而非缺陷回退",
+        "feature_mapping": {
+          "F1": {
+            "status": "absent"
+          },
+          "F2": {
+            "status": "absent"
+          },
+          "F3": {
+            "status": "partial",
+            "ref": "02_search_logs/raw/ZZ900083A1.md",
+            "locator": "L13",
+            "quote": "续打的触发条件是断电事件，本装置不具备任何缺陷检测能力",
+            "note": "按层号续打的机械与记录手段（[0003]/[0004]）可复用，但触发是断电而非缺陷回退"
+          },
+          "F4": {
+            "status": "absent"
+          }
+        },
+        "assessment": {
+          "actor": "ai",
+          "by": "benchmark-gold",
+          "at": "2026-10-27T04:59:00+08:00",
+          "basis": {
+            "N3@TGT-9008": {
+              "problem": {
+                "ref": "02_search_logs/raw/ZZ900083A1.md",
+                "locator": "L8",
+                "quote": "已打印部分报废重来成本高",
+                "rationale": "同为避免整件报废的问题，触发源不同故 problem 3"
+              },
+              "means": {
+                "ref": "02_search_logs/raw/ZZ900083A1.md",
+                "locator": "L9",
+                "quote": "主控周期性把当前层号与喷头坐标写入非易失存储器",
+                "rationale": "层号记录与续打执行手段相邻"
+              }
+            }
+          },
+          "materials": {
+            "N3@TGT-9008": {
+              "problem": "[0002] 长时打印中途断电后，已打印部分报废重来成本高。",
+              "means": "[0003] 主控周期性把当前层号与喷头坐标写入非易失存储器。"
+            }
+          },
+          "fingerprint": "22593fe0d40bfc0b282e5e2386fc3bd925bab59748e89f0fbb798313ef748e51"
+        },
+        "human_confirmation": null,
+        "reviewed_at": "2026-10-27T04:59:00+08:00"
+      }
+    }
+  ],
+  "human_confirmation": {
+    "by": "benchmark-operator",
+    "at": "2026-10-27T04:59:00+08:00",
+    "fingerprint": "22593fe0d40bfc0b282e5e2386fc3bd925bab59748e89f0fbb798313ef748e51"
+  }
+}

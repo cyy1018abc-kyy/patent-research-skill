@@ -1,0 +1,90 @@
+# bm06-drone 真值（全部为编造合成数据的判断基准）
+target: TGT-9006
+axes:
+  N1@TGT-9006: {title_zh: '灯色时序分配', features: [F1]}
+  N2@TGT-9006: {title_zh: '失效动态补位', features: [F2]}
+  N3@TGT-9006: {title_zh: '越界就近降落', features: [F3]}
+  N4@TGT-9006: {title_zh: '节拍对齐', features: [F4]}
+features:
+  F1: {claim: '1', statement: '地面站按三维表演坐标为每机分配灯色时序表'}
+  F2: {claim: '1', statement: '失效机退出时邻机按实时相对位置动态补位'}
+  F3: {claim: '1', statement: '电子围栏越界即就近垂直降落'}
+  F4: {claim: '2', statement: '灯色时序表按音乐节拍时间轴生成并对齐节拍'}
+candidates:
+  P-001:
+    doc_number: ZZ900061A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 5
+    relevance_means: 4
+    disclosure:
+      F1: {status: partial, ref: '02_search_logs/raw/ZZ900061A1.md', locator: '[0005]', quote: '地面站为每架无人机生成随坐标序列同步的变化指令表', note: '分配的是变化指令表而非灯色时序表，且 [0008] 自认不涉及灯光载荷'}
+      F2: {status: absent, note: '[0006] 失效后剩余飞机原位不动、缺口人工评估——与动态补位相反'}
+      F3: {status: absent, note: '[0007] 越界执行自动返航，不是就近垂直降落'}
+      F4: {status: absent}
+    basis:
+      N1@TGT-9006:
+        problem: {ref: '02_search_logs/raw/ZZ900061A1.md', locator: '[0002]', quote: '数百架无人机在空中保持图案，人工逐机设定不可行', rationale: '同为大型编队表演控制问题'}
+        means: {ref: '02_search_logs/raw/ZZ900061A1.md', locator: '[0003]', quote: '按时间轴插值出每架无人机的三维表演坐标序列', rationale: '地面站按三维坐标逐机分配的手段相同'}
+  P-002:
+    doc_number: ZZ900062A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 3
+    relevance_means: 4
+    disclosure:
+      F1: {status: absent}
+      F2: {status: disclosed, ref: '02_search_logs/raw/ZZ900062A1.md', locator: '[0006]', quote: '邻近的完好作业机按实时相对位置就近认领待分配条带', note: '补位对象是作业条带而非表演位形，机制相同'}
+      F3: {status: absent}
+      F4: {status: absent}
+    basis:
+      N2@TGT-9006:
+        problem: {ref: '02_search_logs/raw/ZZ900062A1.md', locator: '[0002]', quote: '单机中途失效会留下未喷洒条带', rationale: '失效留缺需补位的问题同构，场景不同'}
+        means: {ref: '02_search_logs/raw/ZZ900062A1.md', locator: '[0006]', quote: '按实时相对位置就近认领', rationale: '按实时相对位置就近补位的手段相同'}
+  P-003:
+    doc_number: ZZ900065A1
+    role: excluded
+    novelty_check: untouched
+    relevance_problem: 1
+    relevance_means: 1
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: absent}
+      F4: {status: absent}
+    basis:
+      N2@TGT-9006:
+        problem: {ref: '02_search_logs/raw/ZZ900065A1.md', locator: '[0006]', quote: '不涉及编队图案、灯光或娱乐表演', rationale: '自认领域无关，"集群"仅为关键词撞车'}
+        means: {ref: '02_search_logs/raw/ZZ900065A1.md', locator: '[0004]', quote: '集群按预定策略分散脱离', rationale: '射频规避策略与表演控制无手段交集'}
+  P-004:
+    doc_number: ZZ900063A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 4
+    relevance_means: 4
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: disclosed, ref: '02_search_logs/raw/ZZ900063A1.md', locator: '[0007]', quote: '飞控立即接管并在本机正下方就近实施垂直降落', note: '与 F3 的越界就近降落一致；区别仅在触发场景为禁飞区而非表演区'}
+      F4: {status: absent}
+    basis:
+      N3@TGT-9006:
+        problem: {ref: '02_search_logs/raw/ZZ900063A1.md', locator: '[0002]', quote: '机场净空区、重点区域上空禁止无人机进入', rationale: '同为越界安全控制问题'}
+        means: {ref: '02_search_logs/raw/ZZ900063A1.md', locator: '[0003]', quote: '围栏数据以禁飞区多边形与限高面的形式预置', rationale: '电子围栏判定与执行手段相同'}
+  P-005:
+    doc_number: ZZ900064A1
+    role: near_prior_art
+    novelty_check: partial
+    relevance_problem: 2
+    relevance_means: 3
+    disclosure:
+      F1: {status: absent}
+      F2: {status: absent}
+      F3: {status: absent}
+      F4: {status: disclosed, ref: '02_search_logs/raw/ZZ900064A1.md', locator: '[0005]', quote: '时序引擎按节拍时间轴排布灯效队列，使每次灯光颜色与亮度变化落在节拍点上', note: '节拍对齐手段完整披露，但载体是地面舞台灯（[0007]），无无人机'}
+    basis:
+      N4@TGT-9006:
+        problem: {ref: '02_search_logs/raw/ZZ900064A1.md', locator: '[0002]', quote: '难以保证灯效与鼓点一致', rationale: '灯效与节拍脱节的问题相同，载体不同故 problem 仅 2'}
+        means: {ref: '02_search_logs/raw/ZZ900064A1.md', locator: '[0003]', quote: '节拍点由离线节拍分析或人工标记得到', rationale: '节拍时间轴驱动灯效的手段相同'}
+conclusions_must_cite: [P-001, P-002, P-004, P-005]
+overall_verdict: '单篇新颖性 —— 初步成立（无单篇覆盖全部特征：P-001 最接近但缺灯光载荷/补位/就近降落/节拍）；创造性 —— 存疑（P-001 与 P-005 的节拍驱动、P-004 的围栏逻辑存在组合方向，需补充检索）'

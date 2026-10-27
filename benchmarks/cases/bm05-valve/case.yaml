@@ -1,0 +1,27 @@
+# 案例元数据与任务卡（bm05-valve）
+id: bm05-valve
+title: 智能阀门控制 —— 技术特征遗漏专项
+focus: feature_omission
+difficulty: hard
+target: TGT-9005
+metrics_weight:
+  citation_precision: 0.2
+  citation_coverage: 0.1
+  feature_omission: 0.5
+  misjudgment: 0.2
+traps:
+  - F3（水锤预测预收）的披露藏在"水利工程"文档 ZZ900052A1 [0007]，通篇不像阀门文献——浅读极易整篇跳过或判 excluded，丢掉唯一的 F3 披露
+  - F4 的"手动切换"在 ZZ900051A1 [0008]，但那是"卸销+装手轮"的人工切换而非自动脱开的机械优先机构 → partial 而非 disclosed；[0007] 只是"并联手轮"，引错段落即失
+  - F1 的披露是传感器本体文献 ZZ900053A1 [0002]（磁致伸缩测距原理），应用场合在 [0007]——本体与应用分离，容易标成 absent
+  - ZZ900051A1 [0005] "全程按同一速度，不做分段" 是 F2 的反面证据
+task: |
+  工作区已预置：3 条检索日志与 raw 工件、已 ingest 的 3 个候选（P-001..P-003，均
+  untouched）、目标 TGT-9005 的权利要求（见 07_drafting/claims.md 与本案例
+  corpus/target_claims.md）。语料是编造的合成文献，全文在 02_search_logs/raw/。
+  请按 patent-research 技能的执行顺序完成判断链：
+  1. review export → 逐候选评估：relevance_problem / relevance_means / novelty_check / role /
+     feature_mapping（状态与引文，格式见 benchmarks/README.md；F1..F4 逐个表态）；
+  2. review assess --apply → 对全部 near_prior_art 候选做显式人工确认（review confirm --apply，
+     --by 填 benchmark-operator）→ attest --apply；
+  3. 填 04_comparative_analysis/comparison_matrix.md（含每列输出，关键段落用 路径#L行：摘句 形态）；
+  4. 写 05_novelty_conclusions/conclusions.md（引用证据账本中存在的 P 编号）。
