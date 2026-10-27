@@ -21,6 +21,7 @@ from pathlib import Path
 
 from patent_intel import __version__
 from patent_intel.config import ENV_STATE_DIR, STATE_DIR_NAME, load_config, resolve_state_dir
+from patent_intel.io.safe_io import read_json_limited, write_json_atomic
 from patent_intel.workspace import SidecarLayout
 
 EXIT_OK = 0
@@ -191,6 +192,262 @@ def _render_doctor(report: dict[str, object]) -> None:
     print(f"result: {'OK' if report['ok'] else f'{blocking} blocking issue(s)'}")
 
 
+# ── query group (WP-A) ────────────────────────────────────────────────
+
+
+def _workspace_or_exit(root: str | None, *, as_json: bool) -> Path:
+    from patent_intel.kernel_bridge import find_kernel_workspace, is_kernel_workspace
+
+    if root:
+        candidate = Path(root).expanduser()
+        if not is_kernel_workspace(candidate):
+            message = f"not a patentkit workspace (no workspace.yml): {candidate}"
+            if as_json:
+                _emit_json({"ok": False, "error": message})
+            else:
+                print(f"❌ {message}", file=sys.stderr)
+            raise SystemExit(EXIT_WORKSPACE)
+        return candidate.resolve()
+    try:
+        return find_kernel_workspace(Path.cwd())
+    except FileNotFoundError as exc:
+        if as_json:
+            _emit_json({"ok": False, "error": str(exc)})
+        else:
+            print(f"❌ {exc}", file=sys.stderr)
+        raise SystemExit(EXIT_WORKSPACE) from None
+
+
+def _cmd_query_plan(args: argparse.Namespace) -> int:
+    """Build the query family for one axis as proposals (no writes outside sidecar)."""
+    from patent_intel.kernel_bridge import read_axes
+    from patent_intel.retrieval.features import extract_features
+    from patent_intel.retrieval.query_plan import QueryPlanBuilder
+
+    workspace = _workspace_or_exit(args.root, as_json=args.json)
+    axes = read_axes(workspace)
+    axis_key = args.axis if "@" in args.axis else f"{args.axis}@{_active_target(workspace)}"
+    info = axes.get(axis_key)
+    if info is None:
+        message = f"axis {axis_key!r} not in glossary (known: {sorted(axes)})"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_WORKSPACE
+    title = str(info.get("title_zh") or info.get("title_en") or "").strip()
+    if not title:
+        message = f"axis {axis_key!r} has no title to plan from"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_FAIL
+    bundle = extract_features([title], axis_id=axis_key, source_tag="glossary-axis")
+    plan = QueryPlanBuilder().build(bundle)
+    payload = plan.describe()
+    payload["axis_title"] = title
+    if args.json:
+        _emit_json({"ok": True, "plan": payload})
+    else:
+        print(f"axis {axis_key} — {title}: {len(plan.queries)} proposal queries")
+        for q in plan.queries:
+            print(f"  {q.query_id} [{q.query_type}] terms={q.terms[:4]}{'…' if len(q.terms) > 4 else ''}")
+        for a in plan.annotations:
+            print(f"  (annotation) {a['kind']}: {a['statement']}")
+        print("proposals only — approve via review before any kernel-side use")
+    return EXIT_OK
+
+
+def _active_target(workspace: Path) -> str:
+    from patent_intel.kernel_bridge import read_glossary
+
+    glossary = read_glossary(workspace)
+    return str(glossary.get("active_target") or "")
+
+
+def _cmd_query_validate(args: argparse.Namespace) -> int:
+    """Validate a plan JSON file against the record contracts (schema discipline)."""
+    import json
+
+    from patent_intel.contracts import QuerySpec
+
+    path = Path(args.plan)
+    if not path.is_file():
+        _emit_json({"ok": False, "error": f"plan file not found: {path}"}) if args.json else print(
+            f"❌ plan file not found: {path}", file=sys.stderr
+        )
+        return EXIT_USAGE
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        print(f"❌ invalid JSON: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    entries = data.get("queries") if isinstance(data, dict) else data
+    if not isinstance(entries, list):
+        print("❌ plan must be a query list or {queries: [...]}", file=sys.stderr)
+        return EXIT_USAGE
+    errors: list[str] = []
+    valid = 0
+    for i, entry in enumerate(entries):
+        try:
+            QuerySpec.from_dict(entry)
+            valid += 1
+        except Exception as exc:  # noqa: BLE001 - collect all contract violations
+            errors.append(f"query[{i}]: {exc}")
+    if args.json:
+        _emit_json({"ok": not errors, "valid": valid, "errors": errors})
+    else:
+        if errors:
+            print(f"❌ {len(errors)} invalid query spec(s):")
+            for err in errors:
+                print(f"  · {err}")
+        else:
+            print(f"✅ {valid} query spec(s) valid")
+    return EXIT_OK if not errors else EXIT_FAIL
+
+
+# ── recall group (WP-A) ───────────────────────────────────────────────
+
+
+def _cmd_recall_report(args: argparse.Namespace) -> int:
+    """Offline recall diagnostic over the workspace's own corpus (writes sidecar only)."""
+    from patent_intel.retrieval.reporting import recall_report
+    from patent_intel.workspace import SidecarLayout
+
+    workspace = _workspace_or_exit(args.root, as_json=args.json)
+    state_dir = resolve_state_dir(workspace, args.state_dir)
+    layout = SidecarLayout(state_dir)
+    layout.ensure(workspace=workspace)
+    report = recall_report(
+        workspace,
+        state_dir,
+        max_requests=args.max_requests,
+        zero_gain_rounds=args.zero_gain_rounds,
+    )
+    if args.json:
+        _emit_json({"ok": True, "report": report})
+    else:
+        run = report["run"]
+        print(f"recall report (offline, corpus={report['corpus_size']} docs)")
+        print(f"  queries planned: {report['queries_planned']}, run: {len(run['queries_run'])} ({run['stop_reason']})")
+        print(f"  new families discovered: {run['total_new_families']}")
+        coverage = run["coverage"]
+        if coverage.get("uncovered_axes"):
+            print(f"  axes without any hit: {coverage['uncovered_axes']}")
+        print(f"  report saved under: {state_dir / 'reports'}")
+        print(f"  caveat: {report['caveat'][:100]}…")
+    return EXIT_OK
+
+
+# ── evidence group (WP-D) ─────────────────────────────────────────────
+
+
+def _features_from_workspace(workspace: Path) -> list[dict[str, object]]:
+    """Feature view from glossary axes (deterministic; no LLM involvement)."""
+    from patent_intel.kernel_bridge import read_axes
+    from patent_intel.retrieval.features import extract_features
+
+    features: list[dict[str, object]] = []
+    for axis_id, info in sorted(read_axes(workspace).items()):
+        title = str((info or {}).get("title_zh") or (info or {}).get("title_en") or "").strip()
+        if not title:
+            continue
+        bundle = extract_features([title], axis_id=axis_id, source_tag="glossary-axis", approved=True)
+        features.extend(f.to_dict() for f in bundle.features)
+    return features
+
+
+def _cmd_evidence_build(args: argparse.Namespace) -> int:
+    """Rebuild the evidence projection view from the kernel workspace (sidecar only)."""
+    from patent_intel.evidence.coverage_matrix import build_coverage_matrix
+    from patent_intel.evidence.graph import EvidenceGraphBuilder, export_projections
+    from patent_intel.kernel_bridge import read_candidates
+    from patent_intel.workspace import SidecarLayout
+
+    workspace = _workspace_or_exit(args.root, as_json=args.json)
+    state_dir = resolve_state_dir(workspace, args.state_dir)
+    layout = SidecarLayout(state_dir)
+    layout.ensure(workspace=workspace)
+    features = _features_from_workspace(workspace)
+    projections = EvidenceGraphBuilder(features=features).build_from_workspace(workspace)
+    candidates = read_candidates(workspace)
+    matrix = build_coverage_matrix(features, candidates, projections)
+    export_projections(projections, layout.evidence)
+    write_json_atomic(layout.evidence / "coverage_matrix.json", matrix.describe())
+    summary = {
+        "ok": True,
+        "projections": len(projections),
+        "features": len(features),
+        "coverage_ratio": matrix.coverage_ratio,
+        "gaps": matrix.evidence_gaps(),
+        "written": [str(layout.evidence / "projections.json"), str(layout.evidence / "coverage_matrix.json")],
+    }
+    if args.json:
+        _emit_json(summary)
+    else:
+        print(f"evidence view rebuilt: {len(projections)} projections over {len(features)} features")
+        print(f"  coverage ratio (supported cells): {matrix.coverage_ratio:.3f}")
+        if summary["gaps"]:
+            print(f"  features without anchored evidence: {summary['gaps']}")
+        print(f"  written to {layout.evidence}")
+    return EXIT_OK
+
+
+# ── advisory group (WP-D) ─────────────────────────────────────────────
+
+
+def _cmd_advisory_review(args: argparse.Namespace) -> int:
+    """List advisory proposals awaiting human review (read-only; sidecar only)."""
+    from patent_intel.contracts import AdvisoryProposal, ReviewState
+    from patent_intel.workspace import SidecarLayout
+
+    workspace = _workspace_or_exit(args.root, as_json=args.json)
+    state_dir = resolve_state_dir(workspace, args.state_dir)
+    layout = SidecarLayout(state_dir)
+    proposals: list[dict[str, object]] = []
+    if layout.advisory.is_dir():
+        for path in sorted(layout.advisory.glob("*.json")):
+            try:
+                proposal = AdvisoryProposal.from_dict(read_json_limited(path))
+            except Exception as exc:  # noqa: BLE001 - report unreadable proposals honestly
+                proposals.append({"path": path.name, "error": str(exc)})
+                continue
+            if args.claim and args.claim not in str((proposal.change or {}).get("claim_numbers", "")):
+                continue
+            proposals.append(
+                {
+                    "proposal_id": proposal.proposal_id,
+                    "change_kind": (proposal.change or {}).get("kind"),
+                    "requires_human_review": proposal.requires_human_review,
+                    "kernel_gate_ref": proposal.kernel_gate_ref,
+                    "evidence_refs": len(proposal.evidence_refs or []),
+                    "path": path.name,
+                }
+            )
+    payload = {
+        "ok": True,
+        "count": len(proposals),
+        "proposals": proposals,
+        "note": (
+            "proposals are advisory only; adoption requires human review and the kernel "
+            "draft/revise gates (V038). No proposal is ever applied automatically."
+        ),
+    }
+    if args.json:
+        _emit_json(payload)
+    else:
+        print(f"{len(proposals)} proposal(s) on file (state: {state_dir})")
+        for p in proposals:
+            if "error" in p:
+                print(f"  [unreadable] {p['path']}: {p['error']}")
+            else:
+                print(f"  {p['proposal_id']} [{p['change_kind']}] gate: {p['kernel_gate_ref']}")
+        print("  " + payload["note"][:100] + "…")
+    _ = ReviewState  # imported for API symmetry with sidecar review states
+    return EXIT_OK
+
+
 # ── parser assembly ───────────────────────────────────────────────────
 
 
@@ -211,6 +468,65 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_root_args(doctor)
     doctor.set_defaults(func=_cmd_doctor)
+
+    query = sub.add_parser(
+        "query",
+        help="query planning proposals (WP-A) — plans are sidecar proposals, never kernel writes",
+    )
+    query_sub = query.add_subparsers(dest="query_command", metavar="<subcommand>", required=True)
+    plan = query_sub.add_parser(
+        "plan",
+        help="build the query family for one glossary axis (single_feature/broad_recall/cross/xd)",
+    )
+    _add_root_args(plan)
+    plan.add_argument("--axis", required=True, metavar="ID", help="axis id, bare (N1) or target-qualified (N1@TGT-0001)")
+    plan.set_defaults(func=_cmd_query_plan)
+    validate = query_sub.add_parser(
+        "validate",
+        help="validate a plan JSON file against the record contracts",
+    )
+    _add_root_args(validate)
+    validate.add_argument("--plan", required=True, metavar="FILE", help="plan JSON (list or {queries: [...]})")
+    validate.set_defaults(func=_cmd_query_validate)
+
+    recall = sub.add_parser(
+        "recall",
+        help="offline recall diagnostics (WP-A) — BM25 over the workspace's own corpus",
+    )
+    recall_sub = recall.add_subparsers(dest="recall_command", metavar="<subcommand>", required=True)
+    report = recall_sub.add_parser(
+        "report",
+        help="coverage + incremental-yield report; writes only to the sidecar reports/ dir",
+    )
+    _add_root_args(report)
+    report.add_argument("--max-requests", type=int, default=20, help="query budget for the diagnostic run")
+    report.add_argument("--zero-gain-rounds", type=int, default=3, help="stop after N consecutive zero-yield queries")
+    report.set_defaults(func=_cmd_recall_report)
+
+    evidence = sub.add_parser(
+        "evidence",
+        help="evidence projection views (WP-D) — rebuildable, sidecar-only, read-only on the workspace",
+    )
+    evidence_sub = evidence.add_subparsers(dest="evidence_command", metavar="<subcommand>", required=True)
+    ebuild = evidence_sub.add_parser(
+        "build",
+        help="rebuild projections + coverage matrix from the kernel workspace into the sidecar",
+    )
+    _add_root_args(ebuild)
+    ebuild.set_defaults(func=_cmd_evidence_build)
+
+    advisory = sub.add_parser(
+        "advisory",
+        help="claim-amendment proposals (WP-D) — always proposals, never applied automatically",
+    )
+    advisory_sub = advisory.add_subparsers(dest="advisory_command", metavar="<subcommand>", required=True)
+    areview = advisory_sub.add_parser(
+        "review",
+        help="list advisory proposals awaiting human review (read-only)",
+    )
+    _add_root_args(areview)
+    areview.add_argument("--claim", default=None, help="filter proposals mentioning a claim number")
+    areview.set_defaults(func=_cmd_advisory_review)
 
     return parser
 
