@@ -191,6 +191,30 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 - All bundled data is synthetic. Do not upload unpublished material to cloud clients.
 - The `patentkit` kernel is distributed as a wheel; its source is maintained separately.
 
+## Optional extension: patent_intel (4.0 development line)
+
+An independently versioned, strictly optional wheel (`patent_intel`, currently 0.1.0)
+adds retrieval-recall tooling around the kernel without touching its authority:
+
+```bash
+pip install extensions/patent_intel            # stdlib-only base
+pip install "patent_intel[kernel]"             # + read the kernel workspace
+python -m patent_intel doctor --root <ws>      # read-only self-check
+python research/scripts/recall.py plan --axis N1      # query-family proposals
+python research/scripts/recall.py report              # offline recall diagnostic
+python tools/score_retrieval.py --suite benchmarks/retrieval/fixtures/smoke --runs <runs> --json
+```
+
+Boundaries (see [docs/adr/0001-kernel-boundary.md](docs/adr/0001-kernel-boundary.md)):
+the kernel stays the sole authority for evidence levels, gates and sign-off; the
+extension only produces proposals and read-only diagnostics inside its own sidecar
+(`<ws>/.patent-intel/`, deletable without changing kernel validation). Online sources
+(OPS) ship contract-tested but are **not live-run** from this repo; quota/limits
+follow the provider portals. Architecture and data contracts:
+[docs/architecture/4.0-system.md](docs/architecture/4.0-system.md),
+[docs/architecture/contracts.md](docs/architecture/contracts.md).
+Retrieval benchmark protocol: [docs/retrieval-evaluation.md](docs/retrieval-evaluation.md).
+
 ## Version
 
 Skill version: **3.8.0** (patent-research + patent-drafting; patent-discovery in the P1 development line),

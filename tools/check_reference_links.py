@@ -107,7 +107,18 @@ def check(root: Path) -> list[str]:
     return problems
 
 
+def _pin_utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _pin_utf8_stdio()
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent,
                     help="repo root or unpacked release directory (default: repo root)")

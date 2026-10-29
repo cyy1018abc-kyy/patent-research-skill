@@ -10,7 +10,7 @@ description: >
   生成查新报告（docx/HTML）、查看证据账本或 1+N 布局时使用。
   支持多目标工作区；命中「跑一遍新颖性核查」「N1 轴检索式」「补检索」
   「五项验收门是不是 PASS」「asserted 能不能当依据」「证据等级」「数值溯源」
-  「附图标记对不上」等说法时优先触发。
+  「附图标记对不上」「召回增强」「查全诊断」等说法时优先触发。
 license: Apache-2.0
 metadata:
   version: 3.8.0
@@ -46,6 +46,13 @@ metadata:
 | 4 | 门禁 | [`05-验收门口径`](references/05-acceptance-gates.md) | `python scripts/gates.py`（或 `patentkit gates`） | 五门 **verified 列**全 PASS，不看 asserted |
 | 5 | 交稿核对 | [`06-撰写与润色规范`](references/06-drafting-and-polishing-rules.md)；多轮改稿闭环（13 号）属姊妹技能 `patent-drafting`，见其 references/13-revision-loop.md | `python scripts/check.py` + `patentkit attest --check` + 数值溯源（V031/V032）+ 附图标记（V033）+ 结论引用（V034） | validate 0 error/warn；稿件 sha256 无漂移；数值每条有 A/B/C 来源 |
 | 6 | 交付物 | [`08-附图规范`](references/08-figures.md)（需要时） | `patentkit export-docx <TGT>`（docx 查新报告）/ `patentkit map <TGT>`（离线 HTML 总览）/ `patentkit ledger`（证据账本） | 交付物数字与工作区一致，无手工转写 |
+
+**可选扩展（4.0 新增）**：已安装 `patent_intel` 扩展时，可用
+`python scripts/recall.py plan --axis N1`（查询族提案）与
+`python scripts/recall.py report`（离线查全诊断）辅助第 1–2 阶段——输出全部是
+proposal/诊断，不改变门禁口径；扩展未安装时脚本 exit 3 并给安装指引，原流程照常。
+细节与边界读 [`references/09-召回增强`](references/09-recall-enhancement.md)；
+零命中/停止 ≠ 查全，结论引用扩展输出时必须带该限定语。
 
 **撰写类需求转姊妹技能**（v3.0.0 起）：交底书/申请文件底稿、权利要求撰写、OA 答复、
 多轮改稿闭环 → 技能 `patent-drafting`（本技能只负责其前置：门禁、账本、溯源就绪）。

@@ -1,0 +1,38 @@
+{
+  "suite": "synthetic-smoke",
+  "version": "1.0.0",
+  "qrels_version": "qrels-v1",
+  "gold_completeness": "pool_biased",
+  "license": "synthetic identifiers only, no real patent text; ships with the repo",
+  "provenance": "Hand-written fixture for CI: verifies the scorer chain end-to-end offline. Not a research benchmark.",
+  "families": {
+    "ZZ1000001A1": "SMOKE-F1",
+    "ZZ1000002A1": "SMOKE-F1",
+    "ZZ2000001A1": "SMOKE-F2",
+    "ZZ3000001A1": "SMOKE-F3",
+    "ZZ4000001A1": "SMOKE-F4",
+    "ZZ5000001A1": "SMOKE-F5"
+  },
+  "topics": [
+    {
+      "topic_id": "TP-0001",
+      "split": "test",
+      "language": "zh+en",
+      "domain": "timesync",
+      "gold_families": ["SMOKE-F1", "SMOKE-F2"],
+      "critical_families": ["SMOKE-F1"],
+      "relevance_levels": {"SMOKE-F1": 3, "SMOKE-F2": 2},
+      "gold_known_incomplete": false,
+      "adjudication": "fixture author (synthetic)"
+    },
+    {
+      "topic_id": "TP-0002",
+      "split": "test",
+      "language": "en",
+      "domain": "bms",
+      "gold_families": ["SMOKE-F3"],
+      "gold_known_incomplete": false,
+      "adjudication": "fixture author (synthetic)"
+    }
+  ]
+}

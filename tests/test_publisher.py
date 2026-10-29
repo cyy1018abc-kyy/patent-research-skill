@@ -50,11 +50,11 @@ sys.exit(code)
             command = ["bash", str(ROOT / "tools/publish_release.sh")]
             first = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, timeout=30)
             self.assertEqual(first.returncode, 0, first.stderr)
-            data = json.loads(state.read_text())
+            data = json.loads(state.read_text(encoding="utf-8"))
             self.assertTrue(all(not tag["draft"] for tag in data["tags"].values()))
             second = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, timeout=30)
             self.assertEqual(second.returncode, 0, second.stderr)
-            calls = json.loads(state.read_text())["calls"][len(data["calls"]):]
+            calls = json.loads(state.read_text(encoding="utf-8"))["calls"][len(data["calls"]):]
             self.assertTrue(all(call[1] == "view" for call in calls))
 
 

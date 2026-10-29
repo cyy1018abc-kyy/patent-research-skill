@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "patent-intel"
+version = "0.1.0"
+description = "Optional retrieval/document/evidence extension for the patent-research skills (kernel stays authoritative)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Jackey yang", email = "cyy1018abc@gmail.com" }]
+# Base install is standard-library only: `python -m patent_intel --help`, query planning
+# offline diagnostics and the lexical baseline must work with zero third-party packages.
+# Everything heavier is opt-in via extras and none of them pulls models/databases/GPU runtimes.
+dependencies = []
+
+[project.optional-dependencies]
+# Read the patentkit workspace (glossary/search logs/candidates) and replay kernel gates.
+kernel = ["patentkit>=0.8.0"]
+# PDF/OCR document parsing (WP-C).
+pdf = ["docling>=2"]
+# Dense retrieval / RRF fusion (WP-A). numpy only; no model download happens at install time.
+dense = ["numpy>=1.26"]
+# EPO OPS live acquisition (WP-B).
+ops = ["requests>=2.31"]
+
+[project.scripts]
+patent-intel = "patent_intel.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

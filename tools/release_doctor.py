@@ -75,6 +75,69 @@ def _load_tool(name: str):
 # ── 纯函数：发布脚本解析 / SUMS / manifest 校验（单元测试覆盖） ────────────
 
 
+def check_extension_wheel_files(package_dir: Path) -> tuple[str, str]:
+    """校验 ``<package_dir>/extension/`` 下的可选扩展 wheel 与其独立 SUMS（O-04）。
+
+    扩展是可选组件：目录不存在 → SKIP（不算失败）；存在则 SUMS 哈希必须一致，
+    wheel 元数据必须满足「最小安装零第三方依赖 + extras 齐全 + 入口点存在」。
+    """
+    extension_dir = package_dir / "extension"
+    if not extension_dir.is_dir():
+        return SKIP, "extension wheel 未构建（可选组件，不阻断 skill 发布）"
+    wheels = sorted(extension_dir.glob("patent_intel-*.whl"))
+    sums_files = sorted(extension_dir.glob("SHA256SUMS-patent-intel-*.txt"))
+    if len(wheels) != 1 or len(sums_files) != 1:
+        return FAIL, f"extension 目录应恰有一个 wheel 与一份 SUMS：{[p.name for p in wheels]} / {[p.name for p in sums_files]}"
+    sums = parse_sums(sums_files[0].read_text(encoding="utf-8"))
+    if set(sums) != {wheels[0].name}:
+        return FAIL, f"SUMS 名单与 wheel 不一致: {sorted(sums)} vs {wheels[0].name}"
+    digest = hashlib.sha256(wheels[0].read_bytes()).hexdigest()
+    if sums[wheels[0].name] != digest:
+        return FAIL, f"wheel sha256 与 SUMS 不一致（{wheels[0].name}）"
+    problems = _inspect_extension_metadata(wheels[0])
+    if problems:
+        return FAIL, "; ".join(problems)
+    return PASS, f"{wheels[0].name}（sha256 一致；最小安装零第三方依赖、extras 齐全）"
+
+
+def _inspect_extension_metadata(wheel: Path) -> list[str]:
+    """Lightweight wheel audit: METADATA + entry_points (no install, offline)."""
+    import zipfile
+
+    problems: list[str] = []
+    try:
+        with zipfile.ZipFile(wheel) as archive:
+            metadata_name = next(n for n in archive.namelist() if n.endswith(".dist-info/METADATA"))
+            metadata = archive.read(metadata_name).decode("utf-8")
+            entries_name = next(n for n in archive.namelist() if n.endswith(".dist-info/entry_points.txt"))
+            entries = archive.read(entries_name).decode("utf-8")
+    except (StopIteration, zipfile.BadZipFile, KeyError) as exc:
+        return [f"wheel 元数据不可读: {exc}"]
+
+    in_body = False
+    requires_dist: list[str] = []
+    extras: set[str] = set()
+    for line in metadata.splitlines():
+        if not line.strip():
+            in_body = True
+            continue
+        if in_body:
+            break
+        if line.startswith("Requires-Dist:"):
+            requires_dist.append(line.split(":", 1)[1].strip())
+            if "extra ==" in line:
+                extras.add(line.split("extra ==")[-1].strip().strip('"'))
+    base_deps = [r for r in requires_dist if "extra ==" not in r]
+    if base_deps:
+        problems.append(f"基础安装声明了第三方依赖: {base_deps}（最小安装必须零依赖）")
+    for required_extra in ("kernel", "pdf", "dense", "ops"):
+        if required_extra not in extras:
+            problems.append(f"缺少 extras: {required_extra}")
+    if "patent-intel" not in entries or "cli" not in entries:
+        problems.append("entry_points 缺少 patent-intel = patent_intel.cli:main")
+    return problems
+
+
 def parse_publish_assets(script_text: str) -> dict[str, list[str]]:
     """从 publish_release.sh 解析 tag → 上传资产名列表（不含 dist/ 前缀）。
 
@@ -751,6 +814,7 @@ def run_offline(dist: Path | None) -> list[Result]:
         results.append(Result("installers", "本机平台安装器实测", *check_installers(package, zips, wheel)))
     else:
         results.append(Result("installers", "本机平台安装器实测", SKIP, "构建检查未通过"))
+    results.append(Result("extension-wheel", "可选扩展 wheel 独立校验（O-04）", *check_extension_wheel_files(package)))
     if dist is None and package != ROOT:
         __import__("shutil").rmtree(package, ignore_errors=True)  # 现场构建的临时产物
     return results
