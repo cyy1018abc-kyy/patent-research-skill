@@ -1,6 +1,31 @@
 # Changelog
 
-## 2026-10-28 · Unreleased — Patent Research Skill 4.0 WP-0..WP-F：可选扩展 patent_intel（对应蓝图 F/T/B/A/C/D/E/O 各工作包）
+## 2026-10-29 · 3.9.0（kernel 0.9.0 延续，未重发）— patent_intel 0.1.0 发行 + 跨平台 CI 修复（Phase L / WP-L1+L2）
+
+**扩展发行（方案 A）**
+
+- skill release 附加 `patent_intel-0.1.0-py3-none-any.whl` 与独立
+  `SHA256SUMS-patent-intel-v0.1.0.txt`；原 manifest schema 2、双 zip、安装器全部
+  不动（扩展不随安装器自动安装，INSTALL.md 增手动 pip 安装节）。
+- `release_doctor --release` 新增：**多 SUMS** 哈希审计（一个 release 可带多份
+  SUMS，各覆盖各自资产名单）与扩展 wheel **隔离导入**断言（版本 + 入口点）。
+- 内核 0.9.0 无变化，kernel tag 未重发（publish 对已发布 tag no-op 属预期，
+  兼容由 manifest.compat 把关）。
+
+**跨平台 CI 修复（WP-L1，PR #15 合并前置）**
+
+- Windows（cp1252）：新工具 stdout/stderr 统一 `_pin_utf8_stdio()` 钉 UTF-8——
+  修复 em-dash 经 locale 管道输出导致父测试 UTF-8 读取线程死亡、流为 None 的
+  四矩阵全红（本地 PYTHONUTF8/PYTHONIOENCODING 掩盖此类缺陷，已实测取证）。
+- POSIX：safe_io `ensure_contained` 反斜杠归一化（ADR 0003）——`..\` 穿越串
+  双平台一致拒绝，root 内反斜杠分隔路径照常解析。
+- 新守卫 `tools/check_explicit_encoding.py` 入 CI：AST 全扫 104 文件——文本 IO
+  必须显式 `encoding=`（二进制与归档模块豁免）、tools/evals/research-scripts
+  入口必须钉 stdio。
+- 发布工程：`evals/evals.json` 的 `skill_version` 补入 `SKILL_PAIRING_FILES`
+  （残留扫描抓出的漏网活配对点）。
+
+## 2026-10-28 · 4.0 WP-0..WP-F：可选扩展 patent_intel（对应蓝图 F/T/B/A/C/D/E/O 各工作包，随 3.9.0 首次随库发行）
 
 **新增 `extensions/patent_intel`（独立可选 wheel，最小安装零第三方依赖）**
 
@@ -40,7 +65,7 @@
   document-model）、`docs/adr/0001 内核边界`、`0002 sidecar`、
   `docs/retrieval-evaluation.md`、skill references research 09/10、drafting 18、
   discovery 04（中英镜像齐备）。
-- 兼容矩阵：skill 3.8.0 / kernel 0.9.0（protocol 1）不变；扩展兼容
+- 兼容矩阵：skill 3.9.0 / kernel 0.9.0（protocol 1）不变；扩展兼容
   `patentkit >= 0.8.0`；扩展自身版本独立（当前 0.1.0），不参与 skill↔kernel
   版本配对。
 

@@ -8,9 +8,11 @@
 
 ## Getting the installation package
 
-- Skill package zip: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.8.0> →
-  `patent-research-skill-v3.8.0.zip`
+- Skill package zip: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.9.0> →
+  `patent-research-skill-v3.9.0.zip`
 - Kernel wheel / sdist: <https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.9.0>
+- Optional extension wheel (same page): `patent_intel-0.1.0-py3-none-any.whl` +
+  its own `SHA256SUMS-patent-intel-v0.1.0.txt` — see "Optional extension" below
 - Verification: `SHA256SUMS-*.txt` on the same page; on Windows you can check with `Get-FileHash <file> -Algorithm SHA256`.
 
 ## Prerequisites
@@ -71,6 +73,24 @@ chmod +x install.sh
    "what is the search query on the N1 axis" — the skill should trigger and execute the commands in `scripts/`.
 3. Before using a real workspace, practice on the package's `samples/sample_workspace/` (synthetic data, do whatever you like).
 
+## Optional extension: `patent_intel` (retrieval enhancement)
+
+Everything above is the base install — the three skills run unchanged **without** the
+extension. The extension (independent version, e.g. 0.1.0) adds retrieval strategy
+planning, recall diagnostics, multi-source acquisition governance, document parsing and
+evidence projections. It is **never installed by the installers** and never enters the
+release manifest; install it manually only if you want the retrieval layer:
+
+```powershell
+# from the skill-v<version> release page, verify against SHA256SUMS-patent-intel-v<ext>.txt first
+python -m pip install ./patent_intel-0.1.0-py3-none-any.whl
+python -m patent_intel --help        # stdlib-only base install, no heavyweight deps
+```
+
+Boundaries: the extension only produces proposals and read-only analyses — evidence
+grades, G-S gates and conclusions stay with the `patentkit` kernel; uninstalling is a
+plain `pip uninstall patent_intel` plus deleting the workspace's `.patent-intel/` sidecar.
+
 ## Upgrading
 
 ```powershell
@@ -97,7 +117,7 @@ python -m patentkit validate --root /path/to/workspace --strict
 
 Migration preserves source grades, records legacy judgment identity as unknown, and
 does not create human confirmations. Prior gate counts may decrease. See the
-[release notes](https://github.com/cyy1018abc-kyy/patent-research-skill/blob/main/release/notes/skill-v3.8.0.md).
+[release notes](https://github.com/cyy1018abc-kyy/patent-research-skill/blob/main/release/notes/skill-v3.9.0.md).
 
 ## Uninstalling
 
