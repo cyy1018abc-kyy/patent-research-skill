@@ -21,6 +21,7 @@ release-doctor-offline.json
 # ── Phase V evaluation data (local-only, license-restricted / privacy) ──
 benchmarks/retrieval/corpus/
 benchmarks/retrieval/topics/private/
-benchmarks/retrieval/gold/worksheets/
+benchmarks/retrieval/gold/*
+!benchmarks/retrieval/gold/ARBITRATION.md
 benchmarks/retrieval/runs/
 benchmarks/retrieval/ex02/
