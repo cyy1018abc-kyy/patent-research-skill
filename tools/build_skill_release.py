@@ -223,7 +223,18 @@ def build_extension_wheel(out: Path) -> dict:
     }
 
 
+def _pin_utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main() -> int:
+    _pin_utf8_stdio()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=ROOT / "dist")
     parser.add_argument("--built-at", default=datetime.now(timezone.utc).isoformat(timespec="seconds"))

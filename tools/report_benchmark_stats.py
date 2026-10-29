@@ -79,7 +79,20 @@ def render(reports: list[dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _pin_utf8_stdio() -> None:
+    # The AUTO-GENERATED banner carries an em-dash; without pinning, cp1252 CI
+    # runners emitted 0x97 and every UTF-8 consumer of this tool's output died.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _pin_utf8_stdio()
     parser = argparse.ArgumentParser(prog="report_benchmark_stats")
     parser.add_argument("--results", required=True, metavar="DIR", help="directory of archived score reports")
     parser.add_argument("--out", metavar="FILE", help="write the markdown fragment here")

@@ -8,7 +8,9 @@ Guarantees (supply-chain rule 9 + interface rule 8):
   never leaves a half-written JSON record behind (checkpoint/resume rely on this);
 * **path containment** — every path handed to the writers must resolve *inside* a
   declared root; ``..`` traversal, absolute paths and Windows drive-absolute inputs are
-  refused (tests/test_safe_io.py);
+  refused; backslashes count as separator candidates on every platform, so
+  Windows-style traversal strings are refused on POSIX too (tests/test_safe_io.py,
+  docs/adr/0003-backslash-containment.md);
 * **size limits** — reads refuse files above a declared ceiling so a hostile "fixture"
   cannot exhaust memory;
 * **advisory cross-process lock** — best-effort exclusive lock for sidecar writers
@@ -59,9 +61,15 @@ def ensure_contained(root: Path, candidate: Path) -> Path:
 
     Non-existent paths are resolved lexically (``os.path.abspath``); existing ones are
     resolved physically so symlink escapes are caught too.
+
+    Backslashes are rewritten to ``/`` before any check. On POSIX a literal
+    ``..\\..\\evil`` is a legal *filename*, but accepting it as one would let
+    Windows-built traversal strings cross the boundary whenever artifacts move between
+    platforms (ADR 0003); patent workspaces have no legitimate backslash filenames, so
+    the ambiguity is resolved toward refusal.
     """
     root = Path(root).resolve()
-    candidate = Path(candidate)
+    candidate = Path(str(candidate).replace("\\", "/"))
     if candidate.is_absolute():
         resolved = candidate.resolve() if candidate.exists() or candidate.parent.exists() else Path(os.path.abspath(candidate))
     else:

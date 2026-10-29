@@ -101,7 +101,18 @@ def _render(text: str) -> None:
     print(f"已生成 {OUT.relative_to(ROOT)}（{image.width}x{image.height}）")
 
 
+def _pin_utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main() -> int:
+    _pin_utf8_stdio()
     _render(_run_self_test())
     return 0
 

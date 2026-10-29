@@ -133,7 +133,15 @@ def test_sidecar_artifacts_never_contain_credential_env_values(
 # ── path traversal (already enforced by safe_io; adversarial replay here) ──
 
 
-@pytest.mark.parametrize("evil", ["..\\..\\workspace.yml", "../../03_candidates/x.json", "a/b/../../../escape"])
+@pytest.mark.parametrize(
+    "evil",
+    [
+        "..\\..\\workspace.yml",  # refused on POSIX too — backslash = separator candidate (ADR 0003)
+        "../../03_candidates/x.json",
+        "a/b/../../../escape",
+        "sub\\..\\..\\workspace.yml",  # mixed separators
+    ],
+)
 def test_traversal_writes_refused(tmp_path: Path, evil: str) -> None:
     from patent_intel.io.safe_io import PathEscapeError, write_text_atomic
 

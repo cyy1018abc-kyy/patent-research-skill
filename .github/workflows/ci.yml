@@ -85,6 +85,8 @@ jobs:
         run: python tools/bump_version.py --check
       - name: No real workspace data may enter the distribution
         run: python tools/check_no_workspace_data.py
+      - name: Explicit encoding discipline (text IO + entrypoint stdio pinning)
+        run: python tools/check_explicit_encoding.py
       - name: Reference links resolve inside every skill payload (repo tree + unpacked zips)
         run: |
           python tools/check_reference_links.py

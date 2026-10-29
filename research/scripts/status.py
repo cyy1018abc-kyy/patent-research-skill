@@ -85,6 +85,7 @@ def render(data: dict) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _env.configure_stdio()
     args = build_parser().parse_args(argv)
     _env.require_patentkit(as_json=args.json)
     root = _env.resolve_workspace(args.root, as_json=args.json)

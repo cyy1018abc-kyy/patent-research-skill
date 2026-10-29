@@ -82,6 +82,32 @@ def test_containment_refuses_traversal(tmp_path: Path) -> None:
         ensure_contained(tmp_path, "../escape.json")
 
 
+@pytest.mark.parametrize(
+    "evil",
+    [
+        "..\\..\\workspace.yml",  # Windows-style: refused even on POSIX (ADR 0003)
+        "..\\..\\..\\03_candidates\\x.json",
+        "a/b/../../../escape",
+        "sub\\..\\..\\escape",
+    ],
+)
+def test_containment_refuses_backslash_and_mixed_traversal(tmp_path: Path, evil: str) -> None:
+    """Backslash normalization is platform-independent (ADR 0003).
+
+    The Windows-style strings are legal POSIX *filenames*, but treating them as such
+    would let Windows-built traversal cross the boundary when artifacts move between
+    platforms; patent workspaces have no legitimate backslash filenames.
+    """
+    with pytest.raises(PathEscapeError, match="outside"):
+        ensure_contained(tmp_path, evil)
+
+
+def test_containment_accepts_backslash_inside_path(tmp_path: Path) -> None:
+    """A backslash-separated path that stays inside the root is accepted everywhere."""
+    inside = ensure_contained(tmp_path, "sub\\dir\\record.json")
+    assert inside == (tmp_path / "sub" / "dir" / "record.json").resolve()
+
+
 def test_containment_refuses_absolute_outside(tmp_path: Path) -> None:
     with pytest.raises(PathEscapeError, match="outside"):
         ensure_contained(tmp_path, "C:/Windows/evil.json" if Path("C:/").exists() else "/etc/evil.json")
