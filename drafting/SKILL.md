@@ -13,7 +13,7 @@ description: >
   「这个数值能写吗」「结构化权项」「支持映射」「申请文件包」「交付清单」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 3.8.0
+  version: 3.9.0
 ---
 
 # 专利撰写（底稿）

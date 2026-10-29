@@ -349,11 +349,14 @@ def check_local_build(dist: Path | None) -> tuple[str, str, Path, list[Path], Pa
     problems: list[str] = []
     publish = parse_publish_assets((ROOT / "tools/publish_release.sh").read_text(encoding="utf-8"))
     built_names = sorted(p.name for p in package_dir.glob("*") if p.is_file())
+    extension_dir = package_dir / "extension"
+    ext_built = sorted(p.name for p in extension_dir.glob("*") if p.is_file()) if extension_dir.is_dir() else []
     # 内核资产（wheel/sdist/kernel SUMS）由 CI 的内核构建步骤产出，不在 build_skill_release 范围；
-    # 本检查只对 skill tag 的上传名单负责（--dist 复用时允许混有内核产物）。
+    # 本检查只对 skill tag 的上传名单负责（--dist 复用时允许混有内核产物）。方案 A 的可选扩展
+    # wheel 与其独立 SUMS 位于 extension/ 子目录，计入 skill 名单。
     def _kernel_artifact(name: str) -> bool:
         return bool(re.fullmatch(r"(patentkit-.*\.(whl|tar\.gz)|SHA256SUMS-patentkit-.*\.txt)", name))
-    skill_built = sorted(n for n in built_names if not _kernel_artifact(n))
+    skill_built = sorted([n for n in built_names if not _kernel_artifact(n)] + ext_built)
     uploaded_skill = sorted(publish[f"skill-v{skill_version}"])
     if skill_built != uploaded_skill:
         problems.append(f"构建产物与发布脚本 skill 名单不一致:\n  构建: {skill_built}\n  发布: {uploaded_skill}")
@@ -364,20 +367,44 @@ def check_local_build(dist: Path | None) -> tuple[str, str, Path, list[Path], Pa
         problems += [f"{zip_path.name}: {p}" for p in
                      verify_zip_manifest(zip_path, skill_version=skill_version,
                                          kernel_version=kernel_version, expected_skills=expected_skills)]
-    for sums_file in package_dir.glob("SHA256SUMS-*.txt"):
+    # 多 SUMS 核验（方案 A）：skill 主资产与扩展 wheel 各有独立 SUMS，各自覆盖自己的名单；
+    # 内核 SUMS 由 CI 产出，--dist 缺席时跳过该 tag 的全覆盖要求。
+    sums_files = sorted(package_dir.glob("SHA256SUMS-*.txt"))
+    if extension_dir.is_dir():
+        sums_files += sorted(extension_dir.glob("SHA256SUMS-*.txt"))
+    parsed: list[tuple[Path, dict[str, str]]] = []
+    covered: dict[str, Path] = {}
+    for sums_file in sums_files:
         try:
             sums = parse_sums(sums_file.read_text(encoding="utf-8"))
         except ValueError as exc:
-            problems.append(f"{sums_file.name}: {exc}")
+            problems.append(f"{sums_file}: {exc}")
             continue
-        # 每份 SUMS 只对自己的 tag 名单负责（dist 混装 kernel/skill 产物时互不越界）
-        sums_tag = next((t for t, assets in publish.items()
-                         if sums_file.name in assets), None)
-        expected = [n for n in publish.get(sums_tag, []) if n != sums_file.name] if sums_tag else None
-        if expected is not None:
-            problems += [f"{sums_file.name}: {p}" for p in verify_sums(sums, expected)]
+        parsed.append((sums_file, sums))
+        for name in sums:
+            if name in covered and covered[name] != sums_file:
+                problems.append(f"{sums_file.name}: {name} 已被 {covered[name].name} 覆盖")
+            covered[name] = sums_file
+    tag_of: dict[str, str] = {}
+    for tag, assets in publish.items():
+        for n in assets:
+            if not n.startswith("SHA256SUMS-"):
+                tag_of[n] = tag
+    for sums_file, sums in parsed:
+        mine = [n for n in sums if n in tag_of]
+        problems += [f"{sums_file.name}: {p}" for p in verify_sums(sums, mine)]
+    for tag, assets in publish.items():
+        sums_present = any(
+            (package_dir / n).is_file() or (extension_dir / n).is_file()
+            for n in assets if n.startswith("SHA256SUMS-"))
+        if not sums_present:
+            continue
+        for name in assets:
+            if not name.startswith("SHA256SUMS-") and name not in covered:
+                problems.append(f"{tag}: {name} 不在任何 SUMS 覆盖名单内")
+    for sums_file, sums in parsed:
         for name, digest in sums.items():
-            path = package_dir / name
+            path = sums_file.parent / name
             if path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest() != digest:
                 problems.append(f"{sums_file.name}: 哈希不符 {name}")
     if problems:
@@ -642,29 +669,47 @@ def check_release_assets(gh: Github) -> tuple[str, str]:
 
 
 def check_release_hashes(gh: Github) -> tuple[str, str, dict[str, bytes]]:
-    """下载全部资产，校验每个文件 sha256 对 SUMS；返回 {资产名: 字节} 供安装测试复用。"""
+    """下载全部资产，校验每个文件 sha256 对 SUMS；返回 {资产名: 字节} 供安装测试复用。
+
+    一个 release 可携带多份 SUMS（skill 主资产 + 可选扩展各自独立名单，方案 A）：
+    每份 SUMS 只覆盖自己的名单，载荷资产必须恰被一份 SUMS 覆盖。
+    """
     bump = _load_tool("bump_version")
     skill_version, kernel_version = bump._frontmatter_version("research"), bump._kernel_version()
-    publish = parse_publish_assets((ROOT / "tools/publish_release.sh").read_text(encoding="utf-8"))
     problems, blobs = [], {}
     for tag in (f"skill-v{skill_version}", f"patentkit-v{kernel_version}"):
         assets = _release_assets(gh, tag)
-        sums_asset = next((a for name, a in assets.items() if name.startswith("SHA256SUMS-")), None)
-        if sums_asset is None:
+        sums_names = sorted(n for n in assets if n.startswith("SHA256SUMS-"))
+        if not sums_names:
             problems.append(f"{tag} 缺少 SHA256SUMS 资产")
             continue
-        sums = parse_sums(gh.asset(sums_asset["id"]).decode("utf-8"))
-        problems += [f"{tag}: {p}" for p in verify_sums(sums, [n for n in assets if n != sums_asset["name"]])]
+        sums_by_name: dict[str, dict[str, str]] = {}
+        covered_by: dict[str, str] = {}
+        for sums_name in sums_names:
+            sums = parse_sums(gh.asset(assets[sums_name]["id"]).decode("utf-8"))
+            sums_by_name[sums_name] = sums
+            for covered in sums:
+                if covered in covered_by:
+                    problems.append(f"{tag}: {covered} 被两份 SUMS 覆盖（{covered_by[covered]} / {sums_name}）")
+                covered_by[covered] = sums_name
+        payload_names = [n for n in assets if n not in sums_names]
+        for name in payload_names:
+            if name not in covered_by:
+                problems.append(f"{tag}: {name} 不在任何 SUMS 覆盖名单内")
+        for sums_name in sums_names:
+            mine = [n for n in payload_names if covered_by.get(n) == sums_name]
+            problems += [f"{tag}（{sums_name}）: {p}" for p in verify_sums(sums_by_name[sums_name], mine)]
         for name, asset in assets.items():
-            if name == sums_asset["name"]:
+            if name in sums_names:
                 continue
             data = gh.asset(asset["id"])
             blobs[name] = data
-            if hashlib.sha256(data).hexdigest() != sums.get(name):
-                problems.append(f"{tag}: {name} sha256 与 SUMS 不符")
+            sums_name = covered_by.get(name)
+            if sums_name and hashlib.sha256(data).hexdigest() != sums_by_name[sums_name].get(name):
+                problems.append(f"{tag}: {name} sha256 与 {sums_name} 不符")
     if problems:
         return FAIL, "\n".join(problems), {}
-    return PASS, f"{len(blobs)} 个资产逐个重算 sha256 与 SUMS 一致", blobs
+    return PASS, f"{len(blobs)} 个资产逐个重算 sha256 与各自 SUMS 一致", blobs
 
 
 def check_release_manifest(gh: Github, blobs: dict[str, bytes]) -> tuple[str, str]:
@@ -802,6 +847,36 @@ def check_kernel_wheel(blobs: dict[str, bytes]) -> tuple[str, str]:
     return PASS, f"wheel {kernel_version} 导入断言通过（版本 / 协议 1 / 隔离路径）"
 
 
+def check_extension_wheel(blobs: dict[str, bytes]) -> tuple[str, str]:
+    """扩展 wheel 隔离导入（--release）：版本断言 + CLI 入口可导入。
+
+    扩展版本独立于 skill↔kernel 配对，wheel 名单从发布脚本资产解析而来——
+    脚本里换了扩展版本号，这里自动跟随。最小安装必须零第三方依赖可导入。
+    """
+    wheel_names = sorted(n for n in blobs if re.fullmatch(r"patent_intel-\d+\.\d+\.\d+-py3-none-any\.whl", n))
+    if not wheel_names:
+        return SKIP, "Release 未含扩展 wheel（可选组件，不阻断 skill 发布）"
+    if len(wheel_names) > 1:
+        return FAIL, f"扩展 wheel 应恰有一个: {wheel_names}"
+    wheel_name = wheel_names[0]
+    ext_version = re.fullmatch(r"patent_intel-(\d+\.\d+\.\d+)-py3-none-any\.whl", wheel_name).group(1)
+    with tempfile.TemporaryDirectory(prefix="release-doctor-ext-") as tmp:
+        target = Path(tmp) / "site"
+        with zipfile.ZipFile(__import__("io").BytesIO(blobs[wheel_name])) as archive:
+            archive.extractall(target)
+        code = ("import sys, patent_intel; "
+                f"assert patent_intel.__version__ == '{ext_version}', patent_intel.__version__; "
+                "from patent_intel.cli import main; assert callable(main), main; "
+                "assert patent_intel.__file__ and sys.path[0] in patent_intel.__file__, patent_intel.__file__")
+        code = code.replace("sys.path[0]", repr(str(target)))
+        proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", timeout=120,
+                              env={**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONPATH": str(target)})
+        if proc.returncode != 0:
+            return FAIL, f"扩展 wheel 导入断言失败:\n{proc.stdout}{proc.stderr}"[-1200:]
+    return PASS, f"扩展 wheel {ext_version} 导入断言通过（独立版本 / CLI 入口 / 标准库零依赖）"
+
+
 # ── 汇总 ─────────────────────────────────────────────────────────────────
 
 
@@ -837,11 +912,13 @@ def run_release(expect_commit: str | None) -> list[Result]:
         results.append(Result("release-notes", "Release 说明非空且同源", *check_release_notes(gh)))
         results.append(Result("release-install", "真实资产安装测试", *check_release_install(gh, hashes[2])))
         results.append(Result("kernel-wheel", "内核 wheel 隔离导入", *check_kernel_wheel(hashes[2])))
+        results.append(Result("extension-wheel-release", "扩展 wheel 隔离导入（独立 SUMS 名单）", *check_extension_wheel(hashes[2])))
     else:
         for check_id, title in (("release-manifest", "发布 zip manifest 深检"),
                                 ("release-notes", "Release 说明非空且同源"),
                                 ("release-install", "真实资产安装测试"),
-                                ("kernel-wheel", "内核 wheel 隔离导入")):
+                                ("kernel-wheel", "内核 wheel 隔离导入"),
+                                ("extension-wheel-release", "扩展 wheel 隔离导入（独立 SUMS 名单）")):
             results.append(Result(check_id, title, SKIP, "哈希检查未通过，跳过依赖下载资产的检查"))
     return results
 

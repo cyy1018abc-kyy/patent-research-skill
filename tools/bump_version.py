@@ -37,6 +37,7 @@ SKILL_PAIRING_FILES = (
     ("discovery/README.md", "discovery README 版本头"),
     ("tests/test_release.py", "发布验收 zip 文件名"),
     ("tests/test_assessment_contract.py", "SKILL version 断言"),
+    ("evals/evals.json", "评测清单 skill_version（3.9.0 轮补入：残留扫描抓到的漏网配对点）"),
     ("release/INSTALL.md", "安装文档 tag/zip/notes 链接"),
     ("release/install-oneclick.cmd", "一键安装器 zip 名"),
     ("release/install-guide-for-colleagues.md", "同事安装指南"),

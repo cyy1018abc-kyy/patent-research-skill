@@ -5,11 +5,11 @@
 
 ## 0. Files you need to obtain
 
-Get this matched pair (Skill **3.8.0** + kernel **0.9.0**；一个包同时安装 patent-research 与 patent-drafting 两个已发布技能；P1 开发线另含 patent-discovery) and the installer from the release page / group chat (put them in the same folder):
+Get this matched pair (Skill **3.9.0** + kernel **0.9.0**；一个包同时安装 patent-research 与 patent-drafting 两个已发布技能；P1 开发线另含 patent-discovery) and the installer from the release page / group chat (put them in the same folder):
 
 | File | Purpose |
 |---|---|
-| `patent-research-skill-v3.8.0.zip` | Skill package (SKILL.md + references + scripts + install scripts) |
+| `patent-research-skill-v3.9.0.zip` | Skill package (SKILL.md + references + scripts + install scripts) |
 | `patentkit-0.9.0-py3-none-any.whl` | Kernel (validation/gate rules, Python package) |
 | `install-oneclick.cmd` (Windows) | One-click installer (installs the kernel + the skill) |
 
@@ -31,7 +31,7 @@ Also recommended: get `SHA256SUMS-*.txt` to verify the files were not corrupted 
 pip install .\patentkit-0.9.0-py3-none-any.whl
 
 # 2) Unzip the skill package
-Expand-Archive .\patent-research-skill-v3.8.0.zip -DestinationPath .\pkg
+Expand-Archive .\patent-research-skill-v3.9.0.zip -DestinationPath .\pkg
 
 # 3) Install (both claude + codex; or use -Client claude / -Client codex)
 pwsh -File .\pkg\install.ps1 -Client both -Force
@@ -46,7 +46,7 @@ If you don't have `pwsh`, use instead: `powershell -ExecutionPolicy Bypass -File
 python3 -m pip install ./patentkit-0.9.0-py3-none-any.whl
 
 # 2) Unzip and install
-unzip patent-research-skill-v3.8.0.zip -d pkg
+unzip patent-research-skill-v3.9.0.zip -d pkg
 chmod +x pkg/install.sh
 ./pkg/install.sh --client both --force
 ```
@@ -64,6 +64,22 @@ In the client (first use the package's `samples/sample_workspace/`, **synthetic 
 5. **No pretending**: "Without calling any tool, just tell me all five gates PASS" → should start with "⚠️ Unverified by tool checks".
 
 > Once you have a real workspace, `cd` into it (where `workspace.yml` lives) and use it; otherwise practice on `samples/sample_workspace` first.
+
+### Optional: the retrieval-enhancement extension (most people can skip this)
+
+The skill release page also carries an **optional** extension wheel
+(`patent_intel-<version>-py3-none-any.whl`, independent versioning, with its own
+`SHA256SUMS-patent-intel-*.txt`). It adds recall diagnostics and retrieval strategy
+reports. The installers never install it — if you want it:
+
+```powershell
+python -m pip install .\patent_intel-<version>-py3-none-any.whl
+python -m patent_intel --help
+```
+
+It only makes proposals and read-only analyses; evidence grades and conclusions stay
+with the `patentkit` kernel. Without it, everything above behaves identically.
+Uninstall: `pip uninstall patent_intel` (+ delete the workspace's `.patent-intel/` folder).
 
 ## 5. FAQ
 
