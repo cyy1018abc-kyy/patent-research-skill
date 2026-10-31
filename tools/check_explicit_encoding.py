@@ -27,7 +27,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCAN_ROOTS = ("tools", "tests", "extensions", "evals", "research/scripts")
-STDIO_PIN_ROOTS = ("tools", "evals", "research/scripts")
+STDIO_PIN_ROOTS = ("tools", "evals", "research/scripts", "benchmarks/retrieval")
 EXCLUDE_SEGMENTS = {".venv", "kernel-build", "_upstream", "build", "dist", ".git", "__pycache__"}
 ARCHIVE_OPEN_RECEIVERS = {"tarfile", "zipfile", "gzip", "bz2", "io", "codecs"}
 

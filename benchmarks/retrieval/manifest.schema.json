@@ -16,6 +16,29 @@
     },
     "license": {"type": "string", "description": "Overall data license / redistribution statement for derived IDs."},
     "provenance": {"type": "string", "description": "Where the topics and gold came from; how they were adjudicated."},
+    "source_snapshot": {
+      "type": "object",
+      "description": "Optional: source dataset file name -> SHA-256 of the frozen snapshot the manifest was derived from (files themselves stay local, never bundled).",
+      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
+    "time_split": {
+      "type": "object",
+      "description": "Optional: how the chronological split was drawn (anti-leakage, blueprint §12).",
+      "additionalProperties": false,
+      "required": ["key", "rule"],
+      "properties": {
+        "key": {"type": "string"},
+        "rule": {"type": "string"},
+        "train_last_date": {"type": "string"},
+        "val_last_date": {"type": "string"},
+        "test_first_date": {"type": "string"}
+      }
+    },
+    "leakage_report": {
+      "type": "object",
+      "description": "Optional: fixed-corpus transparency counters emitted by check_leakage.py (gold families shared across splits are expected there and are NOT leakage; query-family disjointness is a hard check).",
+      "additionalProperties": {"type": ["integer", "string"]}
+    },
     "families": {
       "type": "object",
       "description": "Optional publication_number -> family_id mapping so run files may cite publications. Family IDs must be stable across manifest versions within the same qrels_version.",
@@ -52,7 +75,8 @@
           "gold_known_incomplete": {"type": "boolean", "default": false},
           "adjudication": {"type": "string", "description": "Who labeled this topic and when (EX-01 requires at least two reviewers for the private expert set)."},
           "license_note": {"type": "string"},
-          "time_split_key": {"type": "string", "description": "Filing/publication date used for chronological splits (anti-leakage, blueprint §12)."}
+          "time_split_key": {"type": "string", "description": "Filing/publication date used for chronological splits (anti-leakage, blueprint §12)."},
+          "source_id": {"type": "string", "description": "Topic id in the source dataset (e.g. DAPFAM query family id); joins the committed manifest to the local-only snapshot."}
         },
         "allOf": [
           {
