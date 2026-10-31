@@ -92,6 +92,8 @@ def _validate_manifest(data: Any, path: Path) -> None:
     known_keys = {
         "suite", "version", "qrels_version", "gold_completeness", "license",
         "provenance", "families", "topics",
+        # Phase V optional provenance keys (kept in lockstep with manifest.schema.json)
+        "source_snapshot", "time_split", "leakage_report",
     }
     unknown = set(data) - known_keys
     if unknown:
@@ -117,6 +119,8 @@ def _validate_manifest(data: Any, path: Path) -> None:
             "topic_id", "split", "language", "domain", "in_domain_of_engine",
             "gold_families", "critical_families", "relevance_levels",
             "gold_known_incomplete", "adjudication", "license_note", "time_split_key",
+            # Phase V optional provenance key (joins the topic to its local-only source row)
+            "source_id",
         }
         t_unknown = set(topic) - topic_keys
         if t_unknown:
