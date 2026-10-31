@@ -94,6 +94,8 @@ RESIDUE_WHITELIST = (
     ("research/references.en/05-acceptance-gates.md", "「Since 0.6.0」G-S-04 census history"),
     ("drafting/references/15-claims-and-support.md", "「内核 0.8.0 起，D-019 citations」历史陈述（特性发布于 0.8.0）"),
     ("drafting/references.en/15-claims-and-support.md", "「kernel 0.8.0」D-019 citations history"),
+    ("drafting/references/12-policy-radar.md", "「skill 3.10.0 轮已对齐」历史陈述（2025 指南对照完成于 3.10.0 轮）"),
+    ("drafting/references.en/12-policy-radar.md", "「skill 3.10.0 round」2025-Guidelines comparison history"),
     ("tools/build_kernel_patch.py", "工具文档字符串里的历史补丁名示例"),
     ("tools/render_terminal_shot.py", "截图脚注按当次发布手工更新"),
     ("evals/check_terminology.py", "「3.1.0 起全部双语」历史陈述"),
