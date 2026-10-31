@@ -1,0 +1,97 @@
+{
+ "tool": "score_phase_v",
+ "suite": "dapfam-derived",
+ "qrels_version": "dapfam-qrels-2026-10-29",
+ "protocol_sha256": "dbbe348f8464bee22b6db444369112966378f8ba3f036d654c3eb0003d982f85",
+ "gate_yaml_sha256": "820e3ddff6af98d3f509ce09342caf48b881e88ab33d6ad1d867c94c97f36b6c",
+ "manifest_sha256": "5259716de48add9a04da60593b66e941c80bb66ab5e1eb64763af7dea0c56acd",
+ "snapshot_sha256": {
+  "corpus.parquet": "469fe8e04d8bd8775a1116eccf0983e570a03444bef9c6e14c97aabafb7526d6",
+  "qrels_all.parquet": "e51ae4e13abee0fc7523560ecddd272bc85dc98befc8ab4466155a0c2d2d4f74",
+  "queries.parquet": "b5ad91a650349a0096911fadcb7bc35a0399eb12d1470fb2601d73af5fc2bcbe"
+ },
+ "topics_evaluated": 312,
+ "primary_metric": "family_recall_at_100",
+ "baseline_recall100_pp": 26.18,
+ "extension_recall100_pp": 23.68,
+ "paired_bootstrap": {
+  "topics": 312,
+  "mean_gain_pp": -2.5018,
+  "ci_lower_pp": -3.75,
+  "ci_upper_pp": -1.2821,
+  "seed": 20261030,
+  "n": 10000
+ },
+ "groups": {
+  "domain": {
+   "baseline": {
+    "IN": {
+     "mean_pp": 28.05,
+     "n": 90
+    },
+    "MIXED": {
+     "mean_pp": 26.13,
+     "n": 216
+    },
+    "OUT": {
+     "mean_pp": 0.0,
+     "n": 6
+    }
+   },
+   "extension": {
+    "IN": {
+     "mean_pp": 26.1,
+     "n": 90
+    },
+    "MIXED": {
+     "mean_pp": 23.33,
+     "n": 216
+    },
+    "OUT": {
+     "mean_pp": 0.0,
+     "n": 6
+    }
+   }
+  },
+  "era": {
+   "baseline": {
+    "era1_early": {
+     "mean_pp": 25.47,
+     "n": 171
+    },
+    "era2_late": {
+     "mean_pp": 27.05,
+     "n": 141
+    }
+   },
+   "extension": {
+    "era1_early": {
+     "mean_pp": 23.45,
+     "n": 171
+    },
+    "era2_late": {
+     "mean_pp": 23.96,
+     "n": 141
+    }
+   }
+  }
+ },
+ "budget": {
+  "baseline_requests_total": 936,
+  "extension_requests_total": 934,
+  "k_per_request": 200,
+  "network_requests": 0
+ },
+ "audit_integrity": {
+  "unauthorized_network_requests": 0,
+  "artifact_hashes_recorded": true
+ },
+ "gate_verdict": "FAIL",
+ "gate_detail": {
+  "gain_ok": false,
+  "ci_ok": false,
+  "min_mean_gain_pp": 5.0
+ },
+ "claim": "experimental",
+ "generated_at": "2026-10-31T18:05:57+08:00"
+}

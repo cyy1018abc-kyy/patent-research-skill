@@ -93,11 +93,11 @@ Windows/Linux with Python 3.11/3.12 before publishing.
 
 ## Download & install
 
-Download the paired [Skill 3.11.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.11.0) and [patentkit 0.10.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.10.0) releases:
+Download the paired [Skill 3.10.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.10.0) and [patentkit 0.10.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.10.0) releases:
 
 | Asset | Purpose |
 |---|---|
-| `patent-research-skill-v3.11.0.zip` | Full package: installs all three skills (patent-research + patent-drafting + patent-discovery), with installers + synthetic sample workspace |
+| `patent-research-skill-v3.10.0.zip` | Full package: installs all three skills (patent-research + patent-drafting + patent-discovery), with installers + synthetic sample workspace |
 | `patentkit-0.10.0-py3-none-any.whl` | Matching kernel: assessment protocol 1 + P0–P4 modules (contracts, upgrade, intake, discovery, draft, figures, delivery) |
 | `install-oneclick.cmd` | Windows installer, also included in the ZIP |
 | `INSTALL-colleagues.md` | One-page install guide (repo source: `release/install-guide-for-colleagues.md`) |
@@ -111,13 +111,13 @@ same folder, then double-click `install-oneclick.cmd`.
 
 ```powershell
 python -m pip install ./patentkit-0.10.0-py3-none-any.whl
-Expand-Archive ./patent-research-skill-v3.11.0.zip -DestinationPath ./pkg
+Expand-Archive ./patent-research-skill-v3.10.0.zip -DestinationPath ./pkg
 pwsh -File ./pkg/install.ps1 -Client both -Force
 ```
 
 ```bash
 python3 -m pip install ./patentkit-0.2.0-py3-none-any.whl
-unzip patent-research-skill-v3.11.0.zip -d pkg
+unzip patent-research-skill-v3.10.0.zip -d pkg
 chmod +x pkg/install.sh && ./pkg/install.sh --client both --force
 ```
 
@@ -164,14 +164,14 @@ python -m unittest discover -s tests -v
 ## Requirements
 
 - Python >= 3.11 (required by the skill scripts)
-- Skill 3.11.0: `patentkit` >= 0.10.0, assessment protocol 1 (docx export needs the optional `python-docx`)
+- Skill 3.10.0: `patentkit` >= 0.10.0, assessment protocol 1 (docx export needs the optional `python-docx`)
 - Codex CLI >= 0.161 (the desktop app bundles a newer runtime, no upgrade needed)
 
 ## Language
 
 Since 2.5.0 the distributable skill runtime is **Chinese-primary**: `SKILL.md`, `references/`
 (including the new 08–13 and `glossary.md`) and assets. The English edition is mirrored under
-`references.en/` (research 01–08 and drafting 00/09–13 maintained on both sides since 3.11.0). Script and
+`references.en/` (research 01–08 and drafting 00/09–13 maintained on both sides since 3.10.0). Script and
 kernel messages, installers, and release notes remain English (engineering layer).
 Implementation plans and verification notes under `docs/` use Chinese.
 
@@ -195,6 +195,16 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 
 An independently versioned, strictly optional wheel (`patent_intel`, currently 0.1.0)
 adds retrieval-recall tooling around the kernel without touching its authority:
+**Status: experimental enhancement** — the preregistered Phase V evaluation
+(DAPFAM, 312 public test topics, same-budget same-engine comparison) did **not**
+meet the improvement gate: Family Recall@100 23.7pp vs 26.2pp for the BM25
+baseline (mean gain −2.5pp, paired bootstrap 95% CI [−3.8, −1.3]); cross-domain
+(OUT) recall is 0 for both sides at K=200. Numbers, groups and failure analysis:
+[benchmarks/retrieval/results/](benchmarks/retrieval/results/) and
+[docs/retrieval-evaluation.md §6](docs/retrieval-evaluation.md).
+
+
+
 
 ```bash
 pip install extensions/patent_intel            # stdlib-only base
@@ -217,5 +227,5 @@ Retrieval benchmark protocol: [docs/retrieval-evaluation.md](docs/retrieval-eval
 
 ## Version
 
-Skill version: **3.11.0** (patent-research + patent-drafting; patent-discovery in the P1 development line),
+Skill version: **3.10.0** (patent-research + patent-drafting; patent-discovery in the P1 development line),
 companion kernel: **0.10.0**. See [CHANGELOG.md](CHANGELOG.md).
