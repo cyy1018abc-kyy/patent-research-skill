@@ -34,12 +34,33 @@ The response skeleton for each X is the three-tier determination applied in reve
    - the combination lacks a motivation to combine / teaches away → inventive step holds;
    - the technical effect presupposes the distinguishing features → effect argument
      (cite the quantified column-D data);
-3. **Amendment strategy** (when necessary):
+3. **Amendment strategy** (when necessary): clear the amendment boundary below first —
    - merge dependent-claim features into the independent claim (check the support mapping
      table first);
    - narrow the numerical range (must stay inside grade-A provenance);
    - any amendment → follow the loop in [13](13-revision-loop.md): re-run
      `attest --apply` and the gates.
+
+### Amendment boundary (2025 practice, Guidelines Part II Ch. 8 §5.2)
+
+Art. 33's "recorded range" = the literal original record + what is **directly and unambiguously
+derivable** from the text and drawings; foreign-language texts and priority documents are not the
+basis. Two red lines:
+
+- **"directed at the defects pointed out"** (Reg. 57.3) — five "not directed at" situations are
+  rejected even without new matter: deleting features to broaden, altering features to broaden,
+  introducing a subject lacking unity, adding an independent claim, adding a dependent claim;
+- **allowed**: narrowing a numerical range within the originally recorded endpoints; a specific
+  "disclaimer" only with proof that the disclaimed segment is uninhabitable or that novelty/
+  inventive step returns after the disclaimer. **Not allowed**: submitting new experimental
+  data/embodiments, turning the vague into the concrete with new content
+  ("elevated temperature" → "above 40 °C"), joining two discrete values into a range
+  ("10 °C or 300 °C" → "10–300 °C"), new combinations of previously separate features,
+  dimensions measured off a drawing.
+
+**Voluntary amendments have exactly two windows** (Reg. 57.2): when filing the examination
+request, or within 3 months of the notice of entry into substantive examination; no voluntary
+amendments while answering an OA.
 
 ## Step 3: the response draft structure
 
@@ -49,6 +70,25 @@ II. Statement of amendments (if any: what changed; no new matter)
 III. Response to each clause (one subsection per X: allegation → fact chart → argument → conclusion)
 IV. Conclusion (current status of each claim)
 ```
+
+## Appeal chain after a rejection (2025 practice)
+
+If the OA stage is lost, three stations remain (deadlines are presets in `patentkit deadlines`):
+
+```
+rejection decision → reexamination request + fee within 3 months → preliminary review
+    (original examining division) → collegial review / reexamination notice
+    (1 month to answer) → reexamination decision → appeal within 3 months
+```
+
+- **Amendments in reexamination** (Reg. 66): limited to curing the defects cited in the
+  rejection or raised by the collegial panel; the scope must not widen — reexamination is a
+  correction window, not a second layout opportunity;
+- **The preliminary review is winnable**: the original division may withdraw the rejection as
+  is, or on the amended text; when drafting, anticipate which "already-notified defect" paths
+  the preliminary review would accept and aim the amendments at already-notified facts and
+  reasons;
+- amendments in reexamination also go through the loop in [13](13-revision-loop.md).
 
 ## Kernel hooks
 

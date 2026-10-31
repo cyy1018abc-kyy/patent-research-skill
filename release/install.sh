@@ -150,7 +150,7 @@ for dir in $SKILL_DIRS; do
 done
 
 if [ "$DRY_RUN" -eq 0 ] && [ "$NO_SELF_CHECK" -eq 0 ]; then
-    "$PYTHON_BIN" -c 'from patentkit.assessment import PROTOCOL_VERSION; assert PROTOCOL_VERSION == 1' || fail "Install the patentkit 0.9.0 wheel before replacing the skill"
+    "$PYTHON_BIN" -c 'from patentkit.assessment import PROTOCOL_VERSION; assert PROTOCOL_VERSION == 1' || fail "Install the patentkit 0.10.0 wheel before replacing the skill"
 fi
 
 for root in "${ROOTS[@]}"; do
@@ -192,7 +192,7 @@ if [ "$NO_SELF_CHECK" -ne 1 ]; then
     if [ -d "$SAMPLE_ROOT" ]; then
         probe="${ROOTS[0]}/patent-research"
         "$PYTHON_BIN" "$probe/scripts/status.py" --root "$SAMPLE_ROOT" --json >/dev/null ||
-            fail "self-check failed. Install the matching patentkit 0.9.0 wheel and retry"
+            fail "self-check failed. Install the matching patentkit 0.10.0 wheel and retry"
         echo "✅ Self-check passed: status.py located the sample workspace and computed the status"
     else
         # 单技能包（无样例）：退化为就位检查

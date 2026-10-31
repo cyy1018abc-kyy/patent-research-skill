@@ -31,6 +31,37 @@ reverse-injection self-checks, deterministic runner, Phase V scoring pipeline
 (paired bootstrap, group slices with n, audit integrity), EX-01/EX-02 annotation
 protocols and κ tooling.
 
+## 2026-10-31 · 3.10.0（kernel 0.10.0 配对）— 2025 审查指南口径适配
+
+**references（中英镜像同步）**
+
+- research 02 检索式模板：检索要素对齐 2025 指南四要素——「效果词」第四角度、
+  关键词三层完善（形式/意义/角度）、功能/应用类似领域双层策略；
+- research 03 三层判定：新增「与审查口径对齐」节（单独对比、抵触申请 18 个月窗口、
+  三步法对照、参数表征推定规则）；评分体系零改动；
+- research 04 证据等级：新增审查员检索报告文件类型对照附录（X/Y/A/R/P/E/T/L → role）；
+- drafting 09 交底书：实施例门槛修正（宽概括 ≥2 实施例、数值范围两端值+中间值）、
+  效果数据须实验证据、AI/算法主题披露追加要素、清楚性禁语；
+- drafting 10 权利要求：新增「领域专项形态」（AI 四位一体布局、算法特征绑定技术数据、
+  比特流引用式撰写、化学组合物措辞、生物序列/保藏速查）；
+- drafting 11 OA 答复：修改边界（2025 口径：五种「不针对」情形、允许/不允许清单、
+  主动修改两时机）+ 驳回后救济链路（复审 3 个月→前置→诉讼 3 个月）；
+- drafting 12 政策雷达 + `docs/policy-log.md`：2025 版指南对照登记（15 条特征点）。
+- 《专利审查指南（2025）》全文与提炼底稿留工作区，不入发行包。
+
+**kernel 0.10.0（纯增量，无规则/协议变化）**
+
+- `patentkit deadlines` PRESETS 扩容：`oa_response_subsequent`（2 个月）、
+  `registration`（2 个月）、`reexamination`（3 个月）、`pte_drug`（3 个月）、
+  `pte_delay`（3 个月）、`biological_deposit`（4 个月）——每项 note 引指南章节锚点；
+  未知台账类型维持 custom 容错，旧工作区 `deadlines.yml` 无需迁移。
+
+**评测与守卫**
+
+- evals 35 → 38 用例（AI 权项形态、OA 修改边界、检索报告文件类型对照），
+  触发短语锚定两个 SKILL.md description；术语/链接/保密/编码四守卫全绿；
+  repo 套件 326/2 与 3.9.0 基线一致，内核开发树套件 707 过/0 败（含新预设用例）。
+
 ## 2026-10-29 · 3.9.0（kernel 0.9.0 延续，未重发）— patent_intel 0.1.0 发行 + 跨平台 CI 修复（Phase L / WP-L1+L2）
 
 **扩展发行（方案 A）**

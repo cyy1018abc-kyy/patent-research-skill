@@ -24,9 +24,12 @@
 4. **Summary of the invention**: the technical problem (from the tier-2 distinguishing
    features) + the technical solution (per N axis; reuse the feature-atom table) +
    beneficial effects (each mapped to a column-D difference, quantified where possible);
-5. **Brief description of the drawings + detailed embodiments**: at least one complete
-   embodiment; numbers come from grade-A/C sources of the provenance registry, and grade C
-   (illustrative example) must be declared explicitly.
+5. **Brief description of the drawings + detailed embodiments**: meet the embodiment bar of
+   the 2025 Guidelines (Part II Ch. 2 §2.2.6) — at least **two different embodiments** for a
+   broad generalization (a single embodiment cannot carry it); a numerical range needs at
+   least its **two endpoints**, and a wide range adds at least one intermediate value; numbers
+   come from grade-A/C sources of the provenance registry, and grade C (illustrative example)
+   must be declared explicitly.
 
 ## From disclosure to application documents (Implementing Regulations 20–23)
 
@@ -39,6 +42,31 @@
 
 Everything lands under `07_drafting/` (manuscript bodies stay outside the repo; only the
 registry and ledgers live here).
+
+## Disclosure thresholds and subject-specific addenda (2025 Guidelines practice)
+
+- **Effect/use data**: effects that cannot be predicted — e.g., a new medical use of a known
+  compound — require experimental evidence; a stated goal without the means, or "needs
+  experimental proof but none provided", is an "enabling" defect under Art. 26.3
+  (Guidelines Part II Ch. 2 §2.1.3). Without data, log it in the open-questions list;
+  do not promise effects in the disclosure.
+- **AI/algorithm subjects — additional elements** (Guidelines Part II Ch. 9 §6.3.1; claim
+  forms in [10](10-claim-drafting.md)):
+  - model construction/training: the required **modules, layers or connections** of the model
+    and the **concrete steps and parameters** needed for training;
+  - model application: how it **combines with the field/scenario** and the **correspondence**
+    between input/output data and concrete technical data;
+  - effect wording: improved quality, precision, efficiency, or internal system performance
+    (less storage/transmission, faster processing); user-experience gains must be attributed
+    jointly to technical and algorithm features;
+  - counter-example (Guidelines example 21): a cancer-prediction model with no key biomarkers
+    named, no verified causality and no validation data fails enablement. For any disclosure
+    containing algorithm features, ask three questions first: which concrete technical data
+    are the inputs/outputs bound to? are the training parameters complete? is each claimed
+    effect verifiable?
+- **Clarity wording bans** (Guidelines Part II Ch. 2 §3.2.2): avoid "approximately / close to /
+  etc. / and the like" and "for example / preferably / in particular / when necessary" in both
+  the specification and the claims — avoid them at draft stage, do not leave them for the OA.
 
 ## Say it clearly, or log it
 

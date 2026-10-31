@@ -8,6 +8,7 @@
 
 | 源 | 看什么 | 影响哪里 |
 |---|---|---|
+| 国知局《专利审查指南》**2025 版** | 2026-10-31 已完成全文对照，15 条特征点与逐项处置登记在 `docs/policy-log.md` 首条；之后只盯下一版修订公告 | research 02/03/04、drafting 09/10/11、deadlines PRESETS（skill 3.10.0 轮已对齐） |
 | 国知局「审查指南」修订公告 | 创造性判断口径、计算机程序/算法类权利要求形态 | [00](00-prerequisites.md) 三层判定摘要、[10](10-claim-drafting.md) 权项形态 |
 | 国知局表格/书式页面 | 请求书/摘要/费用减免书式版本 | [09](09-disclosure-drafting.md) 申请文件清单 |
 | cponline 上传要求 | 附图分辨率/格式/大小限制 | `patentkit figures`（完整规格在 research 技能 08 号文档） |
@@ -26,7 +27,7 @@
 
 ## 已固化为工具的口径（变更需改内核）
 
-- 期限预设：`patentkit/deadlines.py` 的 PRESETS（申请费 2 个月/实审 3 年/OA 4+2 个月/年费周年）；
+- 期限预设：`patentkit/deadlines.py` 的 PRESETS（申请费 2 个月/实审 3 年/OA 4+2 个月/登记 2 个月/复审 3 个月/药品 PTE 与延迟补偿各 3 个月/保藏证明 4 个月/年费周年——2025 口径对账后扩容）；
 - 附图要求：`patentkit figures`（黑白线条、标记一致性）；
 - 五门口径：`patentkit/gates.py`（变更走 CHANGELOG + 回归测试，不接受口头放宽）。
 
