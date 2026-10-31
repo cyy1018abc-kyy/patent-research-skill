@@ -4,7 +4,7 @@
 > 交底书、权利要求/说明书骨架、OA 答复稿、改稿闭环。产出永远是「底稿 + gap 清单」，
 > 不替代专利代理师，不预测授权。
 >
-> **前置**：`patentkit >= 0.9.0`（`pip install patentkit`）；检索侧工作用 patent-research 技能。
+> **前置**：`patentkit >= 0.10.0`（`pip install patentkit`）；检索侧工作用 patent-research 技能。
 
 ## 快速上手
 
