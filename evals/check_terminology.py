@@ -28,7 +28,7 @@ EN_DISCOVERY = ROOT / "discovery" / "references.en"
 
 #: 中文主文件名前缀（两侧镜像齐备的部分）
 PAIRED_RESEARCH = [f"0{i}-" for i in range(1, 9)]   # 01–08
-PAIRED_DRAFTING = ["00-", "09-", "10-", "11-", "12-", "13-", "14-", "15-", "16-", "17-"]
+PAIRED_DRAFTING = ["00-", "09-", "10-", "11-", "12-", "13-", "14-", "15-", "16-", "17-", "19-"]
 PAIRED_DISCOVERY = ["00-", "01-", "02-", "03-"]
 
 #: 核心锚定术语：中文须在中文文档（两技能）出现，英文 token 须在英文镜像出现。
@@ -158,7 +158,7 @@ def main() -> int:
         for p in problems[:30]:
             print(f"  · {p}")
         return 1
-    print("✅ 术语一致性通过：research 01–08 / drafting 00,09–17 / discovery 00–03 中英配对完整，"
+    print("✅ 术语一致性通过：research 01–08 / drafting 00,09–17+19 / discovery 00–03 中英配对完整，"
           "锚定术语在用，glossary 三份逐字节一致")
     return 0
 

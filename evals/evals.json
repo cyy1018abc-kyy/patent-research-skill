@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "skill": "patent-research",
-  "skill_version": "3.10.0",
+  "skill_version": "3.11.0",
   "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
   "cases": [
     {
@@ -521,6 +521,33 @@
           "修改边界"
         ],
         "behavior": "读 references/11 修改边界（2025 口径）：两离散值合并成区间属于引入新内容、不允许；给替代策略（收窄到原记载端点内或并入从权特征）"
+      }
+    },
+    {
+      "id": "D15",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "我们的方案是一种缓释组合物，权利要求里组分含量该怎么写？开放还是封闭式？",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "组合物权利要求",
+          "马库什"
+        ],
+        "behavior": "读 references/19：开放式/封闭式对新颖性结论相反，选型前想清楚；含量之和=100%、禁「约」与「>X」；数值收窄同 10 号纪律"
+      }
+    },
+    {
+      "id": "D16",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "这个化合物发现了治新病的用途，权项能直接写「用于治疗 Y 病」吗？",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "医药用途"
+        ],
+        "behavior": "读 references/19：医药用途写制药方法类型（在制备治疗 Y 病的药物中的应用）；给药对象/方式/用量等用药特征不具限定作用，不指望它们撑范围"
       }
     }
   ]

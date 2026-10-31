@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-31 · 3.11.0（kernel 0.10.0 延续，未重发）— 化学与材料领域 reference
+
+- 新增 `drafting/references/19-chemistry-practice.md`（中英镜像）：化合物/组合物/材料/
+  医药用途主题的领域专项参考——充分公开三件套、组合物开放式/封闭式、医药用途制药方法
+  句式、属种新颖性方向、马库什单一性、补交实验数据口径；口径引《专利审查指南》2025 版
+  第二部分第十章。为 10 号「领域专项形态」化学速查的展开版，互链。
+- 接线：SKILL.md（中英）description 触发短语 + 参考表 19 号行；evals 38 → 40（D15/D16）；
+  术语守卫配对清单纳入 19 号；bump 残留白名单补 12 号雷达的「skill 3.10.0 轮」历史陈述。
+- 内核 0.10.0 无变化，kernel tag 未重发（publish no-op 属预期）。
+
 ## 2026-10-31 · Phase V preregistered benchmark results (gate FAIL → experimental) + BM25 engine 24× fast path
 
 **Retrieval evaluation (preregistered, DAPFAM, 312 public test topics)**

@@ -9,7 +9,7 @@ the release builder, and release notes.
 **No real project data, patent drafts, target IDs, or candidate IDs are included**;
 the sample workspace is synthetic (`TGT-0002`).
 
-## Skill 3.10.0 / kernel 0.10.0 — revision↔conclusions linkage (V038), 9-case benchmark, structured support citations
+## Skill 3.11.0 / kernel 0.10.0 — revision↔conclusions linkage (V038), 9-case benchmark, structured support citations
 
 Three additions in this release (the P0–P4 upgrade of 3.5.0 below remains the capability base):
 

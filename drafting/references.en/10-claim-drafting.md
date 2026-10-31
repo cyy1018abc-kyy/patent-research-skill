@@ -70,7 +70,7 @@ On top of the general discipline, specific subject matters carry their own **cla
 - The zero-disclosure-atom discipline is unchanged: algorithm improvements also go into the
   feature-atom table and the support mapping table.
 
-### Chemistry / compositions (Guidelines Part II Ch. 10 §4)
+### Chemistry / compositions (Guidelines Part II Ch. 10 §4; expanded in [19](19-chemistry-practice.md))
 
 - **Open vs. closed wording**: "containing / including / consisting essentially of" versus
   "consisting of" lead to opposite novelty outcomes — choose deliberately;

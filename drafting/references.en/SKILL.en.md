@@ -16,10 +16,10 @@ description: >
   Prefer triggering on phrases such as "write a disclosure", "how to write the claims",
   "specification support", "how to answer the OA", "revision loop",
   "can this number be written in", "structured claims", "support mapping",
-  "application document package", "delivery manifest".
+  "application document package", "delivery manifest", "composition claims", "Markush", "medical use (manufacturing use)".
 license: Apache-2.0
 metadata:
-  version: 3.10.0
+  version: 3.11.0
 ---
 
 # Patent Drafting (draft-grade)
@@ -158,6 +158,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | [`15-claims-and-support.md`](15-claims-and-support.md) | claim atom / structured claim / support mapping fields, validation rules and review checklist |
 | [`16-figures.md`](16-figures.md) | **P3** professional figures: figure plan spec, deterministic rendering, F-001…F-014 checks, human review discipline |
 | [`17-delivery.md`](17-delivery.md) | **P4** delivery pipeline: frozen snapshot, DOCX/PDF, delivery manifest, E-001…E-012, sign-off/invalidation, CNIPA XML status |
+| [`19-chemistry-practice.md`](19-chemistry-practice.md) | chemistry/materials/medical-use subjects: the three enablement elements, composition wording, Markush unity, genus/spec novelty direction |
 | [`glossary.md`](../references/glossary.md) | zh⇄en glossary (shared with patent-research; CI keeps the copies identical) |
 
 > Commands go straight through `python -m patentkit <subcommand>` (provenance / figures /

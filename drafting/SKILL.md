@@ -10,10 +10,10 @@ description: >
   回复审查意见/OA、改稿并留变更记录、核对数值能不能写进权项、
   把技术方案落成结构化权项并做支持映射、或把审阅稿交付成申请文件包并出交付清单时使用。
   命中「写交底书」「权项怎么写」「说明书支持」「OA 怎么答复」「改稿闭环」
-  「这个数值能写吗」「结构化权项」「支持映射」「四位一体」「程序模块构架」「修改边界」「申请文件包」「交付清单」等说法时优先触发。
+  「这个数值能写吗」「结构化权项」「支持映射」「四位一体」「程序模块构架」「修改边界」「组合物权利要求」「马库什」「医药用途」「申请文件包」「交付清单」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 3.10.0
+  version: 3.11.0
 ---
 
 # 专利撰写（底稿）
@@ -133,6 +133,7 @@ metadata:
 | [`15-claims-and-support.md`](references/15-claims-and-support.md) | 权项原子/结构化权项/支持映射的字段、校验规则与验收清单 |
 | [`16-figures.md`](references/16-figures.md) | **P3** 专业附图：figure plan 规格、确定性渲染、F-001…F-014 校验与人工复核纪律 |
 | [`17-delivery.md`](references/17-delivery.md) | **P4** 交付管线：冻结快照、DOCX/PDF、交付清单、E-001…E-012、签核与失效语义、CNIPA XML 现状 |
+| [`19-chemistry-practice.md`](references/19-chemistry-practice.md) | 化学/材料/医药用途主题：公开三件套、组合物措辞、马库什单一性、属种新颖性方向 |
 | [`glossary.md`](references/glossary.md) | 中英术语对照（与 patent-research 技能同一份，CI 锁定同步） |
 
 > 命令直接用 `python -m patentkit <子命令>`（provenance / figures / deadlines / attest /
