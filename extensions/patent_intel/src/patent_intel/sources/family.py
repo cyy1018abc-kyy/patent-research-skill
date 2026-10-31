@@ -24,6 +24,9 @@ class FamilyGroup:
     family_status: str
     members: list[dict[str, Any]] = field(default_factory=list)
     conflicts: list[str] = field(default_factory=list)
+    #: family refs graded uncertain — recorded for review, never used for merging
+    #: (adaptive roadmap Task 5: 不可靠关系不自动合并)
+    deferred_family_refs: list[dict[str, Any]] = field(default_factory=list)
 
     def describe(self) -> dict[str, Any]:
         return {
@@ -34,6 +37,7 @@ class FamilyGroup:
                 m.get("publication_number") or m.get("normalized_number") or "?" for m in self.members
             ],
             "conflicts": self.conflicts,
+            "deferred_family_refs": len(self.deferred_family_refs),
         }
 
 
@@ -56,12 +60,19 @@ class FamilyView:
         enriched["normalized_number"] = norm.normalized
         enriched["number_confidence"] = norm.confidence
 
-        # 1) explicit family id from the source wins
+        # 1) explicit family id from the source wins — refs graded "uncertain" are
+        # deferred to the landed group for review, never used for merging (Task 5:
+        # 不可靠关系不自动合并; confidence absent = treated as reported, preserving
+        # the pre-Task-5 contract where plain {"family_id": …} refs merge)
         family_refs = record.get("family_refs") or []
         explicit_family = None
+        deferred_refs: list[dict[str, Any]] = []
         if isinstance(family_refs, list):
             for ref in family_refs:
                 if isinstance(ref, dict) and ref.get("family_id"):
+                    if ref.get("confidence") == "uncertain":
+                        deferred_refs.append(ref)
+                        continue
                     explicit_family = str(ref["family_id"])
                     break
 
@@ -84,6 +95,9 @@ class FamilyView:
             self._check_conflict(group, enriched)
         else:
             group.members.append(enriched)
+        for ref in deferred_refs:
+            if ref not in group.deferred_family_refs:
+                group.deferred_family_refs.append(ref)
         return group
 
     def _check_conflict(self, group: FamilyGroup, record: dict[str, Any]) -> None:
