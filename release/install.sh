@@ -91,7 +91,7 @@ skills = data.get("skills")
 if data.get("schema_version") != 2 or not isinstance(skills, list) or not skills:
     raise SystemExit("manifest.json must be schema 2 with a non-empty skills list")
 for s in skills:
-    if s.get("install_dir") != s.get("name") or s["name"] not in {"patent-research", "patent-drafting", "patent-discovery"}:
+    if s.get("install_dir") != s.get("name") or s["name"] not in {"patent-research", "patent-drafting", "patent-discovery", "patent-audit"}:
         raise SystemExit(f"unsupported skill entry: {s}")
 print(" ".join(s["name"] for s in skills))
 print(skills[0]["version"])

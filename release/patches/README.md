@@ -1,6 +1,6 @@
 # patentkit kernel source patches
 
-The current kernel is **0.10.0** (skill 3.11.0): the P0–P4 upgrade — versioned data
+The current kernel is **0.10.0** (skill 4.0.0): the P0–P4 upgrade — versioned data
 contracts + non-destructive workspace upgrade, the discovery/technical-fact control layer
 (G-I), the structured drafting pipeline (G-D, `concept`/`review_draft` gate), the
 professional figure engine, and the complete delivery pipeline (frozen
@@ -90,6 +90,6 @@ The extracted directory retains its upstream `0.1.2` name; the patched package d
 version `0.10.0`. CI repeats the download, checksum verification, patch application, and
 regression tests. No real patent data is needed. CI builds the wheel/sdist and the
 official installation ZIP, runs Windows/Linux acceptance, and publishes the paired
-Releases after merge to main. See `../notes/skill-v3.11.0.md` for installation and
+Releases after merge to main. See `../notes/skill-v4.0.0.md` for installation and
 migration: existing workspaces can run `python -m patentkit upgrade check` first (read-only)
 and `upgrade apply` to add the `10_discovery/` and `11_delivery/` directories non-destructively.

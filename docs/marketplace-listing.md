@@ -1,4 +1,4 @@
-# 技能市场上架文案底稿（3.1.0）
+# 技能市场上架文案底稿（4.0.0）
 
 > 给 `docs/distribution-checklist.md` 的"实际提交上架"用：文案可直接复制，
 > 话术边界照 `distribution-checklist.md` 的"上架话术要点"执行——只写检索/自检/
@@ -15,13 +15,19 @@
 
 **详细描述**：
 
-面向中国专利实践（CNIPA 口径）的双技能包，装一个包得到两个技能：
+面向中国专利实践（CNIPA 口径）的四技能包，装一个包得到四个技能：
 
 - **patent-research**：查新调研。候选池 → 三层判定（单篇新颖性/组合创造性/
   技术效果）→ G-S 五道验收门 × 严格 verified 口径 → 查新报告 docx / 对比地图
   HTML，数字零手工转写；
 - **patent-drafting**：撰写底稿。交底书五段式、独权/从权撰写规则、OA 答复
-  逐条拆解，数值声明强制 A/B/C 溯源（V031/V032 fail-closed）。
+  逐条拆解，数值声明强制 A/B/C 溯源（V031/V032 fail-closed）；
+- **patent-discovery**：研发材料到专利候选点。来源登记 → 技术事实抽取 →
+  候选生成排序 → 发明人确认（内容指纹绑定）→ 检索交接草案；
+- **patent-audit**：检索证据链审计（4.0 新增）。覆盖率台账（要素×数据源×分类号）
+  → 对抗验证每个「要素↔对比文件」映射 → 逐字引文独立复核 → 三态结论
+  （confirmed / needs_validation / rejected）+ 中立报告；方法论改编自
+  Cloudflare security-audit-skill（MIT），审计基线 bm01/bm02 可回归评分。
 
 与其他专利技能的差异在**防伪**，不在功能数量：
 
@@ -31,7 +37,7 @@
 4. 结论只能引用证据账本内的编号（V034），编造引用在交付前被拦截；
 5. 校验规则只活在 patentkit 内核（单一规则权威源），技能层没有第二套口径。
 
-要求 Python 3.11+ 与配套内核 patentkit 0.3.0（Release 页提供 wheel 与 SHA256）。
+要求 Python 3.11+ 与配套内核 patentkit 0.10.0（Release 页提供 wheel 与 SHA256）。
 安装后跑 `python research/scripts/self_test.py` 六项自检（见下方截图）。
 
 **标签**：专利 / 查新 / prior-art / CNIPA / novelty search / 证据链
@@ -44,14 +50,16 @@
 
 **Description**:
 
-> Patent novelty-search & drafting-draft skill pair for Chinese patent practice.
-> Evidence is graded (verified / attested / asserted), acceptance gates refuse to
-> pass on thin evidence (fail-closed), conclusions may only cite the evidence
-> ledger, and every number carries A/B/C provenance. Ships with installers, a
+> Patent novelty-search, drafting, discovery and audit skill suite for Chinese
+> patent practice. Evidence is graded (verified / attested / asserted), acceptance
+> gates refuse to pass on thin evidence (fail-closed), conclusions may only cite
+> the evidence ledger, and every number carries A/B/C provenance. The audit skill
+> (v4.0) adds a coverage ledger, adversarial mapping validation and independent
+> verbatim-quote review with three-verdict findings. Ships with installers, a
 > synthetic sample workspace, a six-point self-test, and a reproducible kernel
 > (CI rebuilds patentkit from public source + a committed patch).
 
-**Tags**: patent, prior-art, novelty-search, fail-closed, evidence-chain, CNIPA
+**Tags**: patent, prior-art, novelty-search, fail-closed, evidence-chain, CNIPA, audit
 
 ## 提交时随附核对
 

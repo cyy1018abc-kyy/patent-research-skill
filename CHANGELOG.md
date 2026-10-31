@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-11-01 · 4.0.0（kernel 0.10.0 延续，未重发）— audit 技能：检索证据链审计
+
+- 新增第四个技能载荷 `audit/`（`patent-audit`）：检索证据链结构化审计——
+  覆盖率台账（要素×数据源×分类号 状态机）→ 覆盖率狩猎 + 批评家 → 对抗验证
+  （证伪优先）→ findings.json 三态结论（confirmed/needs_validation/rejected）
+  → 独立复核（逐字引文+定位）→ 中立报告（REPORT/NEEDS-VALIDATION）。
+  运行产物只写 `12_audit/run-<N>/`；guidance 默认不写审计工件，full audit 须
+  显式授权；默认单 agent 顺序模式（`--multi-agent` 显式并行）。方法论改编自
+  Cloudflare `security-audit-skill`（MIT），见 README Credits 与
+  docs/adr/0004-audit-harness.md；攻击面内容未移植，编排骨架按专利域重写。
+- 确定性层（零第三方依赖，文件头注明 derived from）：
+  `audit/scripts/validate_findings.py`（三态契约：confirmed 必带逐字引文+定位+
+  独立复核标记；needs_validation 必带缺失事实+核验计划且无影响类目；rejected
+  必带证伪理由；破坏性 X/Y/A 与证据确定性两轴分离，partial 禁 X）与
+  `validate_ledger.py`（台账状态机 + coverage_id 确定性派生 + attempts 归档），
+  共 45 个单元测试（tests/test_audit_*）。
+- 审计基准回归（Cloudflare 原件没有的护城河）：`tools/score_audit_findings.py`
+  以 bm01/bm02 的 gold 真值对 findings.json 评分（映射覆盖/映射精度/证据完整性/
+  判定纪律），CI 锁 gold 自检满分；退化夹具（定位漂移/误确认缺失要素/漏报/
+  缺独立复核）在测试中全部失分。
+- 接线：SKILL_DIRS 四技能（zip/manifest/安装器 ps1+sh 同步）；bump 配对点纳入
+  audit 三文件；evals 注册 patent-audit（45 用例，AU1–AU5）；保密/编码/链接
+  三守卫覆盖 audit/；CI 增 audit gold 自检与 compileall。
+- 内核 0.10.0 无变化，kernel tag 未重发（publish no-op 属预期）。
+
 ## 2026-10-31 · 3.11.0（kernel 0.10.0 延续，未重发）— 化学与材料领域 reference
 
 - 新增 `drafting/references/19-chemistry-practice.md`（中英镜像）：化合物/组合物/材料/

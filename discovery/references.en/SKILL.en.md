@@ -12,7 +12,7 @@ description: >
   confirm an invention point, or hand a candidate over to prior-art search.
 license: Apache-2.0
 metadata:
-  version: 3.11.0
+  version: 4.0.0
 ---
 
 # Patent Discovery

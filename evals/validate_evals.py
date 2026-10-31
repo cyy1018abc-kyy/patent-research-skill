@@ -26,6 +26,7 @@ SKILLS = {
     "patent-research": ROOT / "research" / "SKILL.md",
     "patent-drafting": ROOT / "drafting" / "SKILL.md",
     "patent-discovery": ROOT / "discovery" / "SKILL.md",
+    "patent-audit": ROOT / "audit" / "SKILL.md",
 }
 
 VALID_CATEGORIES = {"trigger", "boundary", "refusal", "format"}

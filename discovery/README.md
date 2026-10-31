@@ -1,7 +1,7 @@
 # patent-discovery（专利点挖掘技能）
 
 > 从私有研发材料到**可追溯、可人工确认、可交接**的专利候选点。
-> 本目录是 `patent-research-skill` 仓库下的第三个技能载荷（v3.11.0），
+> 本目录是 `patent-research-skill` 仓库下的第三个技能载荷（v4.0.0），
 > 与 `research/`（检索/证据链）和 `drafting/`（撰写底稿）共用唯一内核 `patentkit`。
 
 ## 何时使用

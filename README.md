@@ -9,23 +9,28 @@ the release builder, and release notes.
 **No real project data, patent drafts, target IDs, or candidate IDs are included**;
 the sample workspace is synthetic (`TGT-0002`).
 
-## Skill 3.11.0 / kernel 0.10.0 — revision↔conclusions linkage (V038), 9-case benchmark, structured support citations
+## Skill 4.0.0 / kernel 0.10.0 — the patent-audit skill: coverage ledger, adversarial validation, independent review
 
-Three additions in this release (the P0–P4 upgrade of 3.5.0 below remains the capability base):
+Headline of this release — a **fourth skill payload**, `audit/` (`patent-audit`), adapting
+the six-phase harness of Cloudflare's `security-audit-skill` (MIT) to the patent-search
+domain (attack-surface content not ported; see [docs/adr/0004-audit-harness.md](docs/adr/0004-audit-harness.md)
+and Credits below):
 
-- **V038 — revision↔conclusions linkage.** A patch to the manuscript automatically marks the
-  novelty conclusions stale; `revise status` exits 1 and `revise close` refuses until each
-  stale conclusion is human-reconfirmed (`revise reconfirm --by <name>`) or explicitly waived
-  into the ledger (`--waive --reason`). validate reports unprocessed stale conclusions as errors.
-- **D-019 — structured support citations.** Drafting support mappings accept optional
-  `citations` (`source` + `L`-range / `[NNNN]` `locator`) that the audit verifies against the
-  workspace; unresolvable citations are errors.
-- **Benchmark at 9 cases** (review P1-1 range 8–12): 45 features, 375 judgment points,
-  140 citations; gold solutions score perfect in CI.
+- **Coverage ledger** (`12_audit/run-<N>/audit-ledger.json`): one stateful unit per
+  element × data source × classification symbol; coverage is the ledger, not a narrative.
+- **Adversarial validation + independent review**: every "element ↔ prior art" mapping
+  goes to a disproof-first verifier, then a fresh reviewer re-checks every verbatim
+  quote and locator; confirmed records carry an independent-review mark.
+- **Three-verdict findings** (`findings.json`): confirmed / needs_validation / rejected,
+  with impact categories (X/Y/A) separated from evidence certainty; two zero-dependency
+  Python validators (`audit/scripts/validate_findings.py`, `validate_ledger.py`) enforce
+  the contract.
+- **Audit-mode benchmark regression**: `tools/score_audit_findings.py` scores findings
+  against the bm01/bm02 gold truth (mapping coverage/precision, evidence integrity,
+  verdict discipline); CI locks the gold self-check at perfect.
 
-The P0–P4 upgrade plan of 3.5.0
-([docs/patent-skill-upgrade-implementation-plan.md](docs/patent-skill-upgrade-implementation-plan.md))
-remains the capability base:
+The 3.5.0 P0–P4 capability base and the 3.10.0/3.11.0 guideline adaptation remain
+unchanged ([docs/patent-skill-upgrade-implementation-plan.md](docs/patent-skill-upgrade-implementation-plan.md)):
 
 - **P0** versioned data contracts + non-destructive workspace upgrade (`upgrade check/apply`);
 - **P1** the third **patent-discovery** skill (material intake → technical facts → patent
@@ -39,12 +44,12 @@ remains the capability base:
   CNIPA XML remains **not attempted** until independently researched and verified.
 
 The kernel is reconstructed in CI from the public 0.1.2 sdist plus
-`release/patches/patentkit-0.1.2-to-0.10.0.patch`; the full package ships all three skills.
+`release/patches/patentkit-0.1.2-to-0.10.0.patch`; the full package ships all four skills.
 The skill-matrix decision (2026-10-25, see
 [docs/skill-matrix-plan.md](docs/skill-matrix-plan.md)) still describes the split into
-**research** and **drafting** (OA merged into drafting), and 3.6.0 additionally ships
-`patent-discovery`. Everything below still describes the 2.5.0 Chinese-primary +
-delivery-safety release, which 3.x inherits in full.
+**research** and **drafting** (OA merged into drafting), 3.6.0 additionally ships
+`patent-discovery`, and 4.0.0 additionally ships `patent-audit`. Everything below still
+describes the 2.5.0 Chinese-primary + delivery-safety release, which 3.x inherits in full.
 
 ## Skill 3.6.0 — release doctor + synthetic patent benchmark
 
@@ -93,11 +98,11 @@ Windows/Linux with Python 3.11/3.12 before publishing.
 
 ## Download & install
 
-Download the paired [Skill 3.10.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v3.10.0) and [patentkit 0.10.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.10.0) releases:
+Download the paired [Skill 4.0.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v4.0.0) and [patentkit 0.10.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.10.0) releases:
 
 | Asset | Purpose |
 |---|---|
-| `patent-research-skill-v3.10.0.zip` | Full package: installs all three skills (patent-research + patent-drafting + patent-discovery), with installers + synthetic sample workspace |
+| `patent-research-skill-v4.0.0.zip` | Full package: installs all four skills (patent-research + patent-drafting + patent-discovery + patent-audit), with installers + synthetic sample workspace |
 | `patentkit-0.10.0-py3-none-any.whl` | Matching kernel: assessment protocol 1 + P0–P4 modules (contracts, upgrade, intake, discovery, draft, figures, delivery) |
 | `install-oneclick.cmd` | Windows installer, also included in the ZIP |
 | `INSTALL-colleagues.md` | One-page install guide (repo source: `release/install-guide-for-colleagues.md`) |
@@ -111,13 +116,13 @@ same folder, then double-click `install-oneclick.cmd`.
 
 ```powershell
 python -m pip install ./patentkit-0.10.0-py3-none-any.whl
-Expand-Archive ./patent-research-skill-v3.10.0.zip -DestinationPath ./pkg
+Expand-Archive ./patent-research-skill-v4.0.0.zip -DestinationPath ./pkg
 pwsh -File ./pkg/install.ps1 -Client both -Force
 ```
 
 ```bash
 python3 -m pip install ./patentkit-0.2.0-py3-none-any.whl
-unzip patent-research-skill-v3.10.0.zip -d pkg
+unzip patent-research-skill-v4.0.0.zip -d pkg
 chmod +x pkg/install.sh && ./pkg/install.sh --client both --force
 ```
 
@@ -131,7 +136,8 @@ After installation, restart the client:
 ```
 research/                patent-research 技能：SKILL.md + references/(zh 01-08+glossary) + references.en/ + scripts/ + assets/
 drafting/                patent-drafting 技能：SKILL.md + references/(zh 00,09-17+glossary)（OA 已并入；14-17 为 P2/P3/P4 结构化撰写、附图与交付管线）
-discovery/               patent-discovery 技能（P1 开发线，未发布）：SKILL.md + references/(zh 00-03+glossary) + references.en/
+discovery/               patent-discovery 技能：SKILL.md + references/(zh 00-03+glossary) + references.en/
+audit/                   patent-audit 技能（4.0 审计线）：SKILL.md + references/(zh 00-07) + references.en/ + scripts/（零依赖校验器）
 evals/                   trigger/refusal/boundary eval set + terminology consistency check (CI)
 release/                 installers (ps1/sh/oneclick), install docs, patches, release notes
 tools/                   reproducible ZIP builder + paired release publisher + secrecy guard
@@ -164,14 +170,15 @@ python -m unittest discover -s tests -v
 ## Requirements
 
 - Python >= 3.11 (required by the skill scripts)
-- Skill 3.10.0: `patentkit` >= 0.10.0, assessment protocol 1 (docx export needs the optional `python-docx`)
+- Skill 4.0.0: `patentkit` >= 0.10.0, assessment protocol 1 (docx export needs the optional `python-docx`)
 - Codex CLI >= 0.161 (the desktop app bundles a newer runtime, no upgrade needed)
 
 ## Language
 
 Since 2.5.0 the distributable skill runtime is **Chinese-primary**: `SKILL.md`, `references/`
 (including the new 08–13 and `glossary.md`) and assets. The English edition is mirrored under
-`references.en/` (research 01–08 and drafting 00/09–13 maintained on both sides since 3.10.0). Script and
+`references.en/` (research 01–08 and drafting 00/09–13 maintained on both sides since 3.10.0;
+audit 00–07 bilingual since 4.0.0). Script and
 kernel messages, installers, and release notes remain English (engineering layer).
 Implementation plans and verification notes under `docs/` use Chinese.
 
@@ -183,6 +190,14 @@ The methodology was informed by ideas from these public Agent Skills
 - `cn-patent-drafter` (Apache-2.0)
 - `patent-disclosure-skill` (Apache-2.0)
 - `patent-validity-checker` (Apache-2.0)
+- [`cloudflare/security-audit-skill`](https://github.com/cloudflare/security-audit-skill) (MIT,
+  © 2025-2026 Cloudflare, Inc.) — the `patent-audit` skill's six-phase audit harness
+  (coverage ledger → adversarial validation → independent review → three-verdict
+  findings → neutral report) is adapted from its orchestration skeleton, rewritten for
+  the patent-search domain; see [docs/adr/0004-audit-harness.md](docs/adr/0004-audit-harness.md).
+  Background reading: ["Build your own vulnerability harness"](https://blog.cloudflare.com/build-your-own-vulnerability-harness).
+  No code or documentation is vendored; the deterministic validators in `audit/scripts/`
+  re-implement the key rules in Python and say so in their file headers.
 
 This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICENSE)).
 
@@ -227,5 +242,5 @@ Retrieval benchmark protocol: [docs/retrieval-evaluation.md](docs/retrieval-eval
 
 ## Version
 
-Skill version: **3.10.0** (patent-research + patent-drafting; patent-discovery in the P1 development line),
+Skill version: **4.0.0** (patent-research + patent-drafting + patent-discovery + patent-audit),
 companion kernel: **0.10.0**. See [CHANGELOG.md](CHANGELOG.md).

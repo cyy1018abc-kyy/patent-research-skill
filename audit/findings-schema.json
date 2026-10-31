@@ -1,0 +1,216 @@
+{
+  "$comment": "patent-audit findings.json 规范契约（v4.0.0）。validate_findings.py（Python，权威实现）按 audit/references/04-findings-contract.md 的规则显式校验本 schema 描述的全部约束；本文件同时是生产方提示词的分支拷贝来源。derived from Cloudflare security-audit-skill report-schema.json (MIT) — 判态骨架保留，字段按专利检索域重写。文档级上限（≤1000 条、≤5 MiB、嵌套 ≤64）由校验器强制。",
+  "type": "array",
+  "items": {
+    "oneOf": [
+      {
+        "type": "object",
+        "description": "confirmed：要素↔对比文件映射成立，证据链完整且经独立证伪未破。",
+        "properties": {
+          "verdict": { "type": "string", "const": "confirmed" },
+          "fingerprint": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$" },
+          "title": { "type": "string", "minLength": 1, "visibleContent": true },
+          "description": { "type": "string", "minLength": 1, "visibleContent": true },
+          "element": { "type": "string", "minLength": 1, "visibleContent": true },
+          "trace": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": { "type": "string", "enum": ["element", "disclosure", "effect"] },
+                "ref": { "type": "string", "minLength": 1 },
+                "description": { "type": "string", "minLength": 1, "visibleContent": true }
+              },
+              "required": ["kind", "ref", "description"],
+              "additionalProperties": false
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref": { "type": "string", "minLength": 1 },
+                "locator": { "type": "string", "minLength": 1, "visibleContent": true },
+                "quote": { "type": "string", "minLength": 2, "visibleContent": true },
+                "description": { "type": "string", "minLength": 1, "visibleContent": true }
+              },
+              "required": ["ref", "locator", "quote", "description"],
+              "additionalProperties": false
+            }
+          },
+          "mapping_rationale": { "type": "string", "minLength": 1, "visibleContent": true },
+          "disclosure_extent": { "type": "string", "enum": ["full", "partial"] },
+          "distinctions": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1, "visibleContent": true }
+          },
+          "impact": {
+            "type": "object",
+            "properties": {
+              "category": { "type": "string", "enum": ["X", "Y", "A"] },
+              "reason": { "type": "string", "minLength": 1, "visibleContent": true }
+            },
+            "required": ["category", "reason"],
+            "additionalProperties": false
+          },
+          "element_coverage": {
+            "type": "object",
+            "description": "impact.category == X 时必须提供且 all_elements 为 true（全要素链声明）。",
+            "properties": {
+              "elements": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+              "all_elements": { "type": "boolean" }
+            },
+            "required": ["elements", "all_elements"],
+            "additionalProperties": false
+          },
+          "conditions": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": { "type": "string", "enum": ["claim_interpretation", "priority_date", "family_status", "translation", "document_availability", "search_scope"] },
+                "description": { "type": "string", "minLength": 1, "visibleContent": true }
+              },
+              "required": ["kind", "description"],
+              "additionalProperties": false
+            }
+          },
+          "independent_review": {
+            "type": "object",
+            "description": "阶段 A5 独立复核的落痕；没有它不得 confirmed。",
+            "properties": {
+              "status": { "type": "string", "enum": ["verified"] },
+              "reviewer": { "type": "string", "minLength": 1, "visibleContent": true }
+            },
+            "required": ["status", "reviewer"],
+            "additionalProperties": false
+          },
+          "confidence": {
+            "type": "object",
+            "description": "证据确定性轴，与 impact（破坏性轴）分离评分。",
+            "properties": {
+              "score": { "type": "string", "enum": ["low", "medium", "high"] },
+              "reason": { "type": "string", "minLength": 1, "visibleContent": true }
+            },
+            "required": ["score", "reason"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["verdict", "fingerprint", "title", "description", "element", "trace", "evidence", "mapping_rationale", "disclosure_extent", "distinctions", "impact", "independent_review", "confidence"],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "description": "needs_validation：路径成立但缺一个决定性事实；永远没有影响类目与确定性评分。",
+        "properties": {
+          "verdict": { "type": "string", "const": "needs_validation" },
+          "fingerprint": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$" },
+          "title": { "type": "string", "minLength": 1, "visibleContent": true },
+          "description": { "type": "string", "minLength": 1, "visibleContent": true },
+          "element": { "type": "string", "minLength": 1, "visibleContent": true },
+          "trace": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": { "type": "string", "enum": ["element", "disclosure", "effect"] },
+                "ref": { "type": "string", "minLength": 1 },
+                "description": { "type": "string", "minLength": 1, "visibleContent": true }
+              },
+              "required": ["kind", "ref", "description"],
+              "additionalProperties": false
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref": { "type": "string", "minLength": 1 },
+                "locator": { "type": "string", "minLength": 1, "visibleContent": true },
+                "quote": { "type": "string", "minLength": 2, "visibleContent": true },
+                "description": { "type": "string", "minLength": 1, "visibleContent": true }
+              },
+              "required": ["ref", "locator", "quote", "description"],
+              "additionalProperties": false
+            }
+          },
+          "claimed_rationale": { "type": "string", "minLength": 1, "visibleContent": true },
+          "blockers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1, "visibleContent": true }
+          },
+          "validation_plan": {
+            "type": "object",
+            "properties": {
+              "local": { "type": "string", "minLength": 1, "visibleContent": true },
+              "external": { "type": "string", "minLength": 1, "visibleContent": true }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": ["verdict", "fingerprint", "title", "description", "element", "trace", "evidence", "claimed_rationale", "blockers", "validation_plan"],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "description": "rejected：候选已被反证推翻；留档防止无新证据时重犯同一主张。",
+        "properties": {
+          "verdict": { "type": "string", "const": "rejected" },
+          "fingerprint": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$" },
+          "title": { "type": "string", "minLength": 1, "visibleContent": true },
+          "description": { "type": "string", "minLength": 1, "visibleContent": true },
+          "element": { "type": "string", "minLength": 1, "visibleContent": true },
+          "trace": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": { "type": "string", "enum": ["element", "disclosure", "effect"] },
+                "ref": { "type": "string", "minLength": 1 },
+                "description": { "type": "string", "minLength": 1, "visibleContent": true }
+              },
+              "required": ["kind", "ref", "description"],
+              "additionalProperties": false
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref": { "type": "string", "minLength": 1 },
+                "locator": { "type": "string", "minLength": 1, "visibleContent": true },
+                "quote": { "type": "string", "minLength": 2, "visibleContent": true },
+                "description": { "type": "string", "minLength": 1, "visibleContent": true }
+              },
+              "required": ["ref", "locator", "quote", "description"],
+              "additionalProperties": false
+            }
+          },
+          "claimed_rationale": { "type": "string", "minLength": 1, "visibleContent": true },
+          "refutation": { "type": "string", "minLength": 1, "visibleContent": true }
+        },
+        "required": ["verdict", "fingerprint", "title", "description", "element", "trace", "evidence", "claimed_rationale", "refutation"],
+        "additionalProperties": false
+      }
+    ]
+  }
+}

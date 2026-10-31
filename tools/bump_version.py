@@ -33,10 +33,13 @@ SKILL_PAIRING_FILES = (
     ("research/SKILL.md", "research frontmatter"),
     ("drafting/SKILL.md", "drafting frontmatter"),
     ("discovery/SKILL.md", "discovery frontmatter"),
+    ("audit/SKILL.md", "audit frontmatter"),
     ("research/references.en/SKILL.en.md", "research 英文镜像 frontmatter"),
     ("drafting/references.en/SKILL.en.md", "drafting 英文镜像 frontmatter"),
     ("discovery/references.en/SKILL.en.md", "discovery 英文镜像 frontmatter"),
+    ("audit/references.en/SKILL.en.md", "audit 英文镜像 frontmatter"),
     ("discovery/README.md", "discovery README 版本头"),
+    ("audit/README.md", "audit README 版本头"),
     ("tests/test_release.py", "发布验收 zip 文件名"),
     ("tests/test_assessment_contract.py", "SKILL version 断言"),
     ("evals/evals.json", "评测清单 skill_version（3.9.0 轮补入：残留扫描抓到的漏网配对点）"),
@@ -62,11 +65,14 @@ KERNEL_PAIRING_FILES = (
     ("research/SKILL.md", "SKILL 配套版本行"),
     ("drafting/SKILL.md", "SKILL 配套版本行"),
     ("discovery/SKILL.md", "SKILL 配套版本行"),
+    ("audit/SKILL.md", "SKILL 配套版本行"),
     ("research/references.en/SKILL.en.md", "英文镜像配套版本行"),
     ("drafting/references.en/SKILL.en.md", "英文镜像配套版本行"),
     ("discovery/references.en/SKILL.en.md", "英文镜像配套版本行"),
+    ("audit/references.en/SKILL.en.md", "英文镜像配套版本行"),
     ("discovery/README.md", "discovery README 内核要求行"),
     ("drafting/README.md", "drafting README 前置版本行"),
+    ("audit/README.md", "audit README 内核要求行"),
     # 注意：release/patches/README.md 故意不在本清单——它含历史叙述段
     # （"Skill 2.5.0 requires patentkit 0.3.0"），整文件替换会篡改历史；
     # 当前补丁名与 notes 指针由 check() 专项校验，新版本的叙述段手工更新。
@@ -169,11 +175,16 @@ def check() -> list[str]:
     skill = _frontmatter_version("research")
     kernel = _kernel_version()
 
-    paired = {"research": skill, "drafting": _frontmatter_version("drafting")}
+    paired = {
+        "research": skill,
+        "drafting": _frontmatter_version("drafting"),
+        "discovery": _frontmatter_version("discovery"),
+        "audit": _frontmatter_version("audit"),
+    }
     if len(set(paired.values())) != 1:
-        problems.append(f"两技能版本必须配对：{paired}")
+        problems.append(f"技能版本必须配对：{paired}")
 
-    for skill_dir in ("research", "drafting"):
+    for skill_dir in ("research", "drafting", "audit"):
         mirror = ROOT / skill_dir / "references.en" / "SKILL.en.md"
         if mirror.is_file() and f"version: {skill}" not in mirror.read_text(encoding="utf-8"):
             problems.append(f"{skill_dir}/references.en/SKILL.en.md 的 version 与 {skill} 不一致")
@@ -210,6 +221,7 @@ def check() -> list[str]:
         "tests/test_assessment_contract.py": [f'assertIn("{kernel}"'],
         "research/SKILL.md": [f"patentkit >= {kernel}"],
         "drafting/SKILL.md": [f"patentkit >= {kernel}"],
+        "audit/SKILL.md": [f"patentkit >= {kernel}"],
     }
     for rel, needles in kernel_needles.items():
         text = (ROOT / rel).read_text(encoding="utf-8")
@@ -251,7 +263,7 @@ def check() -> list[str]:
         break
 
     if not problems:
-        print(f"✅ 版本配对点一致：skill（research+drafting+discovery）={skill}，kernel={kernel}，"
+        print(f"✅ 版本配对点一致：skill（research+drafting+discovery+audit）={skill}，kernel={kernel}，"
               f"测试/发布脚本/CI/notes/补丁指针全部对齐")
     return problems
 
