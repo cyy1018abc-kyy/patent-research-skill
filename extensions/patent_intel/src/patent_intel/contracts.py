@@ -310,7 +310,15 @@ class FeatureSpec(Record):
 
 @dataclass(kw_only=True)
 class QuerySpec(Record):
-    """One planned query — always a proposal until a human approves it (WP-A)."""
+    """One planned query — always a proposal until a human approves it (WP-A).
+
+    ``feature_ids`` is the *authoritative* technical-feature dimension for coverage
+    accounting (adaptive roadmap Task 1): coverage is counted per feature id, never
+    per axis id or per query type. ``axis_id`` stays the planning axis. Planners must
+    fill ``feature_ids`` whenever the query targets known features; a query with no
+    resolvable feature (e.g. an expansion term with unknown origin) keeps it ``None``
+    — an empty feature dimension is reported as unknown coverage, never as zero.
+    """
 
     RECORD_TYPE = "query_spec"
     SPEC = {
@@ -320,6 +328,7 @@ class QuerySpec(Record):
         "language": str,
         "query_type": str,
         "source": str,
+        "feature_ids": list,
         "filters": dict,
         "provenance": list,
         "approved": bool,
@@ -333,6 +342,7 @@ class QuerySpec(Record):
     language: str
     query_type: str
     source: str
+    feature_ids: list[str] | None = None
     filters: dict[str, Any] | None = None
     provenance: list[dict[str, Any]] | None = None
     approved: bool = False
@@ -347,6 +357,16 @@ class QuerySpec(Record):
         for term in self.terms:
             if not isinstance(term, str) or not term.strip():
                 raise RecordValidationError("query terms must be non-empty strings")
+        if self.feature_ids is not None:
+            seen: set[str] = set()
+            for feature_id in self.feature_ids:
+                if not isinstance(feature_id, str) or not feature_id.strip():
+                    raise RecordValidationError("query feature_ids must be non-empty strings")
+                if feature_id in seen:
+                    raise RecordValidationError(
+                        f"query feature_ids must be unique; duplicated {feature_id!r}"
+                    )
+                seen.add(feature_id)
         for item in self.provenance or ():
             if not isinstance(item, dict) or "feature_id" not in item:
                 raise RecordValidationError(

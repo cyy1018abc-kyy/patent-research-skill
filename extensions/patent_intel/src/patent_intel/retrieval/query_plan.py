@@ -125,6 +125,7 @@ class QueryPlanBuilder:
                     language=detect_language(" ".join(terms[:broad_recall_terms])),
                     query_type="broad_recall",
                     source="multi",
+                    feature_ids=[f.feature_id for f in positive],
                     provenance=[c.to_provenance() for c in self._all_candidates(expansions)][:broad_recall_terms],
                     approved=False,
                 )
@@ -145,6 +146,7 @@ class QueryPlanBuilder:
                         language=detect_language(" ".join(t for g in groups for t in g)),
                         query_type="feature_cross",
                         source="multi",
+                        feature_ids=[f.feature_id for f in required[:max_cross]],
                         filters={"and_groups": groups, "max_and": max_cross},
                         provenance=[
                             c.to_provenance()
@@ -172,6 +174,9 @@ class QueryPlanBuilder:
                     language=detect_language(cand.term),
                     query_type="cross_domain",
                     source="multi",
+                    # an expansion term without a resolvable origin feature stays None —
+                    # unknown coverage, never a fabricated feature attribution
+                    feature_ids=[cand.feature_id] if cand.feature_id else None,
                     provenance=[cand.to_provenance()],
                     approved=False,
                 )
@@ -199,6 +204,7 @@ class QueryPlanBuilder:
             language=detect_language(" ".join(terms)),
             query_type="single_feature",
             source="multi",
+            feature_ids=[feature.feature_id],
             filters={"requiredness": feature.requiredness},
             provenance=[c.to_provenance() for c in candidates],
             approved=False,

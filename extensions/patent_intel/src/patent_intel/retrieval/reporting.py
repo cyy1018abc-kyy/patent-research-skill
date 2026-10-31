@@ -17,7 +17,7 @@ from typing import Any
 from patent_intel.contracts import QuerySpec
 from patent_intel.io.safe_io import write_json_atomic
 from patent_intel.kernel_bridge import read_axes, read_candidates
-from patent_intel.retrieval.controller import AdaptiveController, Cancelled, RunOutcome
+from patent_intel.retrieval.controller import AdaptiveController, Cancelled, FamilyBasis, RunOutcome
 from patent_intel.retrieval.features import extract_features
 from patent_intel.retrieval.lexical import BM25Index, CorpusDoc, corpus_from_candidates
 from patent_intel.retrieval.query_plan import QueryPlanBuilder
@@ -50,12 +50,18 @@ def _runner_for(index: BM25Index, corpus_docs: list[CorpusDoc], *, k: int = 20) 
         text = " ".join(query.terms)
         ranked = index.search(text, k=k)
         hits = [doc_id for doc_id, _ in ranked]
+        # Family ids only from corpus-reported family relations; documents without one
+        # stay document-level evidence — a document id never masquerades as a family
+        # id (adaptive roadmap Task 1 / UT-S03).
         fams: list[str] = []
         for doc_id in hits:
-            fam = family_of.get(doc_id) or doc_id
-            if fam not in fams:
+            fam = family_of.get(doc_id)
+            if fam and fam not in fams:
                 fams.append(fam)
-        return RunOutcome(query_id=query.query_id, hits=hits, families=fams, new_families=[])
+        basis = FamilyBasis.REPORTED if fams else FamilyBasis.UNKNOWN
+        return RunOutcome(
+            query_id=query.query_id, hits=hits, families=fams, new_families=[], family_basis=basis
+        )
 
     return runner
 

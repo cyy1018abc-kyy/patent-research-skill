@@ -24,7 +24,7 @@
 | 类型 | 归属 | 关键不变量 |
 |---|---|---|
 | `FeatureSpec` | WP-A（查询视图；基准事实归 Discovery/patentkit） | `source_refs` 非空；`negation` 与 `requiredness=negation` 一致 |
-| `QuerySpec` | WP-A | `provenance` 每项必须带 `feature_id`（UT-Q03：无来源的扩词=unverified proposal）；`approved=false` 才能离开 sidecar |
+| `QuerySpec` | WP-A | `provenance` 每项必须带 `feature_id`（UT-Q03：无来源的扩词=unverified proposal）；`approved=false` 才能离开 sidecar；`feature_ids` 是覆盖记账的权威特征维度（缺省=覆盖未知，不得以 axis/query_type 顶替） |
 | `SearchRun` | WP-B | `hits_reported` ≠ `records_fetched`；`complete=false` 必须给 `incomplete_reason`；`failed` 必须给 `error` |
 | `RawArtifactRef` | WP-B | sha256 必填；`path` 相对工作区或 state dir |
 | `PatentRecord` | WP-B | `source_refs[].{source, raw_ref}` 强制（可回溯）；原始 ID 字符串不重写；`identifier_confidence ∈ {exact, normalized, uncertain}` |

@@ -332,3 +332,68 @@ def test_dedupe_ranked_hits_keeps_best_rank_per_family() -> None:
     ]
     out = dedupe_ranked_hits(ranked)
     assert [item[1] for item in out] == ["EP0001A1", "EP0002A1"]  # FAM-1 kept at rank 1 only
+
+
+# ── capability↔request consistency invariant (adaptive roadmap §2.3-5) ──
+
+
+_PROBE_VALUES = {"keywords": "beacon", "abstract": "信标", "class": "H04W",
+                 "title": "beacon", "applicant": "华为"}
+
+
+def _probe_query(source: str, field: str) -> QuerySpec:
+    return QuerySpec(
+        owner="WP-A", query_id=f"Q-probe-{source}-{field}", axis_id="N1@TGT-0001",
+        terms=["beacon"], language="en", query_type="single_feature", source=source,
+        filters={field: _PROBE_VALUES[field]} if field != "keywords" else None,
+    )
+
+
+def test_every_declared_query_field_is_consumed_by_build_request() -> None:
+    """A declared field must reach the built request. Declaring an unconsumed field
+    lets queries pass the capability gate and then silently DROP the filter —
+    a fabricated success (the §2.3-5 OPS defect, kept impossible by this invariant).
+
+    Gate note: ``keywords`` is a pseudo-field every adapter must declare because
+    ``ensure_query_supported`` always adds it to the checked field set. For kernel
+    adapters terms do not travel alone (a concrete ``--abstract``/``--title``/… flag
+    is mandatory), so their real fields are probed via filters; terms-only adapters
+    (ops) must put the terms into the request itself.
+    """
+    for source_id in registry.ids():
+        adapter = get_source(source_id)
+        declared = sorted(adapter.capabilities().query_fields)
+        field_flags = getattr(adapter, "field_flags", {}) or {}
+        real_fields = [f for f in declared if f != "keywords"]
+        assert "keywords" in declared, (
+            f"{source_id}: 'keywords' must stay declared — the capability gate always "
+            "checks it (base.ensure_query_supported)"
+        )
+        if not real_fields:  # terms-only adapter: terms must reach the request
+            plan = adapter.build_request(_probe_query(source_id, "keywords"))
+            assert plan.args and any("beacon" in str(arg) for arg in plan.args), (
+                f"{source_id}: declared 'keywords' never reaches the request"
+            )
+            continue
+        for field in real_fields:
+            plan = adapter.build_request(_probe_query(source_id, field))
+            assert plan.args, f"{source_id}.{field}: empty request"
+            flag = field_flags.get(field)
+            if flag is not None:  # kernel adapters: value must appear after its flag
+                idx = plan.args.index(flag)
+                assert plan.args[idx + 1] == _PROBE_VALUES[field], (
+                    f"{source_id}.{field}: flag present but value not passed"
+                )
+            else:  # non-kernel adapters: field name or value must appear in the request
+                assert any(
+                    _PROBE_VALUES[field] in str(arg) or field in str(arg) for arg in plan.args
+                ), f"{source_id}.{field}: declared field never reaches the request"
+
+
+def test_ops_class_filter_is_refused_until_declared() -> None:
+    """OPS declares keywords only today; a class-carrying query must be REFUSED,
+    never accepted-then-silently-degraded."""
+    adapter = get_source("ops")
+    assert adapter.capabilities().query_fields == frozenset({"keywords"})
+    with pytest.raises(CapabilityError, match="does not support"):
+        adapter.build_request(_probe_query("ops", "class"))
