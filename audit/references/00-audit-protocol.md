@@ -112,8 +112,12 @@ full audit 开始前，规划者写入运行目录 `12_audit/run-<N>/`（N 取�
 
 ## 8. 覆盖计算与两个必报指标
 
-- **台账覆盖率** =（covered 单元数）／（可行动单元数 = 总数 − not_applicable −
-  out_of_scope）。写进 REPORT §7；quick/scoped 运行必须自称「部分覆盖」。
+- **台账覆盖率** =（狩猎完成单元数，即 `covered` + `candidate`）／（可行动单元数 =
+  总数 − not_applicable − out_of_scope）。`candidate` 表示该单元的狩猎承诺已经
+  完成、且登记了候选映射——它与 `covered` 同属完成态（bm01 首次端到端运行的
+  教训：只数 covered 会把已完成狩猎、登记了候选的单元误计为未覆盖）；
+  `blocked`/`deferred`/`planned` 不计入。写进 REPORT §7；quick/scoped 运行必须
+  自称「部分覆盖」。
 - **verifier 翻案率** =（阶段 A3/A5 被降级或推翻的候选数）／（进入独立验证的候选数）。
   翻案率>0 是「单 agent 自评虚高」的直接证据，如实写进 REPORT，不粉饰。
 

@@ -126,8 +126,13 @@ budget silently, and never skip independent review.**
 
 ## 8. Coverage computation and the two mandatory metrics
 
-- **Ledger coverage** = covered units ÷ actionable units (total − not_applicable −
-  out_of_scope). Goes into REPORT §7; quick/scoped runs must call themselves partial.
+- **Ledger coverage** = hunting-complete units (`covered` + `candidate`) ÷
+  actionable units (total − not_applicable − out_of_scope). A `candidate` unit has
+  discharged its hunting promise and registered a mapping candidate — it counts the
+  same as `covered` (lesson from the first end-to-end run: counting `covered` alone
+  misreads completed hunts with registered candidates as uncovered);
+  `blocked`/`deferred`/`planned` do not count. Goes into REPORT §7; quick/scoped
+  runs must call themselves partial.
 - **Verifier overturn rate** = candidates demoted or refuted in A3/A5 ÷ candidates
   entering independent validation. A non-zero rate is direct evidence of
   single-agent self-assessment inflation; record it plainly in REPORT.
