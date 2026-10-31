@@ -40,6 +40,7 @@ class QueryYieldLedger:
     def __init__(self) -> None:
         self._seen_families: set[str] = set()
         self._seen_docs: set[str] = set()
+        self._discovery_order: list[str] = []
         self._by_query: dict[str, list[str]] = {}
         self._docs_by_query: dict[str, list[str]] = {}
         self._order: list[str] = []
@@ -52,6 +53,7 @@ class QueryYieldLedger:
         for fam in family_hits:
             if fam not in self._seen_families:
                 self._seen_families.add(fam)
+                self._discovery_order.append(fam)
                 new.append(fam)
         self._by_query[query_id] = new
         if query_id not in self._order:
@@ -100,6 +102,11 @@ class QueryYieldLedger:
     def total_new_families(self) -> int:
         """Candidate new families — first-seen, NOT relevance-filtered."""
         return len(self._seen_families)
+
+    @property
+    def discovery_order_families(self) -> list[str]:
+        """Candidate families in first-seen order (deduped) — the fusion/ranking input."""
+        return list(self._discovery_order)
 
     @property
     def total_new_documents(self) -> int:
@@ -153,6 +160,18 @@ class CoverageTracker:
     concept_hits: dict[str, dict[str, int]] = field(default_factory=dict)
     #: axis_id -> discovered family ids
     families: dict[str, set[str]] = field(default_factory=dict)
+
+    def record_feature_attempt(self, feature_id: str, *, query_id: str, axis_id: str = "") -> None:
+        """Record that a query targeting ``feature_id`` executed (independent of hits).
+
+        Attempts distinguish ``not_found`` (cleanly executed, nothing covered the
+        feature) from ``unknown`` (never targeted, or the queries failed) — the
+        evaluator's state machine needs both signals.
+        """
+        if query_id:
+            self.feature_queries.setdefault(feature_id, set()).add(query_id)
+        if axis_id:
+            self.feature_axis.setdefault(feature_id, axis_id)
 
     def record_feature_hit(
         self, feature_id: str, family_id: str, *, query_id: str = "", axis_id: str = ""

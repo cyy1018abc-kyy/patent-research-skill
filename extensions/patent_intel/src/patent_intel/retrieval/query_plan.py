@@ -229,6 +229,24 @@ class QueryPlanBuilder:
 # ── per-source rendering (UT-Q02) ────────────────────────────────────
 
 
+def effective_feature_ids(query: QuerySpec) -> list[str]:
+    """The query's authoritative feature dimension: ``feature_ids`` when present,
+    else the provenance-declared feature ids (deduped, order-stable).
+
+    Shared by the controller (coverage recording) and the policies (utility
+    estimation). Empty = no feature attribution — unknown coverage, never a zero.
+    """
+    if query.feature_ids:
+        return list(dict.fromkeys(query.feature_ids))
+    out: list[str] = []
+    for item in query.provenance or ():
+        if isinstance(item, dict) and item.get("feature_id"):
+            feature_id = str(item["feature_id"])
+            if feature_id not in out:
+                out.append(feature_id)
+    return out
+
+
 class RenderError(ValueError):
     """The query cannot be honestly rendered for the requested source."""
 

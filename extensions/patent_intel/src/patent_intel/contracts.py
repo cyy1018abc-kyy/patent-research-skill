@@ -37,6 +37,8 @@ __all__ = [
     "DocumentAnchor",
     "RetrievalRun",
     "EvaluationReport",
+    "RetrievalGapReport",
+    "CoverageState",
     "EvidenceProjection",
     "AdvisoryProposal",
     "Requiredness",
@@ -597,6 +599,88 @@ class EvaluationReport(Record):
     ci: dict[str, Any] | None = None
     cost: dict[str, Any] | None = None
     coverage: dict[str, Any] | None = None
+
+
+class CoverageState:
+    """Retrieval-level feature coverage states (adaptive roadmap Phase 2).
+
+    These are *retrieval* judgements, never evidence verdicts — a hit is not a
+    disclosure (interface rule: 搜索命中不是披露证据; the kernel owns evidence).
+    ``unknown`` must never be auto-downgraded to ``not_found``: without an executed
+    query targeting the feature, absence cannot be claimed.
+    """
+
+    DISCLOSED = "disclosed"
+    PARTIALLY_DISCLOSED = "partially_disclosed"
+    NOT_FOUND = "not_found"
+    UNKNOWN = "unknown"
+
+    ALL = (DISCLOSED, PARTIALLY_DISCLOSED, NOT_FOUND, UNKNOWN)
+
+
+@dataclass(kw_only=True)
+class RetrievalGapReport(Record):
+    """Gap report after evaluating a retrieval run (WP-A; adaptive roadmap Task 2).
+
+    ``metrics.gold_available=false`` means the numbers are proxy indicators —
+    they must never be presented as true recall (no gold set, no recall claim).
+    """
+
+    RECORD_TYPE = "retrieval_gap_report"
+    SPEC = {
+        "run_label": str,
+        "feature_states": dict,
+        "uncovered_features": list,
+        "partially_covered_features": list,
+        "unknown_features": list,
+        "missing_technical_relations": list,
+        "missing_technical_domains": list,
+        "missing_jurisdictions": list,
+        "missing_data_sources": list,
+        "recommended_actions": list,
+        "metrics": dict,
+        "stop_context": dict,
+    }
+    REQUIRED = ("feature_states", "metrics")
+
+    run_label: str | None = None
+    feature_states: dict[str, str]
+    uncovered_features: list[str] | None = None
+    partially_covered_features: list[str] | None = None
+    unknown_features: list[str] | None = None
+    missing_technical_relations: list[str] | None = None
+    missing_technical_domains: list[str] | None = None
+    missing_jurisdictions: list[str] | None = None
+    missing_data_sources: list[str] | None = None
+    recommended_actions: list[dict[str, Any]] | None = None
+    metrics: dict[str, Any]
+    stop_context: dict[str, Any] | None = None
+
+    def validate(self) -> None:
+        super().validate()
+        for feature_id, state in self.feature_states.items():
+            if state not in CoverageState.ALL:
+                raise RecordValidationError(
+                    f"feature_states[{feature_id!r}] = {state!r} not in {CoverageState.ALL}"
+                )
+        unknown = set(self.unknown_features or ())
+        not_found = set(self.uncovered_features or ())
+        overlap = unknown & not_found
+        if overlap:
+            raise RecordValidationError(
+                f"features cannot be both unknown and not_found: {sorted(overlap)} "
+                "(unknown must never be auto-downgraded to not_found)"
+            )
+        if not isinstance(self.metrics.get("gold_available"), bool):
+            raise RecordValidationError(
+                "metrics must carry an explicit boolean 'gold_available' — "
+                "proxy indicators must never masquerade as true recall"
+            )
+        for action in self.recommended_actions or ():
+            if not isinstance(action, dict) or "action" not in action or "reason" not in action:
+                raise RecordValidationError(
+                    "every recommended_action needs at least {action, reason}"
+                )
 
 
 @dataclass(kw_only=True)
