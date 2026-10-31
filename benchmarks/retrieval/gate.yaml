@@ -1,0 +1,74 @@
+# 检索评测判定门 —— 预注册冻结（Phase V / V3-1）
+# 本文件在任何评测跑分之前提交；此后门值与规则不得修改（改 Gold/调门 = 评测作废）。
+# 协议指纹：docs/retrieval-evaluation.md 的 SHA-256（提交时由 preregistration 校验脚本回填并锁定）。
+# 蓝图来源：patent_research_skill_4_0_engineering_blueprint.md §12；协议：docs/retrieval-evaluation.md §3/§4。
+
+schema_version: 1
+preregistered_at: "2026-10-30"
+protocol_sha256: "dbbe348f8464bee22b6db444369112966378f8ba3f036d654c3eb0003d982f85"  # docs/retrieval-evaluation.md @ preregistration 2026-10-30
+preregistration_rule: >
+  本文件与评测协议的提交必须早于任何 runs/ 评测产物与 results/ 报告；
+  git 历史顺序即预注册证明。跑分后发现缺陷需要返工时：门值不变，
+  全部主题重跑（不得择优），新旧报告都归档。
+
+dataset:
+  name: DAPFAM_patent
+  source: datalyes/DAPFAM_patent (HuggingFace; Ayaou et al., 2025, arXiv:2506.22141)
+  license: CC-BY-NC-SA-4.0
+  snapshot_date: "2026-10-29"
+  corpus_view: TAC (title_en + abstract_en + claims_text; description_en excluded)
+  query_view: TAC (title_en + abstract_en + claims_text)
+  gold: citation-proxy positives (relevance_score == 1.0); sampled negatives exist
+  gold_completeness: pool_biased
+  network: fully offline — zero network requests during any scored run (hard gate)
+
+splits:
+  key: earliest_claim_date
+  rule: order by (earliest_claim_date, query_id); first 60% train / next 15% val / last 25% test
+  test_topics_min: 100
+  enforced_by: benchmarks/retrieval/check_leakage.py (query-family disjointness, time
+    monotonicity, id integrity, empty-gold discipline; gold families shared across
+    splits are a fixed-corpus property and are report-only)
+
+budget:
+  unit: one BM25 index request over the frozen corpus
+  baseline_requests_per_topic: 3   # fixed mechanical variants: (1) full TAC, (2) title+abstract, (3) claims
+  extension_requests_per_topic_max: 3  # AdaptiveController-selected from its planned queries
+  candidate_k_per_request: 200
+  merge_rule: per-document max score across the topic's requests; ties broken by family_id ascending
+  requests_accounted: every executed request counts, including zero-gain ones
+
+primary_metric: family_recall_at_100
+secondary_metrics:
+  - family_recall_at_50
+  - family_recall_at_200
+  - ndcg_at_100
+  - mrr
+  - unique_relevant_yield_per_100_requests
+
+gate:
+  comparison: extension (patent_intel pipeline) vs algorithm baseline (BM25, same frozen corpus, same engine)
+  min_mean_gain_pp: 5.0                  # Family Recall@100, macro-average over test topics
+  paired_bootstrap_ci_lower_pp: 0.0      # per-topic paired bootstrap, 95%, n=10000, seed 20261030
+  groups_must_be_reported:
+    - domain (IN / OUT / MIXED, preregistered topic-level definition)
+    - era (first vs second half of test topic dates)
+    - jurisdiction mix of query family (from source snapshot metadata)
+  failed_groups_must_be_published: true
+
+claim_rule: >
+  「查全率提升」宣称 = min_mean_gain_pp 与 paired_bootstrap_ci_lower_pp 两门同时达标，
+  且完成 ≥100 公共测试主题 + 20–40 私有专家主题（EX-01 双评审）的完整协议。
+  公共主题单独达标而私有主题未完成 ⇒ 结果标注「初步结果（public-topic only）」，
+  宣传口径维持「实验性增强」。任一门未达 ⇒ 全线降级「实验性增强」并列出未达标分组。
+  不得为过门修改 gold、门值或评测协议（协议哈希锁定）。
+
+flow_baseline_note: >
+  3.7.0 原链流程基线与 DAPFAM 不可比（语料/数据源不同、实时索引漂移），本轮不进
+  判定门；原链质量由既有合成金样 9 案例门（CI --gate perfect）持续把守。冻结回放
+  流程基线待 WP-L3 真实原始响应归档后另行立项。
+
+audit_integrity:
+  unauthorized_network_requests: 0   # hard gate: > 0 ⇒ 本轮评测不通过
+  artifact_hash_consistency: run 元数据与文件哈希逐条一致（score_retrieval 审计门）
+  locator_verification: 本轮为族级检索评测，不涉及原文定位引用

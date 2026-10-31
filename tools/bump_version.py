@@ -26,6 +26,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+#: 内核开发树的 __init__（仓库外、仅本机存在；「存在才写」——CI/他人 clone 静默跳过）。
+DEV_TREE_INIT = ROOT.parent / "patentkit" / "patentkit" / "__init__.py"
 
 SKILL_PAIRING_FILES = (
     ("research/SKILL.md", "research frontmatter"),
@@ -223,6 +225,16 @@ def check() -> list[str]:
     patches_readme = (ROOT / "release/patches/README.md").read_text(encoding="utf-8")
     if f"../notes/skill-v{skill}.md" not in patches_readme:
         problems.append(f"release/patches/README.md 的 notes 指针不是 skill-v{skill}.md")
+
+    # 开发树 __version__（V4-1「存在才写」）：开发树不在仓库内、CI/他人 clone 均无
+    # 此文件——存在时必须与内核版本一致，不存在时静默跳过（不产生 CI 依赖）。
+    dev_init = DEV_TREE_INIT
+    if dev_init.is_file():
+        match = re.search(r'__version__\s*=\s*"([^"]+)"', dev_init.read_text(encoding="utf-8"))
+        if match is None or match.group(1) != kernel:
+            problems.append(
+                f"内核开发树 {dev_init} 的 __version__ 与 {kernel} 不一致"
+                f"（实际 {match.group(1) if match else '未找到'}）——3.8.0 轮的手工步骤已入工具射程")
     if not re.search(rf"patentkit-\d+\.\d+\.\d+-to-{re.escape(kernel)}\.patch", patches_readme):
         problems.append(f"release/patches/README.md 未指向当前内核补丁 -to-{kernel}.patch")
     # 散文版本号两处（0.8.0 轮漏改「current kernel is 0.7.0 / declares version 0.7.0」的教训固化）
@@ -298,6 +310,21 @@ def bump(to: str, kernel_to: str | None, make_notes: bool, dry_run: bool, from_s
             was_crlf = b"\r\n" in path.read_bytes()
             path.write_text(pattern.sub(new, text), encoding="utf-8",
                             newline="\r\n" if was_crlf else "\n")
+
+    if kernel_to and DEV_TREE_INIT.is_file():
+        # 开发树 __version__ 不在 KERNEL_PAIRING_FILES 的整文件替换射程内（文件在
+        # 仓库外、且只需改一行）——存在则随 --kernel-to 改写，不存在（CI）跳过。
+        dev_text = DEV_TREE_INIT.read_text(encoding="utf-8")
+        dev_hits = len(re.findall(rf'__version__\s*=\s*"{re.escape(old_kernel)}"', dev_text))
+        print(f"  · {DEV_TREE_INIT.relative_to(DEV_TREE_INIT.parents[2])}: {dev_hits} 处（dev 树 __version__，存在才写）")
+        if not dry_run and dev_hits:
+            was_crlf = b"\r\n" in DEV_TREE_INIT.read_bytes()
+            DEV_TREE_INIT.write_text(
+                re.sub(rf'__version__\s*=\s*"{re.escape(old_kernel)}"',
+                       f'__version__ = "{kernel_to}"', dev_text),
+                encoding="utf-8", newline="\r\n" if was_crlf else "\n")
+    elif kernel_to:
+        print(f"  · dev 树 {DEV_TREE_INIT.name} 不存在（本机无开发树）——跳过，check() 亦容缺")
 
     if make_notes and not dry_run:
         _write_notes("skill", to, old_skill)

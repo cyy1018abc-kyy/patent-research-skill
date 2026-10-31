@@ -42,3 +42,11 @@
   契约落盘，多一道格式转换。
 - 未来重议条件：内核官方提供受限写入 API 且保留人工确认链时，才考虑把
   「批准后的查询入库」自动化；白名单扩充须逐动词补只读证明测试。
+
+## 版本策略补充（2026-10-30，Phase V / V4-3）
+
+扩展 `patent_intel` **不进 skill↔kernel 版本配对**：配对（bump_version.py 的
+SKILL/KERNEL_PAIRING_FILES + publish 双 tag）覆盖的是「方法论 ↔ 内核协议」耦合；
+扩展是可选增量组件，`patentkit >= 0.8.0` 的下限约束由其自身 wheel 元数据表达。
+扩展升版只动 `extensions/patent_intel/pyproject.toml` 与发行脚本资产名（gate 于
+release_doctor 扩展检查），不触发内核补丁链。
