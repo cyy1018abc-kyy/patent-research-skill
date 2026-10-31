@@ -247,6 +247,49 @@ def effective_feature_ids(query: QuerySpec) -> list[str]:
     return out
 
 
+# ── CNIPA multi-subquery decomposition (adaptive roadmap §5.3) ───────
+
+
+def plan_cnipa_subqueries(
+    query: QuerySpec, *, max_subqueries: int = 6
+) -> list[QuerySpec]:
+    """Split one query into CNIPA-friendly subqueries (one term each).
+
+    CNIPA's limited page size and 3-AND cap make one wide OR-query a poor fit: the
+    roadmap requires multi-subquery decomposition with per-subquery result dedup.
+    Splitting is deterministic: single_feature and single-term queries stay whole;
+    multi-term queries split per term, each subquery keeping the feature attribution
+    of its term (via provenance) so coverage stays honest. A hard cap bounds the
+    request cost; the split is recorded, never hidden.
+    """
+    terms = list(dict.fromkeys(query.terms))
+    if query.query_type == "single_feature" or len(terms) <= 1:
+        return [query]
+    feature_by_term: dict[str, str] = {}
+    for item in query.provenance or ():
+        if isinstance(item, dict) and item.get("feature_id") and item.get("term"):
+            feature_by_term.setdefault(str(item["term"]), str(item["feature_id"]))
+    subqueries: list[QuerySpec] = []
+    for index, term in enumerate(terms[:max_subqueries], start=1):
+        feature_id = feature_by_term.get(term)
+        subqueries.append(
+            QuerySpec(
+                owner=query.owner,
+                query_id=f"{query.query_id}-SUB{index:02d}",
+                axis_id=query.axis_id,
+                terms=[term],
+                language=query.language,
+                query_type=query.query_type,
+                source=query.source,
+                feature_ids=[feature_id] if feature_id else None,
+                filters=dict(query.filters or {}),
+                provenance=query.provenance,
+                approved=query.approved,
+            )
+        )
+    return subqueries
+
+
 class RenderError(ValueError):
     """The query cannot be honestly rendered for the requested source."""
 

@@ -14,7 +14,7 @@ from typing import Any
 
 from patent_intel.sources.normalize import NormalizedID, normalize_publication_number
 
-__all__ = ["FamilyGroup", "FamilyView", "dedupe_ranked_hits"]
+__all__ = ["FamilyGroup", "FamilyView", "dedupe_ranked_hits", "dedupe_publication_records"]
 
 
 @dataclass
@@ -139,3 +139,47 @@ def dedupe_ranked_hits(ranked: list[tuple[int, str, dict[str, Any]]]) -> list[tu
             seen.add(family)
         out.append((rank, key, entry))
     return out
+
+
+def dedupe_publication_records(
+    records: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Dedup multi-subquery results by publication-number identity (roadmap §5.3).
+
+    Records whose normalized numbers agree are the *same publication* — the first
+    occurrence is kept and later metadata differences are recorded as conflicts,
+    never silently rewritten. Unparseable numbers dedupe only by their exact raw
+    string. The stats distinguish the accounting honestly:
+    ``{"seen", "unique", "duplicates", "conflicts"}``.
+    """
+    unique: list[dict[str, Any]] = []
+    by_identity: dict[str, dict[str, Any]] = {}
+    conflicts: list[str] = []
+    duplicates = 0
+    for record in records:
+        raw = str(record.get("publication_number") or record.get("normalized_number") or "")
+        norm = normalize_publication_number(raw)
+        identity = norm.normalized if norm.confidence != "uncertain" else raw.strip()
+        if not identity:
+            identity = f"<unnumbered:{len(unique)}>"  # keep unnumbered rows independent
+        existing = by_identity.get(identity)
+        if existing is None:
+            enriched = dict(record)
+            enriched["normalized_number"] = norm.normalized or raw
+            enriched["number_confidence"] = norm.confidence
+            by_identity[identity] = enriched
+            unique.append(enriched)
+            continue
+        duplicates += 1
+        for key in ("title", "publication_date", "assignee"):
+            a, b = existing.get(key), record.get(key)
+            if a and b and a != b:
+                note = f"{identity}: {key} {a!r} vs {b!r}"
+                if note not in conflicts:
+                    conflicts.append(note)
+    return unique, {
+        "seen": len(records),
+        "unique": len(unique),
+        "duplicates": duplicates,
+        "conflicts": conflicts,
+    }

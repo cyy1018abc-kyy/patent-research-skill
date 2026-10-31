@@ -397,3 +397,114 @@ def test_ops_class_filter_is_refused_until_declared() -> None:
     assert adapter.capabilities().query_fields == frozenset({"keywords"})
     with pytest.raises(CapabilityError, match="does not support"):
         adapter.build_request(_probe_query("ops", "class"))
+
+
+# ── CNIPA multi-subquery decomposition + result dedup (Task 7, §5.3) ──
+
+
+def _multi_term_query() -> QuerySpec:
+    return QuerySpec(
+        owner="WP-A", query_id="Q-N1-BR-001", axis_id="N1@TGT-0001",
+        terms=["信标", "beacon", "同步"], language="zh", query_type="broad_recall",
+        source="cnipa",
+        provenance=[
+            {"feature_id": "F-1", "term": "信标", "relation": "base", "source": "seed"},
+            {"feature_id": "F-1", "term": "beacon", "relation": "translation", "source": "seed"},
+            {"feature_id": "F-2", "term": "同步", "relation": "base", "source": "seed"},
+        ],
+    )
+
+
+def test_cnipa_subquery_split_is_deterministic_and_attributed() -> None:
+    from patent_intel.retrieval.query_plan import plan_cnipa_subqueries
+
+    subs = plan_cnipa_subqueries(_multi_term_query())
+    assert [s.query_id for s in subs] == [
+        "Q-N1-BR-001-SUB01", "Q-N1-BR-001-SUB02", "Q-N1-BR-001-SUB03",
+    ]
+    assert [s.terms for s in subs] == [["信标"], ["beacon"], ["同步"]]
+    assert subs[0].feature_ids == ["F-1"]  # term-level feature attribution survives
+    assert subs[2].feature_ids == ["F-2"]
+    # single_feature and single-term queries stay whole
+    single = QuerySpec(
+        owner="WP-A", query_id="Q-SF", axis_id="N1@TGT-0001", terms=["信标"], language="zh",
+        query_type="single_feature", source="cnipa",
+    )
+    assert plan_cnipa_subqueries(single) == [single]
+
+    capped = plan_cnipa_subqueries(_multi_term_query(), max_subqueries=2)
+    assert len(capped) == 2  # request cost stays bounded; the cap is explicit
+
+
+def test_dedupe_publication_records_normalizes_and_reports_conflicts() -> None:
+    from patent_intel.sources.family import dedupe_publication_records
+
+    records = [
+        {"publication_number": "CN 119 000 001 A", "title": "多阀控制", "assignee": "甲"},
+        {"publication_number": "CN119000001A", "title": "多阀控制", "assignee": "甲"},
+        {"publication_number": "CN119000001A", "title": "Multi-valve control", "assignee": "甲"},
+        {"publication_number": "US202600100000A1", "title": "other", "assignee": "乙"},
+        {"publication_number": "junk-entry", "title": "unparseable"},
+        {"publication_number": "junk-entry", "title": "same raw id"},
+    ]
+    unique, stats = dedupe_publication_records(records)
+    assert stats["seen"] == 6
+    assert stats["unique"] == 3  # CN (1) + US (1) + junk raw-string id (1)
+    assert stats["duplicates"] == 3  # CN×3 → 2 dups + junk×2 → 1 dup
+    # same publication, differing title → conflict recorded, first value kept
+    assert any("CN119000001A: title" in c for c in stats["conflicts"])
+    kept = [r for r in unique if r["normalized_number"] == "CN119000001A"][0]
+    assert kept["title"] == "多阀控制"
+
+
+def test_dedupe_publication_records_keeps_unnumbered_rows_independent() -> None:
+    from patent_intel.sources.family import dedupe_publication_records
+
+    unique, stats = dedupe_publication_records(
+        [{"title": "no number 1"}, {"title": "no number 2"}]
+    )
+    assert stats["unique"] == 2 and stats["duplicates"] == 0
+
+
+# ── OPS dry-run ↔ execute request consistency (Task 7) ───────────────
+
+
+def test_ops_dry_run_and_execute_use_the_same_request(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """roadmap §5.4: dry-run 预览的请求必须与实际执行请求一致。"""
+    from patent_intel.config import PatentIntelConfig
+    from patent_intel.sources.ops import OpsAdapter
+
+    class Resp:
+        def __init__(self, status_code: int, text: str = "{}", json_data: dict | None = None) -> None:
+            self.status_code = status_code
+            self.text = text
+            self._json = json_data or {}
+
+        def json(self) -> dict:
+            return self._json
+
+    issued_urls: list[str] = []
+
+    def transport(method: str, url: str, headers: dict, timeout: int) -> object:
+        issued_urls.append(url)
+        if "auth/accesstoken" in url:
+            return Resp(200, json_data={"access_token": "t", "expires_in": 1200})
+        return Resp(200)
+
+    monkeypatch.setenv("OPS_OAUTH_KEY", "test-key")
+    monkeypatch.setenv("OPS_OAUTH_SECRET", "test-secret")
+    adapter = OpsAdapter(transport=transport, sleep=lambda s: None)
+    plan = adapter.build_request(_probe_query("ops", "keywords"))
+    preview_url = adapter.dry_run(plan, tmp_path).preview[0]
+    config = PatentIntelConfig(network_consent=True, allowed_sources=["ops"])
+    adapter.execute(plan, tmp_path / "sidecar", confirm_network=True, config=config,
+                    state_dir=tmp_path / "sidecar", max_pages=1)
+    search_urls = [u for u in issued_urls if "published-data/search" in u]
+    assert search_urls, "execute never issued a search request"
+    # identical query string (the preview's &Range suffix is display-only; the
+    # executed paging rides the X-OPS-Range header — q must match exactly)
+    preview_q = preview_url.split("q=")[1].split("&")[0]
+    executed_q = search_urls[0].split("q=")[1].split("&")[0]
+    assert preview_q == executed_q
