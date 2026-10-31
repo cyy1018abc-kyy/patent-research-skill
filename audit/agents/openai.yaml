@@ -1,0 +1,9 @@
+# Desktop（Codex / ChatGPT App）显示与调用元数据。
+# 触发由 SKILL.md 的 description 决定；本文件只影响桌面 UI 展示与 @ 默认提示词。
+interface:
+  display_name: "检索证据链审计 Patent Audit"
+  short_description: "覆盖率台账→对抗验证→独立复核→三态结论→中立报告 / coverage ledger, adversarial validation, independent review & neutral report"
+  default_prompt: "使用 patent-audit 技能：对已完成检索的工作区做证据链审计——先建覆盖率台账（要素×数据源×分类号），再对抗验证每个要素↔对比文件映射，逐条核对逐字引文与定位，输出三态结论与中立报告。guidance 模式默认不写文件，全面审计需显式授权 (use the patent-audit skill: audit a finished search workspace with a coverage ledger, adversarially validate every element-to-prior-art mapping, verify verbatim quotes and locators, and emit a neutral three-verdict report; guidance mode writes nothing without explicit full-audit authorization)."
+  brand_color: "#7C3AED"
+policy:
+  allow_implicit_invocation: true

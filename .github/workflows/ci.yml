@@ -107,11 +107,15 @@ jobs:
         run: python -m pytest tests extensions/patent_intel/tests -o addopts= -q
       - name: Benchmark gold solutions score perfect (scorer semantics locked)
         run: python tools/score_benchmark.py --suite benchmarks/cases --gold --gate perfect
+      - name: Audit benchmark gold self-check on bm01/bm02 (audit-mode scorer locked)
+        run: |
+          python tools/score_audit_findings.py --case benchmarks/cases/bm01-timesync --gold-selfcheck --gate perfect
+          python tools/score_audit_findings.py --case benchmarks/cases/bm02-bms --gold-selfcheck --gate perfect
       - name: Release doctor offline preflight (pairing + guards + build + installers)
         run: python tools/release_doctor.py --offline --dist dist --json > release-doctor-offline.json
       - name: Syntax checks
         run: |
-          python -m compileall -q research/scripts tools evals benchmarks
+          python -m compileall -q research/scripts tools evals benchmarks audit/scripts
           bash -n release/install.sh
           bash -n tools/publish_release.sh
           git diff --check

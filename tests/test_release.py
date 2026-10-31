@@ -25,8 +25,8 @@ class ReleaseAcceptance(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix="patent-release-test-")
         cls.root = Path(cls.temp.name)
         cls.result = builder.build(cls.root / "dist", "2026-10-25T00:00:00+00:00")
-        cls.full_zip = ROOT / "dist/patent-research-skill-v3.11.0.zip"
-        cls.drafting_zip = ROOT / "dist/patent-drafting-skill-v3.11.0.zip"
+        cls.full_zip = ROOT / "dist/patent-research-skill-v4.0.0.zip"
+        cls.drafting_zip = ROOT / "dist/patent-drafting-skill-v4.0.0.zip"
         if not cls.full_zip.is_file() or not cls.drafting_zip.is_file():
             raise AssertionError("Build both release ZIPs in dist before acceptance (full + drafting)")
         cls.package = cls.root / "package"
@@ -64,13 +64,15 @@ class ReleaseAcceptance(unittest.TestCase):
         self.assertIn("patent-research/SKILL.md", full_names)
         self.assertIn("patent-drafting/SKILL.md", full_names)
         self.assertIn("patent-discovery/SKILL.md", full_names)
+        self.assertIn("patent-audit/SKILL.md", full_names)
         drafting_names = zipfile.ZipFile(self.drafting_zip).namelist()
         self.assertIn("patent-drafting/SKILL.md", drafting_names)
         self.assertNotIn("patent-research/SKILL.md", drafting_names)
         self.assertNotIn("patent-discovery/SKILL.md", drafting_names)
+        self.assertNotIn("patent-audit/SKILL.md", drafting_names)
         full_manifest = json.loads(zipfile.ZipFile(self.full_zip).read("manifest.json"))
         self.assertEqual([s["name"] for s in full_manifest["skills"]],
-                         ["patent-research", "patent-drafting", "patent-discovery"])
+                         ["patent-research", "patent-drafting", "patent-discovery", "patent-audit"])
         self.assertTrue(full_manifest["contents"]["samples_included"])
         single_manifest = json.loads(zipfile.ZipFile(self.drafting_zip).read("manifest.json"))
         self.assertEqual([s["name"] for s in single_manifest["skills"]], ["patent-drafting"])

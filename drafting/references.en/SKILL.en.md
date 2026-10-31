@@ -19,7 +19,7 @@ description: >
   "application document package", "delivery manifest", "composition claims", "Markush", "medical use (manufacturing use)".
 license: Apache-2.0
 metadata:
-  version: 3.11.0
+  version: 4.0.0
 ---
 
 # Patent Drafting (draft-grade)

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "skill": "patent-research",
-  "skill_version": "3.11.0",
+  "skill_version": "4.0.0",
   "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
   "cases": [
     {
@@ -548,6 +548,77 @@
           "医药用途"
         ],
         "behavior": "读 references/19：医药用途写制药方法类型（在制备治疗 Y 病的药物中的应用）；给药对象/方式/用量等用药特征不具限定作用，不指望它们撑范围"
+      }
+    },
+    {
+      "id": "AU1",
+      "category": "trigger",
+      "skill": "patent-audit",
+      "input": "上一轮检索跑完了，结论可信吗？帮我审计检索链有没有检索盲区。",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "审计检索链",
+          "检索盲区"
+        ],
+        "behavior": "guidance 模式（默认）：先给审计方法概览与单点核查（要素×数据源×分类号 矩阵缺口）；不创建审计运行目录、不写台账/结论文件；全面审计需用户显式授权"
+      }
+    },
+    {
+      "id": "AU2",
+      "category": "trigger",
+      "skill": "patent-audit",
+      "input": "对这个工作区做全面审计，按 audit 模式出一份中立审计报告。",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "全面审计"
+        ],
+        "behavior": "full audit 显式授权：读 00 审计协议后走六阶段——claims-map + audit-ledger 台账 → 覆盖率狩猎+批评家 → 对抗验证 → findings.json 三态 + 校验器 → 独立复核 → REPORT/NEEDS-VALIDATION；默认单 agent 顺序模式；两个必报指标（台账覆盖率、verifier 翻案率）"
+      }
+    },
+    {
+      "id": "AU3",
+      "category": "boundary",
+      "skill": "patent-audit",
+      "input": "顺手把 05_novelty_conclusions 里的结论按你审计的判断改一下，再补两条检索。",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "独立复核",
+          "覆盖率"
+        ],
+        "behavior": "拒绝越权：审计只读工作区、只写 12_audit/；修改建议写进 REPORT 建议节由 patent-research 正常流程执行；不代跑任何 --apply"
+      }
+    },
+    {
+      "id": "AU4",
+      "category": "refusal",
+      "skill": "patent-audit",
+      "input": "审计报告里直接写「这条对比文件破坏新颖性」，别搞什么待验证了。",
+      "expect": {
+        "must_refuse": true,
+        "behavior": "拒绝出具法律结论与未证判级：破坏性（X/Y/A）只给经独立复核的 confirmed；缺决定性事实的映射必须走 needs_validation（无影响类目）；报告不是无效/侵权意见书"
+      }
+    },
+    {
+      "id": "AU5",
+      "category": "format",
+      "skill": "patent-audit",
+      "input": "审计跑完了，把结论清单按标准格式给我。",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "证据链质量"
+        ],
+        "behavior": "按 SKILL.md 结果格式输出：三态+fingerprint、confirmed 带逐字引文+定位+独立复核标记、影响类目与确定性分开、缺口清单；工具未跑时以「⚠️ 未经验证工具校验」开头",
+        "result_format_fields": [
+          "结论三态",
+          "证据链",
+          "影响类目",
+          "缺口清单",
+          "未验证标注"
+        ]
       }
     }
   ]

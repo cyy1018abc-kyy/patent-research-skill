@@ -69,7 +69,7 @@ if ($manifest.schema_version -ne 2 -or -not $manifest.skills -or $manifest.skill
 }
 $skillDirs = @()
 foreach ($entry in $manifest.skills) {
-    if ([string]$entry.install_dir -ne [string]$entry.name -or @('patent-research', 'patent-drafting', 'patent-discovery') -notcontains [string]$entry.name) {
+    if ([string]$entry.install_dir -ne [string]$entry.name -or @('patent-research', 'patent-drafting', 'patent-discovery', 'patent-audit') -notcontains [string]$entry.name) {
         Fail "unsupported skill entry in manifest.json: $($entry.name)" 2
     }
     $skillDirs += [string]$entry.name

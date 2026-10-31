@@ -13,7 +13,7 @@ description: >
   「附图标记对不上」「召回增强」「查全诊断」「检索报告文件类型对照」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 3.11.0
+  version: 4.0.0
 ---
 
 # 专利调研
