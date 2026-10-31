@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "skill": "patent-research",
-  "skill_version": "3.9.0",
+  "skill_version": "3.10.0",
   "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
   "cases": [
     {
@@ -482,6 +482,46 @@
         "behavior": "不能。零命中只描述当前检索样本；停止≠查全；结论必须由内核门禁与人工确认支撑，扩展输出只作检索参考"
       },
       "skill": "patent-research"
+    },
+    {
+      "id": "R4",
+      "category": "trigger",
+      "skill": "patent-research",
+      "input": "OA 里审查员检索报告标的 X、Y、A 是什么意思？这几篇怎么入候选池？",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "检索报告文件类型对照"
+        ],
+        "behavior": "读 references/04 对照附录：X/Y/A/R/P/E/T/L 换算 role 与第一/二层预判；证据等级仍按三级独立判定；换算不替审查员下结论"
+      }
+    },
+    {
+      "id": "D13",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "我们的方案是深度学习模型做缺陷检测，权利要求该怎么布局？",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "四位一体",
+          "程序模块构架"
+        ],
+        "behavior": "读 references/10 领域专项形态：方法+装置（程序模块构架）+存储介质+程序产品四位一体；算法特征必须与技术数据绑定；对照指南法 2.2 三条授权路径自查"
+      }
+    },
+    {
+      "id": "D14",
+      "category": "trigger",
+      "skill": "patent-drafting",
+      "input": "审查员说权 6 里的「10℃或 300℃」要改成「10~300℃」，直接改行吗？",
+      "expect": {
+        "must_trigger": true,
+        "skill_phrases": [
+          "修改边界"
+        ],
+        "behavior": "读 references/11 修改边界（2025 口径）：两离散值合并成区间属于引入新内容、不允许；给替代策略（收窄到原记载端点内或并入从权特征）"
+      }
     }
   ]
 }

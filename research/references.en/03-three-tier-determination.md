@@ -84,6 +84,27 @@ is reaching it **in principle impossible**?
 > ⚠️ If the data comes from simulation, the simulation conditions must be stated in the specification; otherwise
 > reproducibility will be questioned.
 
+## Alignment with the examination practice (2025 Guidelines)
+
+The framework maps layer by layer onto the substantive-examination practice of the Examination
+Guidelines 2025 edition (section numbers follow the official text). **The alignment does not touch
+the scoring system**: the two relevance dimensions, the 1–5 levels and the role values are all
+unchanged — what is aligned is the judgment wording and the search obligations.
+
+| This framework | Examination practice (Guidelines) | Alignment notes |
+|---|---|---|
+| Tier 1 per-document novelty | **Separate-comparison principle** (Part II Ch. 3 §3.1): each claim is compared with **each** document alone; combined comparison is prohibited | The `blocking` judgment is inherently a separate comparison; "the same invention" requires substantial identity in four aspects — field, problem, solution, expected effect — not just the feature list |
+| Tier 1 search obligation | **Conflicting-application window** (Part II Ch. 3 §2.2, Ch. 7 §4.2): anything filed by anyone before the filing date and published/announced after it (inclusive), judged on the full text including drawings | Searches must cover applications published within 18 months after the filing date; family/citation tracking must not stop at publication dates earlier than the filing date |
+| Tier 2 combination inventive step | **Three-step method** (Part II Ch. 4 §3.2.1.1): ① closest prior art → ② the technical problem actually solved → ③ technical inspiration | The "strongest argument structure" = walking the three steps for the examiner: pick the closest D1, set the actually-solved problem from the effect of the distinguishing features, then check the three inspiration situations (common knowledge / same document elsewhere with the same function / another document with the same function) |
+| Tier 2 self-attack | **The actually-solved technical problem must not contain guidance or hints toward the distinguishing features** (Part II Ch. 4 §3.2.1.1, step ②) | When writing "what the examiner will say", the problem sentence must not contain wording of the distinguishing features themselves — if it does, the attack is hindsight and does not stand; do not celebrate early |
+| Tier 3 technical effect | **Secondary considerations** (Part II Ch. 4 §5): an unexpected technical effect is a secondary factor of inventive step, not the only route | The criterion "must presuppose the distinguishing features" shares its root with step ②; when the three-step method already yields non-obviousness, do not force extra unexpected-effect claims |
+| Parameter-defined subjects | **Presumption rule** (Part II Ch. 3 §3.2.5): a product defined by parameters/use/preparation that cannot be distinguished in structure/composition is presumed to lack novelty, with the burden on the applicant | For parameter-defined subjects (alloys/materials/compositions), treat the `partial` level strictly — with no structural/compositional distinction found, presume `covered` and state the presumption in the assessment |
+
+**Content boundary of a cited document** (Part II Ch. 3 §2.3): a document's content includes what is
+implicit and directly and unambiguously derivable; drawings count only for what is directly and
+unambiguously derivable — **dimensions obtained by measuring a drawing are not disclosure**.
+Apply this in the feature-comparison matrix whenever a drawing is cited.
+
 ## Workflow
 
 Use [07-assessment-protocol.md](07-assessment-protocol.md) for supported AI/human assessments and explicit batch confirmation. The legacy CSV workflow below may update judgments, but never creates G-S-03 confirmation and unsupported records do not count.

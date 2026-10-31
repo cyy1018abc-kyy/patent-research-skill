@@ -35,3 +35,28 @@ Human scores or exclusions take precedence. AI may save new evidence and a propo
 The kernel checks locators, quotation matches, score consistency and fingerprint freshness. It cannot prove that a quotation entails the score or authenticate the natural person behind a command. The agent must not impersonate a reviewer.
 
 See [07-assessment-protocol.md](07-assessment-protocol.md) for commands and migration. Research conclusions without running tools still require the unverified annotation.
+
+## Annex: examiner search-report file-type correspondence
+
+An examiner's search report cited in an OA marks document roles as **X/Y/A/R/P/E/T/L**
+(Examination Guidelines 2025, Part II Ch. 7 §12). That marking and this project's three
+provenance levels (verified/attested/asserted) are **not the same layer** — it describes the
+role the document plays in the examiner's reasoning, not source traceability. When an OA or
+search report arrives, convert per the table below into candidate `role` / `novelty_check`;
+**provenance levels are still judged independently by the three levels above**:
+
+| Report mark | Examiner meaning | Conversion |
+|---|---|---|
+| X | Alone affects novelty/inventive step | Treat as `near_prior_art`; presume `blocking` in Tier 1; G-S-03 requires human confirmation |
+| Y | In combination affects inventive step | Direct input to the combination-attack presumption; feeds the strongest-argument structure of Tier 2 |
+| A | Background art (no effect on patentability) | `pool`, ordinary candidate |
+| R | Conflicting application (filed before the filing date by anyone) | Triggers Tier 1 plus the Article 9 double-filing check (conflicting applications defeat novelty and double protection only) |
+| P | Intermediate document (citation chain related to R) | `family`/`pool` depending on content; used to trace family and priority chains |
+| E | Identical invention or utility model (same applicant, same day, etc.) | Article 9 double-protection path, recorded separately |
+| T | Cited document (background of P/E/R) | `pool`, for clarifying the citation chain |
+| L | Other (e.g., non-patent literature) | `pool` |
+
+> P marks carry a relevance symbol (Examination Guidelines 2025, Part II Ch. 7 §12); when one
+> document carries several marks, convert to the highest-relevance role. The conversion is a
+> candidate-management action only and **does not conclude for the examiner** — the boundary
+> discipline of reference 11 applies equally.
