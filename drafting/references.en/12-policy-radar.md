@@ -9,6 +9,7 @@
 
 | Source | What to look at | What it affects |
 |---|---|---|
+| CNIPA "Examination Guidelines" **2025 edition** | full-text comparison completed 2026-10-31; 15 change points and their dispositions are logged in the first row of `docs/policy-log.md`; only watch for the next revision notice from here | research references 02/03/04, drafting references 09/10/11, deadline PRESETS (aligned in the skill 3.10.0 round) |
 | CNIPA "Examination Guidelines" revision notices | inventive-step practice, claim forms for computer programs / algorithms | three-tier determination summary in [00](00-prerequisites.md), claim forms in [10](10-claim-drafting.md) |
 | CNIPA forms / book-style pages | request / abstract / fee-reduction form versions | the application-document list in [09](09-disclosure-drafting.md) |
 | cponline upload requirements | drawing resolution / format / size limits | `patentkit figures` (full spec in the research skill's reference 08) |
@@ -29,7 +30,9 @@ the "pending" rows of policy-log.
 ## Practices already frozen into tools (changing them means changing the kernel)
 
 - deadline presets: `patentkit/deadlines.py` PRESETS (application fee 2 months /
-  examination request 3 years / OA 4+2 months / annuities by anniversary);
+  examination request 3 years / OA 4+2 months / registration 2 months / reexamination 3 months /
+  drug-PTE and delayed-grant compensation 3 months each / deposit certificates 4 months /
+  annuities by anniversary — expanded after the 2025-practice reconciliation);
 - drawing requirements: `patentkit figures` (black-white line drawings, mark consistency);
 - the five gates: `patentkit/gates.py` (changes go through CHANGELOG + regression tests,
   never a verbal loosening).

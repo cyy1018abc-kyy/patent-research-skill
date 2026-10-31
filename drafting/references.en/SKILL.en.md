@@ -19,12 +19,12 @@ description: >
   "application document package", "delivery manifest".
 license: Apache-2.0
 metadata:
-  version: 3.9.0
+  version: 3.10.0
 ---
 
 # Patent Drafting (draft-grade)
 
-> **Companions**: `patentkit >= 0.9.0` (the single implementation of the rules) and the
+> **Companions**: `patentkit >= 0.10.0` (the single implementation of the rules) and the
 > sibling skill `patent-research` (evidence chain and acceptance gates).
 > **Position**: convert the search results into deliverable drafts — disclosure, claims /
 > specification skeleton, OA response. The output is always "draft + gap list"; it is not
