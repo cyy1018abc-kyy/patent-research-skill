@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-10-31 · Phase V preregistered benchmark results (gate FAIL → experimental) + BM25 engine 24× fast path
+
+**Retrieval evaluation (preregistered, DAPFAM, 312 public test topics)**
+
+- Gate verdict: **FAIL** — the extension pipeline did not meet the improvement
+  gate: Family Recall@100 23.68pp vs 26.18pp baseline (mean gain −2.50pp,
+  per-topic paired bootstrap 95% CI [−3.75, −1.28]); both gates unmet and the CI
+  upper bound < 0 (significantly worse, not "no difference").
+- Groups published with n: IN 26.1 vs 28.1 (n=90), MIXED 23.3 vs 26.1 (n=216),
+  OUT **0.0 vs 0.0** (n=6 — lexical retrieval cannot reach cross-domain gold at
+  K=200 on either side). Failure analysis and boundaries: docs/retrieval-evaluation.md §6.
+- Claim level downgraded per the preregistered rule: **experimental enhancement**;
+  no "proven recall improvement" wording anywhere. Gold/gate untouched (protocol
+  hash locked to the frozen preregistration snapshot benchmarks/retrieval/protocol-prereg.md).
+- Budget accounted: 936 baseline / 934 extension requests, k=200, zero network
+  requests (audit integrity).
+
+**BM25 engine (4.1-A1, applied after the scored runs — outputs byte-identical)**
+
+- Precomputed per-doc length norm + optional numpy columnar postings fast path
+  (stdlib-only fallback preserved; `PATENT_INTEL_BM25_FORCE_PY=1` escape hatch).
+  Full-text search on the 45k-doc corpus: ~11s → ~0.45s per request (~24×);
+  equivalence locked by unit tests and a byte-identical rerun of the archived
+  real-data smoke (run file compared byte-for-byte).
+
+**Infrastructure** (PR #17): preregistered gate.yaml + frozen protocol snapshot,
+1,247-topic DAPFAM-derived suite (312 test), fetch/build/leakage tooling with
+reverse-injection self-checks, deterministic runner, Phase V scoring pipeline
+(paired bootstrap, group slices with n, audit integrity), EX-01/EX-02 annotation
+protocols and κ tooling.
+
 ## 2026-10-29 · 3.9.0（kernel 0.9.0 延续，未重发）— patent_intel 0.1.0 发行 + 跨平台 CI 修复（Phase L / WP-L1+L2）
 
 **扩展发行（方案 A）**

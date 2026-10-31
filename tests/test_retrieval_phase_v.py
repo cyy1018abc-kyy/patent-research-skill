@@ -70,11 +70,18 @@ def test_gate_yaml_is_preregistered_and_consistent() -> None:
     text = GATE.read_text(encoding="utf-8")
     match = re.search(r'protocol_sha256: "([0-9a-f]{64})"', text)
     assert match, "gate.yaml must carry the protocol hash"
-    actual = hashlib.sha256(PROTOCOL.read_bytes()).hexdigest()
-    assert match.group(1) == actual, "protocol hash drifted — re-register before any new run"
+    # hash covers the FROZEN preregistration snapshot (protocol-prereg.md), not the
+    # evolving protocol doc — the results chapter (§6) was appended post-evaluation
+    # by design; editing the snapshot's §1–§5 semantics = new preregistration required
+    prereg = REPO_ROOT / "benchmarks" / "retrieval" / "protocol-prereg.md"
+    assert prereg.is_file(), "frozen preregistration protocol snapshot must be committed"
+    actual = hashlib.sha256(prereg.read_bytes()).hexdigest()
+    assert match.group(1) == actual, "prereg snapshot drifted from the gate hash"
     assert "PENDING" not in text
     assert 'test_topics_min: 100' in text
     assert 'network_requests: 0' in text or "unauthorized_network_requests: 0" in text
+    live_doc = (REPO_ROOT / "docs" / "retrieval-evaluation.md").read_text(encoding="utf-8")
+    assert "## 6. Phase V 结果与定级" in live_doc, "results chapter must stay published"
 
 
 def test_committed_manifest_satisfies_gate_minimums() -> None:

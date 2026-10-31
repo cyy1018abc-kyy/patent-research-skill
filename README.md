@@ -194,7 +194,14 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 ## Optional extension: patent_intel (4.0 development line)
 
 An independently versioned, strictly optional wheel (`patent_intel`, currently 0.1.0)
-adds retrieval-recall tooling around the kernel without touching its authority:
+adds retrieval-recall tooling around the kernel without touching its authority.
+**Status: experimental enhancement** — the preregistered Phase V evaluation
+(DAPFAM, 312 public test topics, same-budget same-engine comparison) did **not**
+meet the improvement gate: Family Recall@100 23.7pp vs 26.2pp for the BM25
+baseline (mean gain −2.5pp, paired bootstrap 95% CI [−3.8, −1.3]); cross-domain
+(OUT) recall is 0 for both sides at K=200. Numbers, groups and failure analysis:
+[benchmarks/retrieval/results/](benchmarks/retrieval/results/) and
+[docs/retrieval-evaluation.md §6](docs/retrieval-evaluation.md).
 
 ```bash
 pip install extensions/patent_intel            # stdlib-only base

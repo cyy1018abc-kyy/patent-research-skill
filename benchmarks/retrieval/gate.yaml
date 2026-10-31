@@ -1,11 +1,13 @@
 # 检索评测判定门 —— 预注册冻结（Phase V / V3-1）
 # 本文件在任何评测跑分之前提交；此后门值与规则不得修改（改 Gold/调门 = 评测作废）。
-# 协议指纹：docs/retrieval-evaluation.md 的 SHA-256（提交时由 preregistration 校验脚本回填并锁定）。
-# 蓝图来源：patent_research_skill_4_0_engineering_blueprint.md §12；协议：docs/retrieval-evaluation.md §3/§4。
+# 协议指纹：benchmarks/retrieval/protocol-prereg.md（预注册时点协议快照）的 SHA-256。
+# 演进版协议文档 docs/retrieval-evaluation.md 在结果章追加内容不改变本哈希；
+# 修改 §1–§5 语义 = 改协议，必须重新预注册（新哈希 + 新门提交先于新跑分）。
+# 蓝图来源：patent_research_skill_4_0_engineering_blueprint.md §12；协议快照：protocol-prereg.md（= 预注册时点的 docs/retrieval-evaluation.md §1–§5 + 附录 A）。
 
 schema_version: 1
 preregistered_at: "2026-10-30"
-protocol_sha256: "dbbe348f8464bee22b6db444369112966378f8ba3f036d654c3eb0003d982f85"  # docs/retrieval-evaluation.md @ preregistration 2026-10-30
+protocol_sha256: "dbbe348f8464bee22b6db444369112966378f8ba3f036d654c3eb0003d982f85"  # = benchmarks/retrieval/protocol-prereg.md @ preregistration 2026-10-30
 preregistration_rule: >
   本文件与评测协议的提交必须早于任何 runs/ 评测产物与 results/ 报告；
   git 历史顺序即预注册证明。跑分后发现缺陷需要返工时：门值不变，
