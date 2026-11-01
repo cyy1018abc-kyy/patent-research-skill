@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from patent_intel.retrieval.hybrid import family_collapse, rrf_fuse
+from patent_intel.retrieval.reranker import RerankAccount, empty_rerank_account
 
 __all__ = ["ChannelResult", "FusionResult", "FusionPipeline", "FusionError"]
 
@@ -45,13 +46,14 @@ class ChannelResult:
 class FusionResult:
     """Fused ranking plus the full channel account (present / errored / absent)."""
 
-    fused: list[tuple[str, float]]  # after family collapse
+    fused: list[tuple[str, float]]  # after family collapse (+ optional rerank)
     fused_pre_collapse: list[tuple[str, float]]
     channels: dict[str, list[str]]
     channels_errored: dict[str, str]
     channels_absent: dict[str, str]
     k: int
     weights: dict[str, float]
+    rerank: RerankAccount = field(default_factory=empty_rerank_account)
 
     def describe(self) -> dict[str, Any]:
         return {
@@ -61,6 +63,7 @@ class FusionResult:
             "channels_absent": dict(self.channels_absent),
             "k": self.k,
             "weights": dict(self.weights),
+            "rerank": self.rerank.describe(),
             "note": (
                 "RRF 融合分数是排序信号，不是证据强度 (fusion score is a ranking "
                 "signal, not evidence strength)"
@@ -70,15 +73,25 @@ class FusionResult:
 
 @dataclass
 class FusionPipeline:
-    """Per-query RRF fusion with family collapse and honest channel accounting."""
+    """Per-query RRF fusion with family collapse and honest channel accounting.
+
+    Optional rerank stage (WP-L2): when ``reranker`` is set, the family-collapsed
+    top ``rerank_top`` candidates are re-ordered by it (roadmap Phase 4: 融合后的
+    前 N 个候选执行重排序); the tail keeps its fused order. A raising reranker
+    degrades to the pre-rerank ranking with the error recorded in the account.
+    """
 
     k: int = 60
     weights: dict[str, float] = field(default_factory=dict)
     top: int | None = None
+    reranker: Any | None = None
+    rerank_top: int = 50
 
     def __post_init__(self) -> None:
         if self.k <= 0:
             raise ValueError("k must be positive")
+        if self.rerank_top <= 0:
+            raise ValueError("rerank_top must be positive")
 
     def fuse(
         self,
@@ -86,6 +99,7 @@ class FusionPipeline:
         *,
         family_of: Mapping[str, str | None],
         absent: Mapping[str, str] | None = None,
+        query: str = "",
     ) -> FusionResult:
         present = {c.name: list(c.ranked) for c in channels if c.error is None}
         errored = {c.name: c.error for c in channels if c.error is not None}
@@ -96,6 +110,12 @@ class FusionPipeline:
             )
         fused_pre = rrf_fuse(present, k=self.k, weights=self.weights or None, top=self.top)
         fused = family_collapse(fused_pre, {d: f for d, f in family_of.items() if f})
+        account = empty_rerank_account()
+        if self.reranker is not None:
+            applied = self._rerank(fused, query)
+            account = applied.account
+            if account.applied:
+                fused = applied.fused
         return FusionResult(
             fused=fused,
             fused_pre_collapse=fused_pre,
@@ -104,4 +124,49 @@ class FusionPipeline:
             channels_absent=dict(absent or {}),
             k=self.k,
             weights=dict(self.weights),
+            rerank=account,
         )
+
+    def _rerank(self, fused: list[tuple[str, float]], query: str) -> Any:
+        """Run the rerank stage over the fused top-N; returns the account with
+        ``fused`` attached when applied. Failure degrades honestly."""
+        head = fused[: self.rerank_top]
+        try:
+            reranked = self.reranker.rerank(query, list(head))
+        except Exception as exc:  # noqa: BLE001 - degradation is recorded, never silent
+            return _AppliedRerank(
+                account=RerankAccount(
+                    reranker=getattr(self.reranker, "name", type(self.reranker).__name__),
+                    applied=False,
+                    error=f"{type(exc).__name__}: {exc}",
+                    top=self.rerank_top,
+                ),
+                fused=fused,
+            )
+        if sorted(doc for doc, _ in reranked) != sorted(doc for doc, _ in head):
+            # contract: same candidate *set*, same length — a reranker that invents
+            # or drops candidates is refused rather than trusted (order may differ,
+            # that is the reranker's whole job)
+            return _AppliedRerank(
+                account=RerankAccount(
+                    reranker=getattr(self.reranker, "name", type(self.reranker).__name__),
+                    applied=False,
+                    error="reranker returned a different candidate set (contract violation)",
+                    top=self.rerank_top,
+                ),
+                fused=fused,
+            )
+        return _AppliedRerank(
+            account=RerankAccount(
+                reranker=getattr(self.reranker, "name", type(self.reranker).__name__),
+                applied=True,
+                top=self.rerank_top,
+            ),
+            fused=list(reranked) + fused[self.rerank_top:],
+        )
+
+
+@dataclass(frozen=True)
+class _AppliedRerank:
+    account: RerankAccount
+    fused: list[tuple[str, float]]

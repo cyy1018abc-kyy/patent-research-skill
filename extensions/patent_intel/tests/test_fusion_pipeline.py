@@ -177,3 +177,89 @@ def test_recall_report_dense_failure_is_recorded_not_fatal(
     )
     assert "dense" in report["fusion"]["channels_errored"]
     assert "lexical_bm25" in report["fusion"]["channels_present"]
+
+
+# ── WP-L2: rerank stage ──────────────────────────────────────────────
+
+
+class _ReverseTop2:
+    """Reorders whatever top-N the pipeline hands it (contract-abiding)."""
+
+    name = "fake-cross-encoder"
+
+    def rerank(self, query: str, candidates: list[tuple[str, float]]) -> list[tuple[str, float]]:
+        return list(reversed(candidates))
+
+
+class _BrokenReranker:
+    name = "broken-model"
+
+    def rerank(self, query: str, candidates: list[tuple[str, float]]) -> list[tuple[str, float]]:
+        raise RuntimeError("model files missing")
+
+
+class _CheatingReranker:
+    """Violates the contract: invents a candidate and drops another."""
+
+    name = "cheater"
+
+    def rerank(self, query: str, candidates: list[tuple[str, float]]) -> list[tuple[str, float]]:
+        return [("D9", 1.0)]
+
+
+def test_identity_reranker_preserves_order() -> None:
+    from patent_intel.retrieval.reranker import IdentityReranker
+
+    candidates = [("D2", 0.9), ("D1", 0.5), ("D3", 0.1)]
+    assert IdentityReranker().rerank("q", candidates) == candidates
+
+
+def test_pipeline_applies_reranker_to_top_n_and_keeps_tail() -> None:
+    pipeline = FusionPipeline(k=60, reranker=_ReverseTop2(), rerank_top=2)
+    result = pipeline.fuse(
+        [ChannelResult("lexical_bm25", ["D1", "D2", "D3"])],
+        family_of={},
+        query="信标",
+    )
+    assert [doc for doc, _ in result.fused][:2] == ["D2", "D1"]  # top-2 reversed by reranker
+    assert [doc for doc, _ in result.fused][2:] == ["D3"]  # tail keeps fused order
+    account = result.rerank
+    assert account.applied is True and account.reranker == "fake-cross-encoder"
+    assert account.top == 2 and account.error is None
+    assert result.describe()["rerank"]["applied"] is True
+
+
+def test_pipeline_reranker_failure_degrades_with_account() -> None:
+    pipeline = FusionPipeline(k=60, reranker=_BrokenReranker(), rerank_top=2)
+    result = pipeline.fuse(
+        [ChannelResult("lexical_bm25", ["D1", "D2", "D3"])], family_of={}, query="信标"
+    )
+    assert [doc for doc, _ in result.fused] == ["D1", "D2", "D3"]  # pre-rerank order kept
+    assert result.rerank.applied is False
+    assert result.rerank.error and "RuntimeError" in result.rerank.error
+
+
+def test_pipeline_refuses_contract_violating_reranker() -> None:
+    pipeline = FusionPipeline(k=60, reranker=_CheatingReranker(), rerank_top=2)
+    result = pipeline.fuse(
+        [ChannelResult("lexical_bm25", ["D1", "D2", "D3"])], family_of={}, query="信标"
+    )
+    assert [doc for doc, _ in result.fused] == ["D1", "D2", "D3"]  # untrusted, original kept
+    assert result.rerank.applied is False
+    assert "contract violation" in (result.rerank.error or "")
+
+
+def test_runner_without_reranker_records_empty_account() -> None:
+    index = BM25Index(_corpus())
+    runner = reporting._runner_for(index, _corpus(), k=5)
+    outcome = runner(_spec("Q1"))
+    assert outcome.channel_report["rerank"] == {"reranker": None, "applied": False, "error": None, "top": None}
+
+
+def test_runner_with_identity_reranker_leaves_fused_order_intact() -> None:
+    from patent_intel.retrieval.reranker import IdentityReranker
+
+    index = BM25Index(_corpus())
+    plain = reporting._runner_for(index, _corpus(), k=5)
+    reranked = reporting._runner_for(index, _corpus(), k=5, reranker=IdentityReranker())
+    assert reranked(_spec("Q1")).hits == plain(_spec("Q1")).hits

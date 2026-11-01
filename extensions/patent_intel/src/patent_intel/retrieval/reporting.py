@@ -52,18 +52,24 @@ def _runner_for(
     dense_retriever: Any | None = None,
     fuse_k: int = 60,
     fuse_top: int | None = None,
+    reranker: Any | None = None,
+    rerank_top: int = 50,
 ) -> Any:
-    """Fused per-query runner (WP-L1): lexical BM25 always present, dense optional.
+    """Fused per-query runner (WP-L1/L2): lexical BM25 always present, dense and
+    rerank optional.
 
     Family ids only from corpus-reported family relations; documents without one
     stay document-level evidence — a document id never masquerades as a family id
     (adaptive roadmap Task 1 / UT-S03). A single configured channel degenerates to
-    the identical ranking (RRF over one list is order-preserving).
+    the identical ranking (RRF over one list is order-preserving); a failing dense
+    or rerank stage degrades with the reason recorded.
     """
     family_of = {doc.doc_id: doc.family_id for doc in corpus_docs}
     known_families = {doc_id: fam for doc_id, fam in family_of.items() if fam}
     doc_texts = [(doc.doc_id, doc.text) for doc in corpus_docs]
-    pipeline = FusionPipeline(k=fuse_k, top=fuse_top)
+    pipeline = FusionPipeline(
+        k=fuse_k, top=fuse_top, reranker=reranker, rerank_top=rerank_top
+    )
     absent: dict[str, str] = {} if dense_retriever is not None else {
         "dense": "not enabled (enable_dense/--dense; requires the 'dense' extra)"
     }
@@ -79,7 +85,7 @@ def _runner_for(
                 channels.append(
                     ChannelResult("dense", [], error=f"{type(exc).__name__}: {exc}")
                 )
-        fusion = pipeline.fuse(channels, family_of=known_families, absent=absent)
+        fusion = pipeline.fuse(channels, family_of=known_families, absent=absent, query=text)
         hits = [doc_id for doc_id, _score in fusion.fused]
         fams: list[str] = []
         for doc_id in hits:
