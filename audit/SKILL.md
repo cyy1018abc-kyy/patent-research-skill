@@ -13,7 +13,7 @@ description: >
   「证据链质量」「检索盲区」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 4.0.0
+  version: 4.1.0
 ---
 
 # 检索证据链审计（Audit）

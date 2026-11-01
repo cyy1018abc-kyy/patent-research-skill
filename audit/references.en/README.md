@@ -1,6 +1,6 @@
 # patent-audit · English references
 
-This directory mirrors the Chinese-primary runtime of the `patent-audit` skill (v4.0.0).
+This directory mirrors the Chinese-primary runtime of the `patent-audit` skill (v4.1.0).
 The Chinese edition under `../references/` is authoritative; English is maintained for
 non-Chinese reviewers. Audit artifacts are named in English by design (findings.json,
 audit-ledger.json, REPORT.md, NEEDS-VALIDATION.md).

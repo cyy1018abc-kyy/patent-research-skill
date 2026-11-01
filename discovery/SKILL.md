@@ -11,7 +11,7 @@ description: >
   「人工确认」「内容指纹」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 4.0.0
+  version: 4.1.0
 ---
 
 # 专利点挖掘（Discovery）

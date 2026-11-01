@@ -54,13 +54,13 @@ def wheel_path(built_extension: Path) -> Path:
 
 
 def test_extension_wheel_and_sums(built_extension: Path, wheel_path: Path) -> None:
-    sums = built_extension / f"SHA256SUMS-patent-intel-v0.1.0.txt"
+    sums = built_extension / f"SHA256SUMS-patent-intel-v0.2.0.txt"
     assert sums.is_file()
     import hashlib
 
     digest = hashlib.sha256(wheel_path.read_bytes()).hexdigest()
     assert sums.read_text(encoding="utf-8") == f"{digest}  {wheel_path.name}\n"
-    assert wheel_path.name == "patent_intel-0.1.0-py3-none-any.whl"
+    assert wheel_path.name == "patent_intel-0.2.0-py3-none-any.whl"
 
 
 def test_extension_wheel_metadata_minimal_install(wheel_path: Path) -> None:
@@ -83,7 +83,7 @@ def test_extension_wheel_metadata_minimal_install(wheel_path: Path) -> None:
 def test_extension_wheel_pure_python_content(wheel_path: Path) -> None:
     with zipfile.ZipFile(wheel_path) as archive:
         names = archive.namelist()
-    assert all(n.startswith(("patent_intel/", "patent_intel-0.1.0.dist-info/")) for n in names)
+    assert all(n.startswith(("patent_intel/", "patent_intel-0.2.0.dist-info/")) for n in names)
     # no binaries, no bundled models
     assert not any(n.endswith((".so", ".pyd", ".dll", ".bin", ".onnx", ".safetensors")) for n in names)
 
@@ -120,7 +120,7 @@ def test_fresh_venv_install_help_doctor_uninstall(wheel_path: Path, tmp_path: Pa
     assert "offline" in doctor.stdout
 
     version = run("-c", "import patent_intel; print(patent_intel.__version__)")
-    assert version.stdout.strip() == "0.1.0"
+    assert version.stdout.strip() == "0.2.0"
 
     # uninstallable
     uninstall = run("-m", "pip", "uninstall", "-y", "patent-intel", "--quiet")
@@ -164,20 +164,20 @@ def test_doctor_extension_check_detects_bad_metadata(tmp_path: Path) -> None:
     doctor = _load_doctor()
     ext = tmp_path / "extension"
     ext.mkdir()
-    bad = ext / "patent_intel-0.1.0-py3-none-any.whl"
+    bad = ext / "patent_intel-0.2.0-py3-none-any.whl"
     with zipfile.ZipFile(bad, "w") as archive:
         archive.writestr(
-            "patent_intel-0.1.0.dist-info/METADATA",
-            "Metadata-Version: 2.1\nName: patent-intel\nVersion: 0.1.0\n"
+            "patent_intel-0.2.0.dist-info/METADATA",
+            "Metadata-Version: 2.1\nName: patent-intel\nVersion: 0.2.0\n"
             "Requires-Python: >=3.11\nRequires-Dist: torch\n",
         )
         archive.writestr(
-            "patent_intel-0.1.0.dist-info/entry_points.txt",
+            "patent_intel-0.2.0.dist-info/entry_points.txt",
             "[console_scripts]\n",
         )
         archive.writestr("patent_intel/__init__.py", "")
     digest = hashlib.sha256(bad.read_bytes()).hexdigest()
-    (ext / "SHA256SUMS-patent-intel-v0.1.0.txt").write_text(f"{digest}  {bad.name}\n", encoding="utf-8")
+    (ext / "SHA256SUMS-patent-intel-v0.2.0.txt").write_text(f"{digest}  {bad.name}\n", encoding="utf-8")
     status, detail = doctor.check_extension_wheel_files(tmp_path)
     assert status == doctor.FAIL
     assert "torch" in detail or "extras" in detail
@@ -189,7 +189,7 @@ def test_doctor_extension_check_detects_bad_metadata(tmp_path: Path) -> None:
 def test_build_result_reports_extension(tmp_path: Path) -> None:
     builder = _load_builder()
     result = builder.build_extension_wheel(tmp_path)
-    assert result["version"] == "0.1.0"
+    assert result["version"] == "0.2.0"
     assert Path(result["wheel"]).is_file()
     assert Path(result["checksums"]).is_file()
     assert len(result["sha256"]) == 64

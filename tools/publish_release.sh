@@ -5,7 +5,7 @@
 set -euo pipefail
 
 kernel=patentkit-v0.10.0
-skill=skill-v4.0.0
+skill=skill-v4.1.0
 published=0
 for tag in "$kernel" "$skill"; do
     if draft=$(gh release view "$tag" --json isDraft --jq '.isDraft'); then
@@ -25,7 +25,7 @@ if [ "$(gh release view "$kernel" --json isDraft --jq '.isDraft')" = true ]; the
     gh release upload "$kernel" dist/patentkit-0.10.0-py3-none-any.whl dist/patentkit-0.10.0.tar.gz dist/SHA256SUMS-patentkit-v0.10.0.txt --clobber
 fi
 if [ "$(gh release view "$skill" --json isDraft --jq '.isDraft')" = true ]; then
-    gh release upload "$skill" dist/patent-research-skill-v4.0.0.zip dist/patent-drafting-skill-v4.0.0.zip dist/INSTALL-colleagues.md dist/install-oneclick.cmd dist/SHA256SUMS-skill-v4.0.0.txt dist/extension/patent_intel-0.1.0-py3-none-any.whl dist/extension/SHA256SUMS-patent-intel-v0.1.0.txt --clobber
+    gh release upload "$skill" dist/patent-research-skill-v4.1.0.zip dist/patent-drafting-skill-v4.1.0.zip dist/INSTALL-colleagues.md dist/install-oneclick.cmd dist/SHA256SUMS-skill-v4.1.0.txt dist/extension/patent_intel-0.2.0-py3-none-any.whl dist/extension/SHA256SUMS-patent-intel-v0.2.0.txt --clobber
 fi
 gh release edit "$kernel" --draft=false --latest=false
 gh release edit "$skill" --draft=false --latest=true

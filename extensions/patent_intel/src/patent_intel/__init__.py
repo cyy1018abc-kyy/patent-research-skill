@@ -14,7 +14,7 @@ dependencies lazily and degrade with actionable errors.
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 #: Record schemas understood by this build. Records whose ``schema_version`` major is
 #: higher than this are refused with UnsupportedSchemaError instead of being silently

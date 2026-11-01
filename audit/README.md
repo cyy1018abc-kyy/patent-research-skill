@@ -1,7 +1,7 @@
 # patent-audit（检索证据链审计技能）
 
 > 独立复核检索证据链：覆盖率台账 + 对抗验证 + 逐字引文核对 + 中立报告。
-> 本目录是 `patent-research-skill` 仓库下的第四个技能载荷（v4.0.0），
+> 本目录是 `patent-research-skill` 仓库下的第四个技能载荷（v4.1.0），
 > 与 `research/`（检索/证据链）、`drafting/`（撰写底稿）、`discovery/`（专利点挖掘）
 > 共用唯一内核 `patentkit`。
 > 方法论改编自 Cloudflare `security-audit-skill`（MIT）：六阶段审计骨架
