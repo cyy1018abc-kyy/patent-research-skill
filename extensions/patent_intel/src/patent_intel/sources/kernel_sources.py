@@ -15,6 +15,7 @@ sanctioned way raw artifacts come into existence), so they are double-gated by
 
 from __future__ import annotations
 
+import csv
 import json
 import subprocess
 import sys
@@ -32,6 +33,7 @@ from patent_intel.sources.base import (
     RequestPlan,
     SourceAdapter,
 )
+from patent_intel.sources.normalize import normalize_doi, normalize_publication_number
 from patent_intel.sources.registry import register_source
 
 __all__ = ["KernelFetchAdapter", "CnipaAdapter", "CrossrefAdapter", "ACQUISITION_VERBS"]
@@ -164,12 +166,17 @@ class KernelFetchAdapter(SourceAdapter):
         raw_result: dict[str, Any],
     ) -> AcquisitionResult:
         out = AcquisitionResult()
+        normalized_total: int | None = None
         for log_path in new_logs:
             data = json.loads(log_path.read_text(encoding="utf-8"))
             result_block = data.get("result") or {}
             hits = result_block.get("hit_count")
             complete = result_block.get("complete")
             raw_export = result_block.get("raw_export")
+            records = self._iter_raw_records(workspace, raw_export)
+            normalized = self._count_normalized(records)
+            if normalized is not None:
+                normalized_total = (normalized_total or 0) + normalized
             run = SearchRun(
                 owner="WP-B",
                 run_id=f"{plan.source}:{log_path.stem}",
@@ -202,10 +209,15 @@ class KernelFetchAdapter(SourceAdapter):
                 f"kernel {self.kernel_verb} produced no new search log; "
                 f"stdout was: {raw_result.get('stdout', '')[:500]!r}"
             )
+        out.records_normalized = normalized_total
         return out
 
-    def _fetched_count(self, workspace: Path, raw_export: str | None) -> int | None:
-        """Count records in the raw artifact (best effort; None when unreadable)."""
+    def _iter_raw_records(self, workspace: Path, raw_export: str | None) -> list[dict[str, Any]] | None:
+        """Parse the raw artifact into record dicts.
+
+        Returns ``None`` when the artifact is missing or unreadable (unknown — never
+        fabricated as zero), a list of row dicts otherwise (possibly empty).
+        """
         if not raw_export:
             return None
         raw_path = workspace / "02_search_logs" / raw_export
@@ -215,20 +227,56 @@ class KernelFetchAdapter(SourceAdapter):
             if raw_path.suffix == ".json":
                 data = json.loads(raw_path.read_text(encoding="utf-8"))
                 if isinstance(data, list):
-                    return len(data)
+                    return [row for row in data if isinstance(row, dict)]
                 if isinstance(data, dict):
                     items = data.get("items") or data.get("results") or data.get("records")
                     if isinstance(items, list):
-                        return len(items)
-                    return None
+                        return [row for row in items if isinstance(row, dict)]
+                    return []
+                return []
             if raw_path.suffix in (".csv", ".tsv"):
-                lines = [ln for ln in raw_path.read_text(encoding="utf-8").splitlines() if ln.strip()]
-                return max(0, len(lines) - 1)  # minus header
+                delimiter = "\t" if raw_path.suffix == ".tsv" else ","
+                with raw_path.open(encoding="utf-8", newline="") as fh:
+                    return [dict(row) for row in csv.DictReader(fh)]
             if raw_path.suffix == ".jsonl":
-                return sum(1 for ln in raw_path.read_text(encoding="utf-8").splitlines() if ln.strip())
+                rows: list[dict[str, Any]] = []
+                for line in raw_path.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(row, dict):
+                        rows.append(row)
+                return rows
         except (json.JSONDecodeError, UnicodeDecodeError, OSError):
             return None
         return None
+
+    def _fetched_count(self, workspace: Path, raw_export: str | None) -> int | None:
+        """Count records in the raw artifact (best effort; None when unreadable)."""
+        records = self._iter_raw_records(workspace, raw_export)
+        if records is None:
+            return None
+        return len(records)
+
+    @staticmethod
+    def _count_normalized(records: list[dict[str, Any]] | None) -> int | None:
+        """Records whose identifier (publication number or DOI) was confidently
+        normalized (roadmap §8.3: records_normalized ≠ records_fetched)."""
+        if records is None:
+            return None
+        count = 0
+        for record in records:
+            pub = str(record.get("publication_number") or record.get("normalized_number") or "").strip()
+            doi = str(record.get("DOI") or record.get("doi") or "").strip()
+            if pub and normalize_publication_number(pub).confidence != "uncertain":
+                count += 1
+            elif doi and normalize_doi(doi).confidence != "uncertain":
+                count += 1
+        return count
 
 
 @register_source

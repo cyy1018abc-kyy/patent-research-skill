@@ -157,7 +157,7 @@ def _fake_kernel_raw_log(ws: Path, *, hits: int = 1000, fetched: int = 3) -> Non
     raw_dir.mkdir(parents=True, exist_ok=True)
     raw_rel = "raw/Q100_page-1.json"
     (raw_dir / "Q100_page-1.json").write_text(
-        json.dumps({"items": [{"DOI": f"10.1/fake{i}"} for i in range(fetched)]}),
+        json.dumps({"items": [{"DOI": f"10.1000/fake{i}"} for i in range(fetched)]}),
         encoding="utf-8",
     )
     log = {
@@ -508,3 +508,91 @@ def test_ops_dry_run_and_execute_use_the_same_request(
     preview_q = preview_url.split("q=")[1].split("&")[0]
     executed_q = search_urls[0].split("q=")[1].split("&")[0]
     assert preview_q == executed_q
+
+
+# ── WP-L5: §8.3 accounting (records_normalized / new_publications / new_families) ──
+
+
+def test_execute_counts_records_normalized_from_raw(gold_workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Crossref raw carries DOIs: fetched=3, normalized=3 (all DOIs parse confidently)."""
+    adapter = get_source("crossref")
+    plan = adapter.build_request(_query())
+    config = PatentIntelConfig(network_consent=True, allowed_sources=["crossref"])
+
+    def fake_run(self, args, workspace, timeout=300):  # type: ignore[no-untyped-def]
+        _fake_kernel_raw_log(workspace, hits=1000, fetched=3)
+        return {"stdout": "ok", "stderr": ""}
+
+    monkeypatch.setattr(type(adapter), "_run_kernel", fake_run)
+    result = adapter.execute(plan, gold_workspace, confirm_network=True, config=config)
+    assert result.records_normalized == 3
+    assert result.describe()["records_normalized"] == 3
+    assert "new_publications" not in result.describe()  # unknown until corpus state is applied
+
+
+def test_records_normalized_excludes_unparseable_ids(gold_workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from patent_intel.sources.normalize import normalize_publication_number
+
+    adapter = get_source("crossref")
+    plan = adapter.build_request(_query())
+    config = PatentIntelConfig(network_consent=True, allowed_sources=["crossref"])
+
+    def fake_run(self, args, workspace, timeout=300):  # type: ignore[no-untyped-def]
+        raw_dir = workspace / "02_search_logs" / "raw"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        raw_rel = "raw/Q100_page-1.json"
+        (raw_dir / "Q100_page-1.json").write_text(json.dumps({"items": [
+            {"publication_number": "CN119000001A"},
+            {"publication_number": "junk-entry"},
+            {"DOI": "10.1000/real-one"},
+        ]}), encoding="utf-8")
+        assert normalize_publication_number("junk-entry").confidence == "uncertain"
+        log = {
+            "db": "crossref", "target": "TGT-9001", "actor": "test", "capture_mode": "live",
+            "timestamp": "2026-02-01T08:00:00+00:00",
+            "query": {"id": "N1", "axis": "N1@TGT-9001", "text": "q"},
+            "result": {"hit_count": 9, "raw_export": raw_rel, "complete": False},
+            "capture_incomplete_reason": "limited",
+        }
+        (workspace / "02_search_logs" / "crossref_2026-02-01_N1_1.log.json").write_text(
+            json.dumps(log, ensure_ascii=False), encoding="utf-8")
+        return {"stdout": "ok", "stderr": ""}
+
+    monkeypatch.setattr(type(adapter), "_run_kernel", fake_run)
+    result = adapter.execute(plan, gold_workspace, confirm_network=True, config=config)
+    assert result.runs[0].records_fetched == 3
+    assert result.records_normalized == 2  # junk entry stays unnormalized, honestly
+
+
+def test_account_new_counts_against_corpus_state() -> None:
+    from patent_intel.sources.family import account_new
+
+    records = [
+        {"publication_number": "CN119000001A", "family_refs": [{"family_id": "FAM-9", "source": "ops"}]},
+        {"publication_number": "CN 119 000 001 A"},  # same publication, formatted differently
+        {"publication_number": "EP1234567A1", "family_refs": [
+            {"family_id": "FAM-9", "source": "ops"},
+            {"family_id": "FAM-GUESS", "source": "guess", "confidence": "uncertain"},
+        ]},
+        {"publication_number": "EP0000002A1"},  # caller already knows this one
+        {"publication_number": "still-junk"},   # uncertain → no identity, no count
+    ]
+    accounting = account_new(
+        records, known_publications={"EP0000002A1"}, known_families={"FAM-1"},
+    )
+    assert accounting["new_publications"] == 2  # CN119000001A (once) + EP1234567A1
+    accounting2 = account_new(
+        records, known_publications={"EP0000002A1"}, known_families=set(),
+    )
+    assert accounting2["new_families"] == 1  # FAM-9 reported; FAM-GUESS uncertain → excluded
+
+
+def test_account_new_uncertain_family_ref_never_counts() -> None:
+    from patent_intel.sources.family import account_new
+
+    accounting = account_new(
+        [{"publication_number": "CN119000001A",
+          "family_refs": [{"family_id": "FAM-X", "source": "guess", "confidence": "uncertain"}]}],
+        known_publications=set(), known_families=set(),
+    )
+    assert accounting == {"new_publications": 1, "new_families": 0}

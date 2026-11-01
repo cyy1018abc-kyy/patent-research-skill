@@ -9,12 +9,19 @@ same number with conflicting metadata is a *conflict*, never silently rewritten.
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from typing import Any
 
 from patent_intel.sources.normalize import NormalizedID, normalize_publication_number
 
-__all__ = ["FamilyGroup", "FamilyView", "dedupe_ranked_hits", "dedupe_publication_records"]
+__all__ = [
+    "FamilyGroup",
+    "FamilyView",
+    "dedupe_ranked_hits",
+    "dedupe_publication_records",
+    "account_new",
+]
 
 
 @dataclass
@@ -183,3 +190,40 @@ def dedupe_publication_records(
         "duplicates": duplicates,
         "conflicts": conflicts,
     }
+
+
+def account_new(
+    records: list[dict[str, Any]],
+    *,
+    known_publications: Collection[str],
+    known_families: Collection[str],
+) -> dict[str, int]:
+    """New-publication / new-family accounting against the caller's corpus state
+    (roadmap §8.3: new_publications / new_families are corpus deltas, not hit
+    counts). Family contribution uses only reported (non-uncertain) family refs —
+    uncertain relations never contribute to family accounting. Records the caller
+    already holds are not new; duplicates inside one batch count once.
+    """
+    known_pubs = {str(p) for p in known_publications}
+    known_fams = {str(f) for f in known_families}
+    new_pubs = 0
+    new_families = 0
+    seen_families: set[str] = set()
+    for record in records:
+        pub = str(record.get("publication_number") or record.get("normalized_number") or "").strip()
+        if pub:
+            norm = normalize_publication_number(pub)
+            if norm.confidence != "uncertain" and norm.normalized and norm.normalized not in known_pubs:
+                known_pubs.add(norm.normalized)
+                new_pubs += 1
+        for ref in record.get("family_refs") or []:
+            if (
+                isinstance(ref, dict)
+                and ref.get("family_id")
+                and ref.get("confidence") != "uncertain"
+            ):
+                family_id = str(ref["family_id"])
+                if family_id not in known_fams and family_id not in seen_families:
+                    seen_families.add(family_id)
+                    new_families += 1
+    return {"new_publications": new_pubs, "new_families": new_families}
