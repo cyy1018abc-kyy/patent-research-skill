@@ -9,12 +9,19 @@ same number with conflicting metadata is a *conflict*, never silently rewritten.
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from typing import Any
 
 from patent_intel.sources.normalize import NormalizedID, normalize_publication_number
 
-__all__ = ["FamilyGroup", "FamilyView", "dedupe_ranked_hits"]
+__all__ = [
+    "FamilyGroup",
+    "FamilyView",
+    "dedupe_ranked_hits",
+    "dedupe_publication_records",
+    "account_new",
+]
 
 
 @dataclass
@@ -24,6 +31,9 @@ class FamilyGroup:
     family_status: str
     members: list[dict[str, Any]] = field(default_factory=list)
     conflicts: list[str] = field(default_factory=list)
+    #: family refs graded uncertain — recorded for review, never used for merging
+    #: (adaptive roadmap Task 5: 不可靠关系不自动合并)
+    deferred_family_refs: list[dict[str, Any]] = field(default_factory=list)
 
     def describe(self) -> dict[str, Any]:
         return {
@@ -34,6 +44,7 @@ class FamilyGroup:
                 m.get("publication_number") or m.get("normalized_number") or "?" for m in self.members
             ],
             "conflicts": self.conflicts,
+            "deferred_family_refs": len(self.deferred_family_refs),
         }
 
 
@@ -56,12 +67,19 @@ class FamilyView:
         enriched["normalized_number"] = norm.normalized
         enriched["number_confidence"] = norm.confidence
 
-        # 1) explicit family id from the source wins
+        # 1) explicit family id from the source wins — refs graded "uncertain" are
+        # deferred to the landed group for review, never used for merging (Task 5:
+        # 不可靠关系不自动合并; confidence absent = treated as reported, preserving
+        # the pre-Task-5 contract where plain {"family_id": …} refs merge)
         family_refs = record.get("family_refs") or []
         explicit_family = None
+        deferred_refs: list[dict[str, Any]] = []
         if isinstance(family_refs, list):
             for ref in family_refs:
                 if isinstance(ref, dict) and ref.get("family_id"):
+                    if ref.get("confidence") == "uncertain":
+                        deferred_refs.append(ref)
+                        continue
                     explicit_family = str(ref["family_id"])
                     break
 
@@ -84,6 +102,9 @@ class FamilyView:
             self._check_conflict(group, enriched)
         else:
             group.members.append(enriched)
+        for ref in deferred_refs:
+            if ref not in group.deferred_family_refs:
+                group.deferred_family_refs.append(ref)
         return group
 
     def _check_conflict(self, group: FamilyGroup, record: dict[str, Any]) -> None:
@@ -125,3 +146,84 @@ def dedupe_ranked_hits(ranked: list[tuple[int, str, dict[str, Any]]]) -> list[tu
             seen.add(family)
         out.append((rank, key, entry))
     return out
+
+
+def dedupe_publication_records(
+    records: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Dedup multi-subquery results by publication-number identity (roadmap §5.3).
+
+    Records whose normalized numbers agree are the *same publication* — the first
+    occurrence is kept and later metadata differences are recorded as conflicts,
+    never silently rewritten. Unparseable numbers dedupe only by their exact raw
+    string. The stats distinguish the accounting honestly:
+    ``{"seen", "unique", "duplicates", "conflicts"}``.
+    """
+    unique: list[dict[str, Any]] = []
+    by_identity: dict[str, dict[str, Any]] = {}
+    conflicts: list[str] = []
+    duplicates = 0
+    for record in records:
+        raw = str(record.get("publication_number") or record.get("normalized_number") or "")
+        norm = normalize_publication_number(raw)
+        identity = norm.normalized if norm.confidence != "uncertain" else raw.strip()
+        if not identity:
+            identity = f"<unnumbered:{len(unique)}>"  # keep unnumbered rows independent
+        existing = by_identity.get(identity)
+        if existing is None:
+            enriched = dict(record)
+            enriched["normalized_number"] = norm.normalized or raw
+            enriched["number_confidence"] = norm.confidence
+            by_identity[identity] = enriched
+            unique.append(enriched)
+            continue
+        duplicates += 1
+        for key in ("title", "publication_date", "assignee"):
+            a, b = existing.get(key), record.get(key)
+            if a and b and a != b:
+                note = f"{identity}: {key} {a!r} vs {b!r}"
+                if note not in conflicts:
+                    conflicts.append(note)
+    return unique, {
+        "seen": len(records),
+        "unique": len(unique),
+        "duplicates": duplicates,
+        "conflicts": conflicts,
+    }
+
+
+def account_new(
+    records: list[dict[str, Any]],
+    *,
+    known_publications: Collection[str],
+    known_families: Collection[str],
+) -> dict[str, int]:
+    """New-publication / new-family accounting against the caller's corpus state
+    (roadmap §8.3: new_publications / new_families are corpus deltas, not hit
+    counts). Family contribution uses only reported (non-uncertain) family refs —
+    uncertain relations never contribute to family accounting. Records the caller
+    already holds are not new; duplicates inside one batch count once.
+    """
+    known_pubs = {str(p) for p in known_publications}
+    known_fams = {str(f) for f in known_families}
+    new_pubs = 0
+    new_families = 0
+    seen_families: set[str] = set()
+    for record in records:
+        pub = str(record.get("publication_number") or record.get("normalized_number") or "").strip()
+        if pub:
+            norm = normalize_publication_number(pub)
+            if norm.confidence != "uncertain" and norm.normalized and norm.normalized not in known_pubs:
+                known_pubs.add(norm.normalized)
+                new_pubs += 1
+        for ref in record.get("family_refs") or []:
+            if (
+                isinstance(ref, dict)
+                and ref.get("family_id")
+                and ref.get("confidence") != "uncertain"
+            ):
+                family_id = str(ref["family_id"])
+                if family_id not in known_fams and family_id not in seen_families:
+                    seen_families.add(family_id)
+                    new_families += 1
+    return {"new_publications": new_pubs, "new_families": new_families}

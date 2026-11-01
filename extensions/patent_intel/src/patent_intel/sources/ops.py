@@ -82,7 +82,12 @@ class OpsAdapter(SourceAdapter):
     def capabilities(self) -> Capability:
         return Capability(
             source=self.id,
-            query_fields=frozenset({"keywords", "class"}),
+            # honesty first: build_request only constructs `ti or ab=(...)` today.
+            # Classification filtering is re-declared only after the CQL field is
+            # verified against the live API (Stage 4) — declaring it now let queries
+            # with a class filter pass the capability gate and then silently DROP
+            # the filter (adaptive roadmap §2.3-5).
+            query_fields=frozenset({"keywords"}),
             languages=frozenset({"en", "zh", "de", "fr"}),
             max_results_per_query=0,  # unknown; paged with explicit limits
             pagination=True,
@@ -94,7 +99,9 @@ class OpsAdapter(SourceAdapter):
             notes=(
                 "Contract-tested against a fake transport only; no live run from this "
                 "repo yet. 403/429 stop acquisition (no retry storm); raw pages go to "
-                "the sidecar with SHA-256 audit entries."
+                "the sidecar with SHA-256 audit entries. Classification (class) search "
+                "is undeclared until live-verified; a query carrying a class filter is "
+                "refused rather than silently degraded."
             ),
         )
 

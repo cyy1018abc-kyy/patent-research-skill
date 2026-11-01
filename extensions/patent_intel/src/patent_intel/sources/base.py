@@ -110,19 +110,34 @@ class DryRunResult:
 
 @dataclass
 class AcquisitionResult:
-    """Outcome of one executed acquisition: runs + raw artifacts (kernel-written)."""
+    """Outcome of one executed acquisition: runs + raw artifacts (kernel-written).
+
+    Roadmap §8.3 accounting: ``records_normalized`` counts raw records whose
+    identifier (publication number or DOI) was confidently normalized; the
+    ``new_publications`` / ``new_families`` deltas need the caller's corpus state
+    and are filled via :func:`patent_intel.sources.family.account_new` — an adapter
+    alone cannot know them, so they stay ``None`` (unknown) rather than 0.
+    """
 
     runs: list[SearchRun] = field(default_factory=list)
     raw_refs: list[dict[str, Any]] = field(default_factory=list)
     #: paths of kernel-written log files created by this execution
     log_paths: list[str] = field(default_factory=list)
+    records_normalized: int | None = None
+    new_publications: int | None = None
+    new_families: int | None = None
 
     def describe(self) -> dict[str, Any]:
-        return {
+        out = {
             "runs": [r.to_dict() for r in self.runs],
             "raw_refs": self.raw_refs,
             "log_paths": self.log_paths,
         }
+        for name in ("records_normalized", "new_publications", "new_families"):
+            value = getattr(self, name)
+            if value is not None:
+                out[name] = value
+        return out
 
 
 class SourceAdapter(ABC):

@@ -15,19 +15,28 @@ from typing import Any
 __all__ = ["rrf_fuse", "family_collapse", "DenseRetriever"]
 
 
-def rrf_fuse(rankings: dict[str, list[str]], *, k: int = 60, top: int | None = None) -> list[tuple[str, float]]:
-    """Fuse named rankings into one list by RRF: score = Σ 1/(k + rank_i).
+def rrf_fuse(
+    rankings: dict[str, list[str]],
+    *,
+    k: int = 60,
+    top: int | None = None,
+    weights: dict[str, float] | None = None,
+) -> list[tuple[str, float]]:
+    """Fuse named rankings into one list by RRF: score = Σ w_i/(k + rank_i).
 
     Deterministic: equal fused scores break by doc id ascending; input list order
     is also a tiebreaker (dict insertion order), so identical inputs give identical
-    outputs (UT-R01).
+    outputs (UT-R01). ``weights`` optionally scales each channel (default 1.0);
+    weights do not participate in tie-breaking — equal scores still break by doc id.
     """
     if k <= 0:
         raise ValueError("k must be positive")
+    channel_weights = weights or {}
     scores: dict[str, float] = {}
     for source_name in rankings:
+        weight = channel_weights.get(source_name, 1.0)
         for rank, doc_id in enumerate(rankings[source_name], start=1):
-            scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+            scores[doc_id] = scores.get(doc_id, 0.0) + weight / (k + rank)
     fused = sorted(scores.items(), key=lambda item: (-item[1], item[0]))
     return fused[:top] if top else fused
 

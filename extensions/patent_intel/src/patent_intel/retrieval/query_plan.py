@@ -125,6 +125,7 @@ class QueryPlanBuilder:
                     language=detect_language(" ".join(terms[:broad_recall_terms])),
                     query_type="broad_recall",
                     source="multi",
+                    feature_ids=[f.feature_id for f in positive],
                     provenance=[c.to_provenance() for c in self._all_candidates(expansions)][:broad_recall_terms],
                     approved=False,
                 )
@@ -145,6 +146,7 @@ class QueryPlanBuilder:
                         language=detect_language(" ".join(t for g in groups for t in g)),
                         query_type="feature_cross",
                         source="multi",
+                        feature_ids=[f.feature_id for f in required[:max_cross]],
                         filters={"and_groups": groups, "max_and": max_cross},
                         provenance=[
                             c.to_provenance()
@@ -172,6 +174,9 @@ class QueryPlanBuilder:
                     language=detect_language(cand.term),
                     query_type="cross_domain",
                     source="multi",
+                    # an expansion term without a resolvable origin feature stays None —
+                    # unknown coverage, never a fabricated feature attribution
+                    feature_ids=[cand.feature_id] if cand.feature_id else None,
                     provenance=[cand.to_provenance()],
                     approved=False,
                 )
@@ -199,6 +204,7 @@ class QueryPlanBuilder:
             language=detect_language(" ".join(terms)),
             query_type="single_feature",
             source="multi",
+            feature_ids=[feature.feature_id],
             filters={"requiredness": feature.requiredness},
             provenance=[c.to_provenance() for c in candidates],
             approved=False,
@@ -221,6 +227,67 @@ class QueryPlanBuilder:
 
 
 # ── per-source rendering (UT-Q02) ────────────────────────────────────
+
+
+def effective_feature_ids(query: QuerySpec) -> list[str]:
+    """The query's authoritative feature dimension: ``feature_ids`` when present,
+    else the provenance-declared feature ids (deduped, order-stable).
+
+    Shared by the controller (coverage recording) and the policies (utility
+    estimation). Empty = no feature attribution — unknown coverage, never a zero.
+    """
+    if query.feature_ids:
+        return list(dict.fromkeys(query.feature_ids))
+    out: list[str] = []
+    for item in query.provenance or ():
+        if isinstance(item, dict) and item.get("feature_id"):
+            feature_id = str(item["feature_id"])
+            if feature_id not in out:
+                out.append(feature_id)
+    return out
+
+
+# ── CNIPA multi-subquery decomposition (adaptive roadmap §5.3) ───────
+
+
+def plan_cnipa_subqueries(
+    query: QuerySpec, *, max_subqueries: int = 6
+) -> list[QuerySpec]:
+    """Split one query into CNIPA-friendly subqueries (one term each).
+
+    CNIPA's limited page size and 3-AND cap make one wide OR-query a poor fit: the
+    roadmap requires multi-subquery decomposition with per-subquery result dedup.
+    Splitting is deterministic: single_feature and single-term queries stay whole;
+    multi-term queries split per term, each subquery keeping the feature attribution
+    of its term (via provenance) so coverage stays honest. A hard cap bounds the
+    request cost; the split is recorded, never hidden.
+    """
+    terms = list(dict.fromkeys(query.terms))
+    if query.query_type == "single_feature" or len(terms) <= 1:
+        return [query]
+    feature_by_term: dict[str, str] = {}
+    for item in query.provenance or ():
+        if isinstance(item, dict) and item.get("feature_id") and item.get("term"):
+            feature_by_term.setdefault(str(item["term"]), str(item["feature_id"]))
+    subqueries: list[QuerySpec] = []
+    for index, term in enumerate(terms[:max_subqueries], start=1):
+        feature_id = feature_by_term.get(term)
+        subqueries.append(
+            QuerySpec(
+                owner=query.owner,
+                query_id=f"{query.query_id}-SUB{index:02d}",
+                axis_id=query.axis_id,
+                terms=[term],
+                language=query.language,
+                query_type=query.query_type,
+                source=query.source,
+                feature_ids=[feature_id] if feature_id else None,
+                filters=dict(query.filters or {}),
+                provenance=query.provenance,
+                approved=query.approved,
+            )
+        )
+    return subqueries
 
 
 class RenderError(ValueError):

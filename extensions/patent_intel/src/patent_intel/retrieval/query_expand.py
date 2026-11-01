@@ -95,6 +95,7 @@ class TermCandidate:
     def to_provenance(self) -> dict[str, Any]:
         return {
             "feature_id": self.feature_id,
+            "term": self.term,
             "relation": self.relation,
             "source": self.source,
             "verified": self.verified,

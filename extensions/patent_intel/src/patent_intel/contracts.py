@@ -33,10 +33,15 @@ __all__ = [
     "QuerySpec",
     "SearchRun",
     "RawArtifactRef",
+    "IngestStatus",
     "PatentRecord",
+    "PublicationRecord",
+    "FieldPresence",
     "DocumentAnchor",
     "RetrievalRun",
     "EvaluationReport",
+    "RetrievalGapReport",
+    "CoverageState",
     "EvidenceProjection",
     "AdvisoryProposal",
     "Requiredness",
@@ -310,7 +315,15 @@ class FeatureSpec(Record):
 
 @dataclass(kw_only=True)
 class QuerySpec(Record):
-    """One planned query — always a proposal until a human approves it (WP-A)."""
+    """One planned query — always a proposal until a human approves it (WP-A).
+
+    ``feature_ids`` is the *authoritative* technical-feature dimension for coverage
+    accounting (adaptive roadmap Task 1): coverage is counted per feature id, never
+    per axis id or per query type. ``axis_id`` stays the planning axis. Planners must
+    fill ``feature_ids`` whenever the query targets known features; a query with no
+    resolvable feature (e.g. an expansion term with unknown origin) keeps it ``None``
+    — an empty feature dimension is reported as unknown coverage, never as zero.
+    """
 
     RECORD_TYPE = "query_spec"
     SPEC = {
@@ -320,6 +333,7 @@ class QuerySpec(Record):
         "language": str,
         "query_type": str,
         "source": str,
+        "feature_ids": list,
         "filters": dict,
         "provenance": list,
         "approved": bool,
@@ -333,6 +347,7 @@ class QuerySpec(Record):
     language: str
     query_type: str
     source: str
+    feature_ids: list[str] | None = None
     filters: dict[str, Any] | None = None
     provenance: list[dict[str, Any]] | None = None
     approved: bool = False
@@ -347,6 +362,16 @@ class QuerySpec(Record):
         for term in self.terms:
             if not isinstance(term, str) or not term.strip():
                 raise RecordValidationError("query terms must be non-empty strings")
+        if self.feature_ids is not None:
+            seen: set[str] = set()
+            for feature_id in self.feature_ids:
+                if not isinstance(feature_id, str) or not feature_id.strip():
+                    raise RecordValidationError("query feature_ids must be non-empty strings")
+                if feature_id in seen:
+                    raise RecordValidationError(
+                        f"query feature_ids must be unique; duplicated {feature_id!r}"
+                    )
+                seen.add(feature_id)
         for item in self.provenance or ():
             if not isinstance(item, dict) or "feature_id" not in item:
                 raise RecordValidationError(
@@ -406,9 +431,31 @@ class SearchRun(Record):
             raise RecordValidationError("status=failed requires 'error'")
 
 
+class IngestStatus:
+    """Lifecycle of a registered raw artifact (adaptive roadmap Task 4).
+
+    Registration never implies ingestion: ``registered`` artifacts are archived and
+    hash-verified but not yet parsed into the unified repository.
+    """
+
+    REGISTERED = "registered"
+    INGESTED = "ingested"
+    FAILED = "failed"
+    SUPERSEDED = "superseded"
+
+    ALL = (REGISTERED, INGESTED, FAILED, SUPERSEDED)
+
+
 @dataclass(kw_only=True)
 class RawArtifactRef(Record):
-    """Pointer to one captured raw response artifact (WP-B)."""
+    """Pointer to one captured raw response artifact (WP-B).
+
+    Task 4 registry fields (``artifact_id`` onward) are optional and additive —
+    older refs without them keep round-tripping. Physical paths stay wherever each
+    source wrote them (kernel workspace ``02_search_logs/raw/``, OPS sidecar
+    ``raw/``, local imports); registration unifies the *references and audit*,
+    never the storage location.
+    """
 
     RECORD_TYPE = "raw_artifact_ref"
     SPEC = {
@@ -419,6 +466,11 @@ class RawArtifactRef(Record):
         "source": str,
         "captured_at": str,
         "source_record_id": str,
+        "artifact_id": str,
+        "query_id": str,
+        "run_id": str,
+        "ingest_status": str,
+        "normalized_record_refs": list,
     }
     REQUIRED = ("path", "sha256", "mime", "bytes", "source", "captured_at")
 
@@ -429,6 +481,11 @@ class RawArtifactRef(Record):
     source: str
     captured_at: str
     source_record_id: str | None = None
+    artifact_id: str | None = None
+    query_id: str | None = None
+    run_id: str | None = None
+    ingest_status: str | None = None
+    normalized_record_refs: list[dict[str, Any]] | None = None
 
     def validate(self) -> None:
         super().validate()
@@ -436,6 +493,10 @@ class RawArtifactRef(Record):
             raise RecordValidationError("bytes must be >= 0")
         if not re.fullmatch(r"[0-9a-f]{64}", self.sha256):
             raise RecordValidationError(f"sha256 must be 64 lowercase hex chars, got {self.sha256!r}")
+        if self.ingest_status is not None and self.ingest_status not in IngestStatus.ALL:
+            raise RecordValidationError(
+                f"ingest_status {self.ingest_status!r} not in {IngestStatus.ALL}"
+            )
 
 
 @dataclass(kw_only=True)
@@ -478,6 +539,120 @@ class PatentRecord(Record):
             if not isinstance(ref, dict) or "source" not in ref or "raw_ref" not in ref:
                 raise RecordValidationError(
                     "each source_ref needs {source, raw_ref} so candidates stay traceable (interface rule 4)"
+                )
+
+
+class FieldPresence:
+    """Honest field-completeness vocabulary (adaptive roadmap §6.4).
+
+    A field the source never returned is ``missing``; a field we did not ask for (or
+    whose absence cannot be distinguished from an acquisition gap) is ``unknown``.
+    Neither may be presented as "the original does not contain this content" —
+    字段缺失表示为未知或未取得，不得用空值推断原文不存在该内容.
+    """
+
+    OBTAINED = "obtained"
+    MISSING = "missing"
+    UNKNOWN = "unknown"
+
+    ALL = (OBTAINED, MISSING, UNKNOWN)
+
+
+@dataclass(kw_only=True)
+class PublicationRecord(Record):
+    """One publication text (公开号 + kind code uniquely locate it; WP-B, Task 5).
+
+    ``PatentRecord`` stays the light index entry; this is the detailed per-publication
+    model. Multilingual fields are ``{language_tag: text}`` maps saved per language —
+    never merged into one string. ``family_refs`` carry their own confidence: refs
+    graded ``uncertain`` are recorded but must never drive deterministic merging.
+    """
+
+    RECORD_TYPE = "publication_record"
+    SPEC = {
+        "publication_id": str,
+        "publication_number": str,
+        "application_number": str,
+        "jurisdiction": str,
+        "kind_code": str,
+        "title": dict,
+        "abstract": dict,
+        "applicants": list,
+        "inventors": list,
+        "priority_dates": list,
+        "filing_date": str,
+        "publication_date": str,
+        "ipc": list,
+        "cpc": list,
+        "citations": list,
+        "family_refs": list,
+        "source_refs": list,
+        "identifier_confidence": str,
+        "field_completeness": dict,
+    }
+    REQUIRED = ("publication_id", "publication_number", "source_refs", "identifier_confidence")
+
+    publication_id: str
+    publication_number: str
+    source_refs: list[dict[str, Any]]
+    identifier_confidence: str
+    application_number: str | None = None
+    jurisdiction: str | None = None
+    kind_code: str | None = None
+    title: dict[str, str] | None = None
+    abstract: dict[str, str] | None = None
+    applicants: list[str] | None = None
+    inventors: list[str] | None = None
+    priority_dates: list[str] | None = None
+    filing_date: str | None = None
+    publication_date: str | None = None
+    ipc: list[str] | None = None
+    cpc: list[str] | None = None
+    citations: list[dict[str, Any]] | None = None
+    family_refs: list[dict[str, Any]] | None = None
+    field_completeness: dict[str, str] | None = None
+
+    def validate(self) -> None:
+        super().validate()
+        if self.identifier_confidence not in IdentifierConfidence.ALL:
+            raise RecordValidationError(
+                f"identifier_confidence {self.identifier_confidence!r} not in {IdentifierConfidence.ALL}"
+            )
+        if not self.source_refs:
+            raise RecordValidationError("publication record must carry at least one source_ref")
+        for ref in self.source_refs:
+            if not isinstance(ref, dict) or "source" not in ref or "raw_ref" not in ref:
+                raise RecordValidationError(
+                    "each source_ref needs {source, raw_ref} so publications stay traceable (interface rule 4)"
+                )
+        for name in ("title", "abstract"):
+            value = getattr(self, name)
+            if value is not None:
+                if not value:
+                    raise RecordValidationError(f"{name} must be a non-empty language map or None")
+                for lang, text in value.items():
+                    if not isinstance(lang, str) or not lang.strip():
+                        raise RecordValidationError(f"{name} language tags must be non-empty strings")
+                    if not isinstance(text, str) or not text.strip():
+                        raise RecordValidationError(
+                            f"{name}[{lang!r}] must be a non-empty string — absent languages are "
+                            "simply not present in the map, never empty placeholders"
+                        )
+        for ref in self.family_refs or ():
+            if not isinstance(ref, dict) or not ref.get("family_id") or not ref.get("source"):
+                raise RecordValidationError(
+                    "each family_ref needs {family_id, source} — family relations are only "
+                    "used when a source actually reported them (UT-S03)"
+                )
+            confidence = ref.get("confidence")
+            if confidence is not None and confidence not in IdentifierConfidence.ALL:
+                raise RecordValidationError(
+                    f"family_ref confidence {confidence!r} not in {IdentifierConfidence.ALL}"
+                )
+        for field_name, presence in (self.field_completeness or {}).items():
+            if presence not in FieldPresence.ALL:
+                raise RecordValidationError(
+                    f"field_completeness[{field_name!r}] = {presence!r} not in {FieldPresence.ALL}"
                 )
 
 
@@ -577,6 +752,88 @@ class EvaluationReport(Record):
     ci: dict[str, Any] | None = None
     cost: dict[str, Any] | None = None
     coverage: dict[str, Any] | None = None
+
+
+class CoverageState:
+    """Retrieval-level feature coverage states (adaptive roadmap Phase 2).
+
+    These are *retrieval* judgements, never evidence verdicts — a hit is not a
+    disclosure (interface rule: 搜索命中不是披露证据; the kernel owns evidence).
+    ``unknown`` must never be auto-downgraded to ``not_found``: without an executed
+    query targeting the feature, absence cannot be claimed.
+    """
+
+    DISCLOSED = "disclosed"
+    PARTIALLY_DISCLOSED = "partially_disclosed"
+    NOT_FOUND = "not_found"
+    UNKNOWN = "unknown"
+
+    ALL = (DISCLOSED, PARTIALLY_DISCLOSED, NOT_FOUND, UNKNOWN)
+
+
+@dataclass(kw_only=True)
+class RetrievalGapReport(Record):
+    """Gap report after evaluating a retrieval run (WP-A; adaptive roadmap Task 2).
+
+    ``metrics.gold_available=false`` means the numbers are proxy indicators —
+    they must never be presented as true recall (no gold set, no recall claim).
+    """
+
+    RECORD_TYPE = "retrieval_gap_report"
+    SPEC = {
+        "run_label": str,
+        "feature_states": dict,
+        "uncovered_features": list,
+        "partially_covered_features": list,
+        "unknown_features": list,
+        "missing_technical_relations": list,
+        "missing_technical_domains": list,
+        "missing_jurisdictions": list,
+        "missing_data_sources": list,
+        "recommended_actions": list,
+        "metrics": dict,
+        "stop_context": dict,
+    }
+    REQUIRED = ("feature_states", "metrics")
+
+    run_label: str | None = None
+    feature_states: dict[str, str]
+    uncovered_features: list[str] | None = None
+    partially_covered_features: list[str] | None = None
+    unknown_features: list[str] | None = None
+    missing_technical_relations: list[str] | None = None
+    missing_technical_domains: list[str] | None = None
+    missing_jurisdictions: list[str] | None = None
+    missing_data_sources: list[str] | None = None
+    recommended_actions: list[dict[str, Any]] | None = None
+    metrics: dict[str, Any]
+    stop_context: dict[str, Any] | None = None
+
+    def validate(self) -> None:
+        super().validate()
+        for feature_id, state in self.feature_states.items():
+            if state not in CoverageState.ALL:
+                raise RecordValidationError(
+                    f"feature_states[{feature_id!r}] = {state!r} not in {CoverageState.ALL}"
+                )
+        unknown = set(self.unknown_features or ())
+        not_found = set(self.uncovered_features or ())
+        overlap = unknown & not_found
+        if overlap:
+            raise RecordValidationError(
+                f"features cannot be both unknown and not_found: {sorted(overlap)} "
+                "(unknown must never be auto-downgraded to not_found)"
+            )
+        if not isinstance(self.metrics.get("gold_available"), bool):
+            raise RecordValidationError(
+                "metrics must carry an explicit boolean 'gold_available' — "
+                "proxy indicators must never masquerade as true recall"
+            )
+        for action in self.recommended_actions or ():
+            if not isinstance(action, dict) or "action" not in action or "reason" not in action:
+                raise RecordValidationError(
+                    "every recommended_action needs at least {action, reason}"
+                )
 
 
 @dataclass(kw_only=True)

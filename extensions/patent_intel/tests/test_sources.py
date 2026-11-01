@@ -157,7 +157,7 @@ def _fake_kernel_raw_log(ws: Path, *, hits: int = 1000, fetched: int = 3) -> Non
     raw_dir.mkdir(parents=True, exist_ok=True)
     raw_rel = "raw/Q100_page-1.json"
     (raw_dir / "Q100_page-1.json").write_text(
-        json.dumps({"items": [{"DOI": f"10.1/fake{i}"} for i in range(fetched)]}),
+        json.dumps({"items": [{"DOI": f"10.1000/fake{i}"} for i in range(fetched)]}),
         encoding="utf-8",
     )
     log = {
@@ -332,3 +332,267 @@ def test_dedupe_ranked_hits_keeps_best_rank_per_family() -> None:
     ]
     out = dedupe_ranked_hits(ranked)
     assert [item[1] for item in out] == ["EP0001A1", "EP0002A1"]  # FAM-1 kept at rank 1 only
+
+
+# ── capability↔request consistency invariant (adaptive roadmap §2.3-5) ──
+
+
+_PROBE_VALUES = {"keywords": "beacon", "abstract": "信标", "class": "H04W",
+                 "title": "beacon", "applicant": "华为"}
+
+
+def _probe_query(source: str, field: str) -> QuerySpec:
+    return QuerySpec(
+        owner="WP-A", query_id=f"Q-probe-{source}-{field}", axis_id="N1@TGT-0001",
+        terms=["beacon"], language="en", query_type="single_feature", source=source,
+        filters={field: _PROBE_VALUES[field]} if field != "keywords" else None,
+    )
+
+
+def test_every_declared_query_field_is_consumed_by_build_request() -> None:
+    """A declared field must reach the built request. Declaring an unconsumed field
+    lets queries pass the capability gate and then silently DROP the filter —
+    a fabricated success (the §2.3-5 OPS defect, kept impossible by this invariant).
+
+    Gate note: ``keywords`` is a pseudo-field every adapter must declare because
+    ``ensure_query_supported`` always adds it to the checked field set. For kernel
+    adapters terms do not travel alone (a concrete ``--abstract``/``--title``/… flag
+    is mandatory), so their real fields are probed via filters; terms-only adapters
+    (ops) must put the terms into the request itself.
+    """
+    for source_id in registry.ids():
+        adapter = get_source(source_id)
+        declared = sorted(adapter.capabilities().query_fields)
+        field_flags = getattr(adapter, "field_flags", {}) or {}
+        real_fields = [f for f in declared if f != "keywords"]
+        assert "keywords" in declared, (
+            f"{source_id}: 'keywords' must stay declared — the capability gate always "
+            "checks it (base.ensure_query_supported)"
+        )
+        if not real_fields:  # terms-only adapter: terms must reach the request
+            plan = adapter.build_request(_probe_query(source_id, "keywords"))
+            assert plan.args and any("beacon" in str(arg) for arg in plan.args), (
+                f"{source_id}: declared 'keywords' never reaches the request"
+            )
+            continue
+        for field in real_fields:
+            plan = adapter.build_request(_probe_query(source_id, field))
+            assert plan.args, f"{source_id}.{field}: empty request"
+            flag = field_flags.get(field)
+            if flag is not None:  # kernel adapters: value must appear after its flag
+                idx = plan.args.index(flag)
+                assert plan.args[idx + 1] == _PROBE_VALUES[field], (
+                    f"{source_id}.{field}: flag present but value not passed"
+                )
+            else:  # non-kernel adapters: field name or value must appear in the request
+                assert any(
+                    _PROBE_VALUES[field] in str(arg) or field in str(arg) for arg in plan.args
+                ), f"{source_id}.{field}: declared field never reaches the request"
+
+
+def test_ops_class_filter_is_refused_until_declared() -> None:
+    """OPS declares keywords only today; a class-carrying query must be REFUSED,
+    never accepted-then-silently-degraded."""
+    adapter = get_source("ops")
+    assert adapter.capabilities().query_fields == frozenset({"keywords"})
+    with pytest.raises(CapabilityError, match="does not support"):
+        adapter.build_request(_probe_query("ops", "class"))
+
+
+# ── CNIPA multi-subquery decomposition + result dedup (Task 7, §5.3) ──
+
+
+def _multi_term_query() -> QuerySpec:
+    return QuerySpec(
+        owner="WP-A", query_id="Q-N1-BR-001", axis_id="N1@TGT-0001",
+        terms=["信标", "beacon", "同步"], language="zh", query_type="broad_recall",
+        source="cnipa",
+        provenance=[
+            {"feature_id": "F-1", "term": "信标", "relation": "base", "source": "seed"},
+            {"feature_id": "F-1", "term": "beacon", "relation": "translation", "source": "seed"},
+            {"feature_id": "F-2", "term": "同步", "relation": "base", "source": "seed"},
+        ],
+    )
+
+
+def test_cnipa_subquery_split_is_deterministic_and_attributed() -> None:
+    from patent_intel.retrieval.query_plan import plan_cnipa_subqueries
+
+    subs = plan_cnipa_subqueries(_multi_term_query())
+    assert [s.query_id for s in subs] == [
+        "Q-N1-BR-001-SUB01", "Q-N1-BR-001-SUB02", "Q-N1-BR-001-SUB03",
+    ]
+    assert [s.terms for s in subs] == [["信标"], ["beacon"], ["同步"]]
+    assert subs[0].feature_ids == ["F-1"]  # term-level feature attribution survives
+    assert subs[2].feature_ids == ["F-2"]
+    # single_feature and single-term queries stay whole
+    single = QuerySpec(
+        owner="WP-A", query_id="Q-SF", axis_id="N1@TGT-0001", terms=["信标"], language="zh",
+        query_type="single_feature", source="cnipa",
+    )
+    assert plan_cnipa_subqueries(single) == [single]
+
+    capped = plan_cnipa_subqueries(_multi_term_query(), max_subqueries=2)
+    assert len(capped) == 2  # request cost stays bounded; the cap is explicit
+
+
+def test_dedupe_publication_records_normalizes_and_reports_conflicts() -> None:
+    from patent_intel.sources.family import dedupe_publication_records
+
+    records = [
+        {"publication_number": "CN 119 000 001 A", "title": "多阀控制", "assignee": "甲"},
+        {"publication_number": "CN119000001A", "title": "多阀控制", "assignee": "甲"},
+        {"publication_number": "CN119000001A", "title": "Multi-valve control", "assignee": "甲"},
+        {"publication_number": "US202600100000A1", "title": "other", "assignee": "乙"},
+        {"publication_number": "junk-entry", "title": "unparseable"},
+        {"publication_number": "junk-entry", "title": "same raw id"},
+    ]
+    unique, stats = dedupe_publication_records(records)
+    assert stats["seen"] == 6
+    assert stats["unique"] == 3  # CN (1) + US (1) + junk raw-string id (1)
+    assert stats["duplicates"] == 3  # CN×3 → 2 dups + junk×2 → 1 dup
+    # same publication, differing title → conflict recorded, first value kept
+    assert any("CN119000001A: title" in c for c in stats["conflicts"])
+    kept = [r for r in unique if r["normalized_number"] == "CN119000001A"][0]
+    assert kept["title"] == "多阀控制"
+
+
+def test_dedupe_publication_records_keeps_unnumbered_rows_independent() -> None:
+    from patent_intel.sources.family import dedupe_publication_records
+
+    unique, stats = dedupe_publication_records(
+        [{"title": "no number 1"}, {"title": "no number 2"}]
+    )
+    assert stats["unique"] == 2 and stats["duplicates"] == 0
+
+
+# ── OPS dry-run ↔ execute request consistency (Task 7) ───────────────
+
+
+def test_ops_dry_run_and_execute_use_the_same_request(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """roadmap §5.4: dry-run 预览的请求必须与实际执行请求一致。"""
+    from patent_intel.config import PatentIntelConfig
+    from patent_intel.sources.ops import OpsAdapter
+
+    class Resp:
+        def __init__(self, status_code: int, text: str = "{}", json_data: dict | None = None) -> None:
+            self.status_code = status_code
+            self.text = text
+            self._json = json_data or {}
+
+        def json(self) -> dict:
+            return self._json
+
+    issued_urls: list[str] = []
+
+    def transport(method: str, url: str, headers: dict, timeout: int) -> object:
+        issued_urls.append(url)
+        if "auth/accesstoken" in url:
+            return Resp(200, json_data={"access_token": "t", "expires_in": 1200})
+        return Resp(200)
+
+    monkeypatch.setenv("OPS_OAUTH_KEY", "test-key")
+    monkeypatch.setenv("OPS_OAUTH_SECRET", "test-secret")
+    adapter = OpsAdapter(transport=transport, sleep=lambda s: None)
+    plan = adapter.build_request(_probe_query("ops", "keywords"))
+    preview_url = adapter.dry_run(plan, tmp_path).preview[0]
+    config = PatentIntelConfig(network_consent=True, allowed_sources=["ops"])
+    adapter.execute(plan, tmp_path / "sidecar", confirm_network=True, config=config,
+                    state_dir=tmp_path / "sidecar", max_pages=1)
+    search_urls = [u for u in issued_urls if "published-data/search" in u]
+    assert search_urls, "execute never issued a search request"
+    # identical query string (the preview's &Range suffix is display-only; the
+    # executed paging rides the X-OPS-Range header — q must match exactly)
+    preview_q = preview_url.split("q=")[1].split("&")[0]
+    executed_q = search_urls[0].split("q=")[1].split("&")[0]
+    assert preview_q == executed_q
+
+
+# ── WP-L5: §8.3 accounting (records_normalized / new_publications / new_families) ──
+
+
+def test_execute_counts_records_normalized_from_raw(gold_workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Crossref raw carries DOIs: fetched=3, normalized=3 (all DOIs parse confidently)."""
+    adapter = get_source("crossref")
+    plan = adapter.build_request(_query())
+    config = PatentIntelConfig(network_consent=True, allowed_sources=["crossref"])
+
+    def fake_run(self, args, workspace, timeout=300):  # type: ignore[no-untyped-def]
+        _fake_kernel_raw_log(workspace, hits=1000, fetched=3)
+        return {"stdout": "ok", "stderr": ""}
+
+    monkeypatch.setattr(type(adapter), "_run_kernel", fake_run)
+    result = adapter.execute(plan, gold_workspace, confirm_network=True, config=config)
+    assert result.records_normalized == 3
+    assert result.describe()["records_normalized"] == 3
+    assert "new_publications" not in result.describe()  # unknown until corpus state is applied
+
+
+def test_records_normalized_excludes_unparseable_ids(gold_workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from patent_intel.sources.normalize import normalize_publication_number
+
+    adapter = get_source("crossref")
+    plan = adapter.build_request(_query())
+    config = PatentIntelConfig(network_consent=True, allowed_sources=["crossref"])
+
+    def fake_run(self, args, workspace, timeout=300):  # type: ignore[no-untyped-def]
+        raw_dir = workspace / "02_search_logs" / "raw"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        raw_rel = "raw/Q100_page-1.json"
+        (raw_dir / "Q100_page-1.json").write_text(json.dumps({"items": [
+            {"publication_number": "CN119000001A"},
+            {"publication_number": "junk-entry"},
+            {"DOI": "10.1000/real-one"},
+        ]}), encoding="utf-8")
+        assert normalize_publication_number("junk-entry").confidence == "uncertain"
+        log = {
+            "db": "crossref", "target": "TGT-9001", "actor": "test", "capture_mode": "live",
+            "timestamp": "2026-02-01T08:00:00+00:00",
+            "query": {"id": "N1", "axis": "N1@TGT-9001", "text": "q"},
+            "result": {"hit_count": 9, "raw_export": raw_rel, "complete": False},
+            "capture_incomplete_reason": "limited",
+        }
+        (workspace / "02_search_logs" / "crossref_2026-02-01_N1_1.log.json").write_text(
+            json.dumps(log, ensure_ascii=False), encoding="utf-8")
+        return {"stdout": "ok", "stderr": ""}
+
+    monkeypatch.setattr(type(adapter), "_run_kernel", fake_run)
+    result = adapter.execute(plan, gold_workspace, confirm_network=True, config=config)
+    assert result.runs[0].records_fetched == 3
+    assert result.records_normalized == 2  # junk entry stays unnormalized, honestly
+
+
+def test_account_new_counts_against_corpus_state() -> None:
+    from patent_intel.sources.family import account_new
+
+    records = [
+        {"publication_number": "CN119000001A", "family_refs": [{"family_id": "FAM-9", "source": "ops"}]},
+        {"publication_number": "CN 119 000 001 A"},  # same publication, formatted differently
+        {"publication_number": "EP1234567A1", "family_refs": [
+            {"family_id": "FAM-9", "source": "ops"},
+            {"family_id": "FAM-GUESS", "source": "guess", "confidence": "uncertain"},
+        ]},
+        {"publication_number": "EP0000002A1"},  # caller already knows this one
+        {"publication_number": "still-junk"},   # uncertain → no identity, no count
+    ]
+    accounting = account_new(
+        records, known_publications={"EP0000002A1"}, known_families={"FAM-1"},
+    )
+    assert accounting["new_publications"] == 2  # CN119000001A (once) + EP1234567A1
+    accounting2 = account_new(
+        records, known_publications={"EP0000002A1"}, known_families=set(),
+    )
+    assert accounting2["new_families"] == 1  # FAM-9 reported; FAM-GUESS uncertain → excluded
+
+
+def test_account_new_uncertain_family_ref_never_counts() -> None:
+    from patent_intel.sources.family import account_new
+
+    accounting = account_new(
+        [{"publication_number": "CN119000001A",
+          "family_refs": [{"family_id": "FAM-X", "source": "guess", "confidence": "uncertain"}]}],
+        known_publications=set(), known_families=set(),
+    )
+    assert accounting == {"new_publications": 1, "new_families": 0}
