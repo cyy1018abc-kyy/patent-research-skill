@@ -18,7 +18,7 @@ import os
 
 from patent_intel.retrieval.terminology import normalize_term
 
-__all__ = ["CorpusDoc", "BM25Index", "tokenize"]
+__all__ = ["CorpusDoc", "BM25Index", "BM25FIndex", "tokenize"]
 
 _CJK = re.compile(r"[\u4e00-\u9fff]")
 _WORD = re.compile(r"[a-zA-Z0-9]+")
@@ -252,6 +252,191 @@ def corpus_from_candidates(candidates: list[dict[str, Any]]) -> list[CorpusDoc]:
         family_id = str(family[0]) if isinstance(family, list) and family else None
         docs.append(CorpusDoc(doc_id=doc_id, text=text, family_id=family_id, metadata={"kind": cand.get("kind")}))
     return docs
+
+
+class BM25FIndex:
+    """Field-weighted BM25F (roadmap §4.1; ablation ABL-1 A1..A3).
+
+    score(q, d) = Σ_f w_f · BM25_f(q, d): each field is scored with the same Okapi
+    conventions as :class:`BM25Index` (idf floored at 0, k1/b length norm against
+    the field's own average length) and the per-field scores are weighted and
+    summed. A document absent from a field's postings (empty field) contributes 0
+    for that field — an empty field is never an error and never a fabricated score.
+
+    Deterministic: ties by doc_id ascending. ``search(..., fields=...)`` restricts
+    which fields are searched (the mechanical request variants); weights are NOT
+    renormalized within a subset — they are per-field multipliers, period. Built
+    with the same inverted-postings + precomputed-norm technique as BM25Index's
+    fast path.
+    """
+
+    def __init__(
+        self,
+        fields_by_doc: dict[str, dict[str, str]],
+        *,
+        weights: dict[str, float],
+        k1: float = 1.5,
+        b: float = 0.75,
+    ) -> None:
+        if not fields_by_doc:
+            raise ValueError("empty corpus")
+        if any(w < 0 for w in weights.values()):
+            raise ValueError("field weights must be non-negative")
+        self.k1 = k1
+        self.b = b
+        self.weights = dict(weights)
+        self._n_docs = len(fields_by_doc)
+        self._all_doc_ids = sorted(fields_by_doc)
+        self.fields: list[str] = []
+        self._postings: dict[str, dict[str, dict[str, int]]] = {}
+        self._df: dict[str, dict[str, int]] = {}
+        self._norm: dict[str, dict[str, float]] = {}
+        field_tokens: dict[str, dict[str, list[str]]] = {}
+        for doc_id, fields in fields_by_doc.items():
+            for field_name, text in fields.items():
+                if field_name not in self.weights:
+                    continue  # unweighted fields are not indexed at all
+                field_tokens.setdefault(field_name, {})[doc_id] = tokenize(text or "")
+        if not field_tokens:
+            raise ValueError("no indexed field overlaps the supplied weights")
+        for field_name in sorted(field_tokens):
+            self.fields.append(field_name)
+            docs = field_tokens[field_name]
+            postings: dict[str, dict[str, int]] = {}
+            df: dict[str, int] = {}
+            lengths: dict[str, int] = {}
+            for doc_id, tokens in docs.items():
+                lengths[doc_id] = len(tokens)
+                for token in tokens:
+                    bucket = postings.get(token)
+                    if bucket is None:
+                        postings[token] = {doc_id: 1}
+                        df[token] = 1
+                    elif doc_id in bucket:
+                        bucket[doc_id] += 1
+                    else:
+                        bucket[doc_id] = 1
+                        df[token] += 1
+            self._postings[field_name] = postings
+            self._df[field_name] = df
+            avg = (sum(lengths.values()) / len(lengths)) if lengths else 0.0
+            self._norm[field_name] = {
+                doc_id: self.k1 * (1 - self.b + self.b * length / avg)
+                for doc_id, length in lengths.items() if length > 0
+            }
+            del docs
+        del field_tokens
+        self._np = self._build_numpy() if _numpy_enabled() else None
+
+    def __len__(self) -> int:
+        return self._n_docs
+
+    def _idf(self, field: str, term: str) -> float:
+        """Same BM25+ style floored idf as BM25Index, per-field df."""
+        df = self._df[field].get(term, 0)
+        if df == 0:
+            return 0.0
+        return max(0.0, math.log((self._n_docs - df + 0.5) / (df + 0.5) + 1.0))
+
+    def _build_numpy(self):
+        """Columnar per-field postings over a shared global doc order.
+
+        The vectorized arithmetic uses the SAME expression tree as the pure-Python
+        path — ((w·idf) · tf) · k1p1 / (tf + norm) — so the two paths are
+        IEEE-bit-identical (UT-R01 discipline, mirroring BM25Index._build_numpy).
+        """
+        try:
+            import numpy as np
+        except ImportError:
+            return None
+        doc_ids = self._all_doc_ids
+        doc_index = {doc_id: i for i, doc_id in enumerate(doc_ids)}
+        per_field: dict[str, dict[str, tuple]] = {}
+        norm_vecs: dict[str, Any] = {}
+        for field in self.fields:
+            postings = self._postings[field]
+            terms: dict[str, tuple] = {}
+            for term, bucket in postings.items():
+                ids = sorted(bucket)
+                idx = np.fromiter((doc_index[d] for d in ids), dtype=np.int32, count=len(ids))
+                tfs = np.fromiter((bucket[d] for d in ids), dtype=np.int32, count=len(ids))
+                terms[term] = (idx, tfs)
+            per_field[field] = terms
+            norm_vecs[field] = np.fromiter(
+                (self._norm[field].get(d, 0.0) for d in doc_ids), dtype=np.float64, count=len(doc_ids))
+        return {"np": np, "doc_ids": doc_ids, "per_field": per_field, "norm": norm_vecs}
+
+    def search(
+        self, query: str, *, k: int = 10, fields: list[str] | None = None
+    ) -> list[tuple[str, float]]:
+        """Rank documents for the query; ``fields=None`` searches all indexed fields.
+
+        Deterministic: ties by doc_id ascending. Query tokens are iterated raw
+        (duplicates weight repeatedly), matching BM25Index conventions. The numpy
+        path (when available) is IEEE-bit-identical to the pure-Python path.
+        """
+        if k <= 0:
+            raise ValueError(f"k must be positive, got {k}")
+        active = [f for f in self.fields if fields is None or f in fields]
+        if fields is not None:
+            unknown = set(fields) - set(self.fields)
+            if unknown:
+                raise ValueError(f"unknown fields {sorted(unknown)} (indexed: {self.fields})")
+        if self._np is not None:
+            return self._search_np(query, k, active)
+        return self._search_py(query, k, active)
+
+    def _search_py(self, query: str, k: int, active: list[str]) -> list[tuple[str, float]]:
+        scores: dict[str, float] = {}
+        k1p1 = self.k1 + 1.0
+        for field in active:
+            weight = self.weights.get(field, 1.0)
+            if weight == 0.0:
+                continue
+            postings = self._postings[field]
+            norm_map = self._norm[field]
+            for token in tokenize(query):
+                bucket = postings.get(token)
+                if not bucket:
+                    continue
+                scaled_idf = weight * self._idf(field, token)
+                if scaled_idf <= 0.0:
+                    continue
+                for doc_id, tf in bucket.items():
+                    norm = norm_map.get(doc_id)
+                    if norm is None:
+                        continue
+                    contribution = (scaled_idf * tf) * k1p1 / (tf + norm)
+                    scores[doc_id] = scores.get(doc_id, 0.0) + contribution
+        ranked = sorted(scores.items(), key=lambda item: (-item[1], item[0]))
+        return ranked[:k]
+
+    def _search_np(self, query: str, k: int, active: list[str]) -> list[tuple[str, float]]:
+        np = self._np["np"]
+        doc_ids = self._np["doc_ids"]
+        scores = np.zeros(len(doc_ids), dtype=np.float64)
+        k1p1 = self.k1 + 1.0
+        for field in active:
+            weight = self.weights.get(field, 1.0)
+            if weight == 0.0:
+                continue
+            terms = self._np["per_field"][field]
+            norm_vec = self._np["norm"][field]
+            for token in tokenize(query):
+                entry = terms.get(token)
+                if entry is None:
+                    continue
+                idx, tfs = entry
+                scaled_idf = weight * self._idf(field, token)
+                if scaled_idf <= 0.0:
+                    continue
+                scores[idx] += (scaled_idf * tfs) * k1p1 / (tfs + norm_vec[idx])
+        positive = np.nonzero(scores > 0.0)[0]
+        if positive.size == 0:
+            return []
+        order = np.lexsort((positive, -scores[positive]))
+        top = positive[order[:k]]
+        return [(doc_ids[int(i)], float(scores[int(i)])) for i in top]
 
 
 _ = normalize_term  # kept import for API stability of diagnostic tooling
