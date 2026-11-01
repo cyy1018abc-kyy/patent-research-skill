@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "skill": "patent-research",
-  "skill_version": "4.0.0",
+  "skill_version": "4.1.0",
   "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
   "cases": [
     {

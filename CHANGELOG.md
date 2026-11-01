@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-11-01 · 4.1.0（kernel 0.10.0 延续，未重发）— 自适应检索与消融证据（扩展 0.2.0）
+
+- **扩展 patent_intel 0.1.0 → 0.2.0**（独立版本，不进 skill↔kernel 配对）：自适应检索
+  Stage 0–3 全部 + 融合/重排管线 + §8.3 分账（细节见 release/notes/skill-v4.1.0.md）。
+  契约新增 CoverageState/RetrievalGapReport/PublicationRecord/FieldPresence/IngestStatus，
+  扩展 QuerySpec.feature_ids 与 RawArtifactRef 登记字段（全部向后兼容，schema_version=1 不变）。
+- **身份与覆盖口径**：feature_ids 显式化、family_basis 三态（doc id 永不冒充 family id）、
+  候选/疑似/确认三桶分账、特征级覆盖（修复 query_type 当 concept 致覆盖恒 0）、
+  OPS 能力收缩到 {"keywords"} +「声明字段必被消费」不变量。
+- **评估与调度**：RetrievalGapReport（unknown 不降级 not_found；无 gold 只报代理指标）、
+  RetrievalEvaluator 状态机、MarginalUtilityPolicy 收益驱动 + 诚实软停止 + 决策全留痕。
+- **数据底座**：RawArtifactRegistry 内容寻址登记（物理路径不动）、PublicationRecord
+  多语言公开文本、FieldConflictLog 字段级冲突（人工确认不可覆盖）、不确定家族挂账不合并。
+- **语料生命周期**：CorpusManager 幂等导入/内容寻址快照/评测语料冻结隔离/
+  索引清单失败保留旧 active。
+- **融合与重排**：rrf_fuse 通道权重化、FusionPipeline 通道留痕（失败/缺席不当 0 分）、
+  重排接口（IdentityReranker 保底、合约校验、降级留痕）、recall --dense、§8.3 三计数。
+- **消融 ABL-1（预注册门执行，312 test 主题零联网）**：A0 与 Phase V 基线逐字节一致
+  （26.18%）；RRF 融合 +2.15pp CI[+1.20,+3.11] 过门（首个预注册正向宣称，仅限合并方式）；
+  BM25F 初始权重 −2.93pp 显著负增益被否决；主门维持 FAIL 不重开。报告
+  benchmarks/retrieval/results/ablation-2026-11-01-{smoke,full}.json，演进文档 §7。
+- **联调准备**：CNIPA 多子查询拆分/去重、OPS dry-run↔execute 一致性测试、
+  docs/live-rehearsal-runbook.md；CNIPA/OPS 维持 partial。
+- 接线：bump 配对点 +audit en 镜像 README（4.0.0 轮漏配）；findings-schema.json 契约
+  版本陈述入残留白名单；扩展版本触点（pyproject/__init__/publish/test_extension_release）
+  0.1.0→0.2.0；README 版本章节重写。
+
 ## 2026-11-01 · 4.0.0（kernel 0.10.0 延续，未重发）— audit 技能：检索证据链审计
 
 - 新增第四个技能载荷 `audit/`（`patent-audit`）：检索证据链结构化审计——

@@ -235,3 +235,49 @@ def test_controller_selection_is_coverage_gap_first() -> None:
 def test_controller_rejects_negative_budget() -> None:
     with pytest.raises(ValueError, match="non-negative"):
         AdaptiveController(lambda q: None, max_requests=-1)  # type: ignore[arg-type,return-value]
+
+
+# ── BM25FIndex (ablation ABL-1 A1..A3 engine) ─────────────────────────
+
+
+def _bm25f_docs() -> dict[str, dict[str, str]]:
+    return {
+        "D1": {"title": "beacon timing estimation", "abstract": "wireless sensor clock", "claims": "a beacon receiver estimating timing"},
+        "D2": {"title": "drift compensation", "abstract": "beacon period adaptation", "claims": ""},
+        "D3": {"title": "battery management", "abstract": "state of charge", "claims": "battery cells"},
+    }
+
+
+def test_bm25f_weights_and_field_subsets() -> None:
+    from patent_intel.retrieval.lexical import BM25FIndex
+
+    idx = BM25FIndex(_bm25f_docs(), weights={"title": 3.0, "abstract": 2.0, "claims": 2.0})
+    all_fields = dict(idx.search("beacon", k=5))
+    title_only = dict(idx.search("beacon", k=5, fields=["title"]))
+    assert set(all_fields) == {"D1", "D2"}
+    assert set(title_only) == {"D1"}  # D2 has beacon only in abstract
+    # heavier title weight lifts the title hit above the abstract-only hit
+    assert all_fields["D1"] > all_fields["D2"]
+
+
+def test_bm25f_empty_field_never_fabricates_scores() -> None:
+    from patent_intel.retrieval.lexical import BM25FIndex
+
+    idx = BM25FIndex(_bm25f_docs(), weights={"title": 3.0, "abstract": 2.0, "claims": 2.0})
+    claims_only = dict(idx.search("battery cells", k=5, fields=["claims"]))
+    assert set(claims_only) == {"D3"}  # only D3 mentions it in claims; D2's empty claims field contributes nothing
+
+
+def test_bm25f_deterministic_and_rejects_bad_args() -> None:
+    from patent_intel.retrieval.lexical import BM25FIndex
+
+    idx = BM25FIndex(_bm25f_docs(), weights={"title": 3.0, "abstract": 2.0, "claims": 2.0})
+    assert idx.search("beacon timing", k=5) == idx.search("beacon timing", k=5)
+    with pytest.raises(ValueError, match="unknown fields"):
+        idx.search("x", k=5, fields=["nope"])
+    with pytest.raises(ValueError, match="k must be positive"):
+        idx.search("x", k=0)
+    with pytest.raises(ValueError, match="non-negative"):
+        BM25FIndex(_bm25f_docs(), weights={"title": -1.0})
+    with pytest.raises(ValueError, match="empty corpus"):
+        BM25FIndex({}, weights={"title": 3.0})

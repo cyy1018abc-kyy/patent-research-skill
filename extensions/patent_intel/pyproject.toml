@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "patent-intel"
-version = "0.1.0"
+version = "0.2.0"
 description = "Optional retrieval/document/evidence extension for the patent-research skills (kernel stays authoritative)"
 readme = "README.md"
 requires-python = ">=3.11"
