@@ -42,7 +42,7 @@ MANIFEST = rb.TOPICS_MANIFEST
 SCORER = REPO_ROOT / "tools" / "score_retrieval.py"
 CONFIGS = ("A0", "A1", "A2", "A3")
 STEPS = (("A1", "A0"), ("A2", "A1"), ("A3", "A2"))
-ARCHIVED_BASELINE = Path("E:/Users/amdir/Desktop/专利调研与润色/patent-research-skill/benchmarks/retrieval/results/baseline.jsonl")
+ARCHIVED_BASELINE = Path("E:/Users/amdir/Desktop/专利调研与润色/patent-research-skill/benchmarks/retrieval/runs/baseline.jsonl")
 
 
 def _pin_utf8_stdio() -> None:
