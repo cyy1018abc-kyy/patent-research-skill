@@ -1,0 +1,80 @@
+# 消融评测判定门 —— 预注册冻结（Phase L3 / ABL-1）
+# 本文件与 protocol-prereg-ablation.md 同一提交冻结；此后门值与规则不得修改。
+# 协议指纹 = protocol-prereg-ablation.md 的 SHA-256（预注册时点快照）。
+# 与主门 gate.yaml 的关系：主门结论（FAIL → 实验性增强）保持不变，本门只管辖
+# 组件归因的逐步宣称；改主门/改 gold/改本门 = 评测作废。
+
+schema_version: 1
+gate_kind: ablation
+preregistered_at: "2026-11-01"
+protocol_sha256: "7952449b78c4525b6f74ad7f64c19164b20f2bd65f76677de2662a8906f030ec"  # = benchmarks/retrieval/protocol-prereg-ablation.md @ preregistration 2026-11-01
+preregistration_rule: >
+  本文件与协议的提交必须早于任何 runs/ 评测产物与 results/ 报告；git 历史顺序即
+  预注册证明。smoke 与全量的执行顺序固定 A0→A1→A2→A3，全部主题重跑不得择优；
+  缺陷返工时门值不变、新旧报告都归档。
+
+dataset:
+  name: DAPFAM_patent
+  source: datalyes/DAPFAM_patent (HuggingFace; Ayaou et al., 2025, arXiv:2506.22141)
+  license: CC-BY-NC-SA-4.0
+  snapshot_date: "2026-10-29"
+  snapshot_sha256:
+    corpus_parquet: "469fe8e04d8bd8775a1116eccf0983e570a03444bef9c6e14c97aabafb7526d6"
+    qrels_all_parquet: "e51ae4e13abee0fc7523560ecddd272bc85dc98befc8ab4466155a0c2d2d4f74"
+    queries_parquet: "b5ad91a650349a0096911fadcb7bc35a0399eb12d1470fb2601d73af5fc2bcbe"
+  corpus_view: TAC (title_en + abstract_en + claims_text; description_en excluded)
+  network: fully offline — zero network requests during any scored run (hard gate)
+
+splits:
+  key: earliest_claim_date
+  rule: identical to gate.yaml (60/15/25 chronological); test split = 312 topics
+  enforced_by: benchmarks/retrieval/check_leakage.py (unchanged, rerun before scoring)
+
+configs:
+  A0_baseline: BM25 uniform fields; 3 mechanical requests (full TAC / title+abstract / claims); per-document max merge; must byte-match archived Phase V baseline.jsonl (same engine version)
+  A1_bm25f: BM25F weights {title: 3.0, abstract: 2.0, claims: 2.0}; same 3 mechanical requests; per-document max merge
+  A2_features: A1 index; feature-derived single_feature queries from topic TAC (extract_features + DictionaryExpander defaults), first 3 by plan order; per-document max merge
+  A3_rrf: A2 requests fused by RRF (k=60, equal weights) replacing max merge
+  constants_locked_in: benchmarks/retrieval/protocol-prereg-ablation.md §3
+
+budget:
+  requests_per_topic_max: 3
+  requests_accounted: every executed request counts, including zero-gain ones
+
+primary_metric: family_recall_at_100
+secondary_metrics:
+  - family_recall_at_50
+  - family_recall_at_200
+  - ndcg_at_100
+  - mrr
+  - unique_relevant_yield_per_100_requests
+
+step_claim_gate:
+  comparison: A_k vs A_{k-1} for k in {1,2,3} (macro mean over test topics)
+  min_mean_gain_pp: 2.0
+  paired_bootstrap_ci_lower_pp: 0.0   # per-topic paired bootstrap, 95%, n=10000, seed 20261101
+  report_all_step_deltas: true        # negative/null deltas published as-is
+  groups_must_be_reported:
+    - domain (IN / OUT / MIXED, same topic-level definition as gate.yaml)
+    - era (first vs second half of test topic dates)
+  failed_groups_must_be_published: true
+
+claim_rule: >
+  「组件 X 提升检索」宣称 = 该步 (A_k − A_{k-1}) 同时满足 min_mean_gain_pp 与
+  paired_bootstrap_ci_lower_pp 两门。主协议整体宣称（5.0pp 门）不在本协议重开；
+  A3−A0 只作归因陈述。任何门未过 ⇒ 该组件标注「可用但无宣称」。负增益照实发表。
+  不得为过门修改 gold、门值或评测协议（协议哈希锁定）。
+
+smoke:
+  subset: first 24 test topics by split order
+  pass_condition: all four configs complete without crash AND A0 smoke family_recall_at_100 > 0 AND request budgets respected
+  smoke_results_enter_claims: false
+
+reproduction:
+  A0_vs_archived_baseline: byte-identical (sha256) to benchmarks/retrieval/results/baseline.jsonl from Phase V run 2026-10-31
+  on_mismatch: harness defect — fix, then full rerun of all configs (gate values unchanged)
+
+audit_integrity:
+  unauthorized_network_requests: 0   # hard gate: > 0 ⇒ 本轮评测不通过
+  artifact_hash_consistency: run 元数据与文件哈希逐条一致（score 审计门）
+  locator_verification: 族级检索评测，不涉及原文定位引用
