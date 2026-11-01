@@ -92,6 +92,9 @@ class RunOutcome:
     new_documents: list[str] = field(default_factory=list)
     #: runner/evaluator-suspected relevant families — subset of ``families``; never inferred
     suspected_relevant: list[str] = field(default_factory=list)
+    #: per-query fusion account from the runner (channels present/errored/absent) —
+    #: informational only; the controller never reads it for decisions
+    channel_report: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if self.family_basis not in FamilyBasis.ALL:

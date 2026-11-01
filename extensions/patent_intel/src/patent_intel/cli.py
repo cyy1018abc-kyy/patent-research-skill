@@ -324,6 +324,7 @@ def _cmd_recall_report(args: argparse.Namespace) -> int:
         state_dir,
         max_requests=args.max_requests,
         zero_gain_rounds=args.zero_gain_rounds,
+        enable_dense=getattr(args, "dense", False),
     )
     if args.json:
         _emit_json({"ok": True, "report": report})
@@ -524,6 +525,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_root_args(report)
     report.add_argument("--max-requests", type=int, default=20, help="query budget for the diagnostic run")
     report.add_argument("--zero-gain-rounds", type=int, default=3, help="stop after N consecutive zero-yield queries")
+    report.add_argument(
+        "--dense", action="store_true",
+        help="add the dense channel to per-query RRF fusion (requires the 'dense' extra; "
+             "failure degrades to lexical-only with the reason recorded)",
+    )
     report.set_defaults(func=_cmd_recall_report)
 
     evidence = sub.add_parser(
