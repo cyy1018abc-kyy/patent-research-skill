@@ -1,6 +1,43 @@
 # Changelog
 
-## 2026-11-01 · 4.1.0（kernel 0.10.0 延续，未重发）— 自适应检索与消融证据（扩展 0.2.0）
+## 2026-11-07 · 4.2.0（kernel 0.10.0 延续，未重发）— 41A-D 落地：组件阶梯、命令面与预注册 V2 证据（扩展 0.3.0）
+
+- **扩展 patent_intel 0.2.0 → 0.3.0**（独立版本）：41A-2/3/4/5、41B-1/2、41C-1/2、
+  41D-2 九个特性包全落地（细节见 release/notes/skill-v4.2.0.md）。
+- **贡献账本（41A-2）**：每查询新族/边际收益/重复查询识别，确定性；CLI
+  `contribution report`（汇总计数版诚实拒绝）。
+- **跨域共现挖掘（41A-3）**：CooccurrenceMiner 只吃 train/val（签名层拒绝 test）、
+  lift+digest 戳记、CrossDomainExpander 字典回退保留、挖掘输入纯度硬门入
+  check_leakage。**预注册 V2 评测：−0.67pp CI[−0.96,−0.40] 显著负增益、OUT 组零召回
+  未改善——如实降级「实验性、无宣称」**（docs/retrieval-evaluation.md §8）。
+- **难负例/过度自信诊断（41A-4）**：above_gold/near_tie/dominant/zero_overlap 排序
+  几何信号，不产出相关性结论。
+- **一等批处理（41A-5）**：retrieval/batch.py 显式 batch_mode；run_benchmark 薄壳化
+  逐字节一致；auto-approval 收敛为显式 `--approve` 旗标；CLI `bench run`。
+- **NPL 证据链（41B-1，许可先行）**：source-licensing.md 逐源登记（离线全 planned
+  不可执行）；NplFulltext SHA-256 版本化正文；未许可源在任何 transport 前拒绝；
+  NPL 默认 transport 无网络栈（网络导入只许在 transport 层，守卫锁定）。
+- **引证链预算（41B-2）**：三方向按边际收益进控制器统一预算；零收益剪枝留痕；
+  移除无限层路径（深度天花板）；引证任务=approved=False 提案走统一 run_plan。
+- **时间视图（41C-1）**：公布日/优先权日结构化+封闭词表建议，永不改变召回与排序
+  （对比测试锁定）；recall --dates-file/--target-filing-date。
+- **增量失效（41C-2）**：快照哈希链（父指针可验证）；staleness.json sidecar 标注
+  （manifest 历史不改写）；anchor_staleness——锚点失效即引用失效，unknown 冒充
+  current 被禁止。
+- **源诊断（41D-2）**：五态（ready/blocked/skip/planned/unknown）+ `doctor sources`；
+  默认离线零隐性联网。
+- **W3-INT**：三命令接线；`doctor` 单独使用向后兼容；修复 `query validate` 的
+  EXIT_USAGE 未定义潜在崩溃。
+- **W4-EVAL 预注册 V2 阶梯**（gate-v2.yaml + protocol-prereg-v2.md 同一提交冻结，
+  seed 20261107）：V2-0 与 Phase V 基线逐字节一致（26.18%）；特征查询 −1.97pp 显著
+  负；RRF +1.95pp 差 0.05pp 未过门（可用但无宣称；ABL-1 的 +2.15pp 宣称不重开）；
+  跨域扩展 −0.67pp 显著负。无效首轮报告（基线误用 smoke 文件）整份归档留痕。
+- **41D-3**：09 号参考中英镜像 4.2 能力节；evals +4 用例（45→49）；固定查询集回归
+  测试入库。
+- 测试基线：扩展 512 passed / 2 skipped（4.1.0 时 471）；三守卫绿（编码 149 文件）；
+  bump --check 绿（skill 4.2.0 / kernel 0.10.0）。
+
+## 2026-11-01 · 4.1.0（kernel 0.10.0 延续，未重发）— 自适应检索与消融证据（扩展 0.2.0）（kernel 0.10.0 延续，未重发）— 自适应检索与消融证据（扩展 0.2.0）
 
 - **扩展 patent_intel 0.1.0 → 0.2.0**（独立版本，不进 skill↔kernel 配对）：自适应检索
   Stage 0–3 全部 + 融合/重排管线 + §8.3 分账（细节见 release/notes/skill-v4.1.0.md）。

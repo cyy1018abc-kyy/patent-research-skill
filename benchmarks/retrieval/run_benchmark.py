@@ -77,20 +77,15 @@ def iter_corpus_docs(corpus_dir: Path):
 
 def topic_query_texts(topic: dict, queries_by_id: dict) -> dict[str, str]:
     """The three mechanical baseline request texts for one topic (preregistered)."""
-    q = queries_by_id[topic["source_id"]]
-    tac = " ".join(x for x in (q["title_en"], q["abstract_en"], q["claims_text"]) if x)
-    ta = " ".join(x for x in (q["title_en"], q["abstract_en"]) if x)
-    return {"tac": tac, "ta": ta, "claims": q["claims_text"] or ""}
+    from patent_intel.retrieval.batch import topic_query_texts as _impl
+
+    return _impl(topic, queries_by_id)
 
 
 def merge_rankings(score_maps: list[dict[str, float]], k: int) -> list[tuple[str, float]]:
-    merged: dict[str, float] = {}
-    for scores in score_maps:
-        for doc_id, score in scores.items():
-            if score > merged.get(doc_id, float("-inf")):
-                merged[doc_id] = score
-    ranked = sorted(merged.items(), key=lambda item: (-item[1], item[0]))
-    return ranked[:k]
+    from patent_intel.retrieval.batch import merge_rankings as _impl
+
+    return _impl(score_maps, k)
 
 
 def write_run(side: str, rows: list[dict], meta: dict) -> None:
@@ -165,68 +160,34 @@ def main() -> int:
     requests_total = 0
     t0 = time.time()
 
-    if args.side == "baseline":
-        for n, topic in enumerate(topics, start=1):
-            texts = topic_query_texts(topic, queries_by_id)
-            score_maps = []
-            for name in ("tac", "ta", "claims"):  # preregistered fixed variants
-                hits = index.search(texts[name], k=K_PER_REQUEST)
-                requests_total += 1
-                score_maps.append(dict(hits))
-            for rank, (fam, _score) in enumerate(merge_rankings(score_maps, K_PER_REQUEST), start=1):
-                rows.append({"topic_id": topic["topic_id"], "family_id": fam, "rank": rank})
-            if n % 50 == 0:
-                print(f"  [baseline] {n}/{len(topics)} ({time.time() - t0:.0f}s)")
-        meta = {"engine": "BM25Index", "engine_params": ENGINE_PARAMS, "requests_total": requests_total,
-                "topics_run": len(topics), "budget": "3 fixed requests (tac/ta/claims)"}
-    else:
-        from patent_intel.retrieval.controller import AdaptiveController, RunOutcome
-        from patent_intel.retrieval.features import extract_features
-        from patent_intel.retrieval.query_plan import QueryPlanBuilder
+    # 41A-5: the preregistered loops live in patent_intel.retrieval.batch — this
+    # script is a thin shell (paths, hash evidence, progress printing). The
+    # benchmark-mode auto-approval is an explicit flag here, gate.yaml-declared.
+    from patent_intel.retrieval.batch import BatchConfig, run_batch
 
-        def run_topic(topic: dict) -> tuple[list[dict], int]:
-            q = queries_by_id[topic["source_id"]]
-            statements = [q["title_en"] or "", q["abstract_en"] or ""]
-            statements += [c.strip() for c in (q["claims_text"] or "").splitlines() if c.strip()]
-            bundle = extract_features(statements, axis_id=f"N1@{topic['topic_id']}",
-                                      source_tag="dapfam-benchmark", approved=True)
-            plan = QueryPlanBuilder().build(bundle)
-            # gate.yaml declares benchmark-mode auto-approval: this evaluates the retrieval
-            # layer, not the human-approval workflow — in workspace flows these plans stay
-            # unapproved proposals (query_plan.py hard-codes approved=False).
-            for query_spec in plan.queries:
-                query_spec.approved = True
-            pending = plan.approved_queries()
-            if not pending:
-                return [], 0
-            score_maps: list[dict[str, float]] = []
-            executed = 0
+    every = 50 if args.side == "baseline" else 20
 
-            def runner(query_spec):  # injected search executor (offline BM25)
-                nonlocal executed
-                executed += 1
-                hits = index.search(" ".join(query_spec.terms), k=K_PER_REQUEST)
-                score_maps.append(dict(hits))
-                return RunOutcome(query_id=query_spec.query_id,
-                                  hits=[h[0] for h in hits], families=[h[0] for h in hits],
-                                  cost=1.0)
+    def _progress(completed: int, total: int) -> None:
+        if completed % every == 0:
+            print(f"  [{args.side}] {completed}/{total} ({time.time() - t0:.0f}s)", flush=True)
 
-            controller = AdaptiveController(runner, max_requests=BUDGET_REQUESTS, max_cost=float(BUDGET_REQUESTS))
-            report = controller.run_plan(pending)
-            merged = merge_rankings(score_maps, K_PER_REQUEST)
-            return [{"topic_id": topic["topic_id"], "family_id": fam, "rank": rank}
-                    for rank, (fam, _score) in enumerate(merged, start=1)], executed
-
-        for n, topic in enumerate(topics, start=1):
-            topic_rows, used = run_topic(topic)
-            rows.extend(topic_rows)
-            requests_total += used
-            if n % 20 == 0:
-                print(f"  [extension] {n}/{len(topics)} ({time.time() - t0:.0f}s)")
-        meta = {"engine": "BM25Index", "engine_params": ENGINE_PARAMS, "requests_total": requests_total,
-                "topics_run": len(topics),
-                "budget": f"AdaptiveController max {BUDGET_REQUESTS} requests/topic",
-                "patent_intel_version": patent_intel.__version__}
+    result = run_batch(
+        topics,
+        queries_by_id,
+        index,
+        BatchConfig(
+            side=args.side,
+            k_per_request=K_PER_REQUEST,
+            budget_requests=BUDGET_REQUESTS,
+            engine_params=ENGINE_PARAMS,
+            approve_queries=args.side == "extension",
+        ),
+        batch_mode=f"run_benchmark:{args.side}",
+        progress=_progress,
+    )
+    rows = result.rows
+    requests_total = result.requests_total
+    meta = dict(result.meta)
 
     meta.update({
         "snapshot_sha256": {p.name: sha256_file(CORPUS_DIR / p.name) for p in sorted(CORPUS_DIR.glob("*.parquet"))},

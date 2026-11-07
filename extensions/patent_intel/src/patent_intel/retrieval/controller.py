@@ -25,8 +25,13 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from patent_intel.contracts import QuerySpec
+from patent_intel.retrieval.citation_expand import (
+    CitationBudgetPlan,
+    allocate_citation_layers,
+)
 from patent_intel.retrieval.coverage import CoverageTracker, QueryYieldLedger
 from patent_intel.retrieval.policy import (
+    DEFAULT_TYPE_COSTS,
     GapFirstPolicy,
     PolicyState,
     RetrievalPolicy,
@@ -40,6 +45,7 @@ __all__ = [
     "AdaptiveController",
     "StopReason",
     "FamilyBasis",
+    "CitationBudgetPlan",
 ]
 
 _OWNER = "WP-A"
@@ -289,6 +295,39 @@ class AdaptiveController:
         if suspected:
             return self.ledger.mark_suspected(family_ids)
         return self.ledger.mark_confirmed(family_ids)
+
+    def plan_citation_layers(
+        self,
+        report: ControllerReport,
+        records: list[dict[str, Any]],
+        *,
+        seen_refs: set[str] | None = None,
+        max_depth: int = 1,
+        max_tasks_per_direction: int = 10,
+    ) -> CitationBudgetPlan:
+        """Allocate citation-direction expansion into THIS run's remaining budget (41B-2).
+
+        The three directions (cites / cited_by / family) are admitted by marginal
+        benefit against what this run has left of ``max_requests`` / ``max_cost``
+        — the same pool every other query draws from, never a side budget.
+        Zero-yield directions are pruned with an explicit reason; planning beyond
+        the citation-walk ceiling is refused (no unbounded layer paths).
+
+        The plan is proposals only: convert admitted tasks with
+        :func:`citation_expand.citation_tasks_to_query_specs` and feed them
+        through :meth:`run_plan` to execute (and re-account) them.
+        """
+        remaining_requests = max(0, self.max_requests - len(report.queries_run))
+        remaining_cost = max(0.0, self.max_cost - report.budget_spent)
+        return allocate_citation_layers(
+            records,
+            seen_refs=seen_refs,
+            budget_requests=remaining_requests,
+            budget_cost=remaining_cost,
+            cost_per_task=DEFAULT_TYPE_COSTS.get("citation_expand", 2.0),
+            max_depth=max_depth,
+            max_tasks_per_direction=max_tasks_per_direction,
+        )
 
     def _policy_state(self, report: ControllerReport) -> PolicyState:
         """Snapshot of the run state a policy may inspect — deterministic inputs only

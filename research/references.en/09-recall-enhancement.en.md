@@ -42,3 +42,18 @@ Adaptive retrieval stops on budget exhaustion / consecutive zero-gain rounds /
 manual cancel — **stopping is not exhaustive recall**. The report carries that
 caveat verbatim; never cite extension output as an argument that "no closer
 document exists".
+
+## 4.2 capabilities (W3/W4 wiring — advisory semantics unchanged)
+
+| Capability | Command | Nature |
+|---|---|---|
+| Per-query contribution ledger (new families / marginal benefit / duplicate queries) | `python -m patent_intel contribution report --report <full controller dump>` | read-only derivation; summarized (counts-only) reports are honestly rejected |
+| First-class batch entry (frozen corpus + topic manifest → result files) | `python -m patent_intel bench run --corpus-dir … --topics … --side baseline\|extension --out-dir …` | `--approve` is an explicit flag; unapproved = zero rows, never a silent bypass |
+| Five-state source diagnostics (ready/blocked/skip/planned/unknown) | `python -m patent_intel doctor sources [--only ID …]` | default offline, zero implicit network; `blocked>0` → exit 1 |
+| Time-suggestion view (publication/priority date structure) | `recall report --dates-file <json> --target-filing-date YYYY-MM-DD` | advisory only — **never changes recall or ranking**; date conflicts/missing values are flagged, never fabricated |
+
+Boundaries unchanged: the contribution ledger is **candidate-level** accounting
+(candidate ≠ relevant); `planned` sources are unverified for licensing and
+non-executable; time suggestions are not relevance or prior-art conclusions;
+batch artifacts follow the same honest per-request accounting (zero-gain
+requests included).

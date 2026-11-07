@@ -13,7 +13,7 @@ description: >
   「附图标记对不上」「召回增强」「查全诊断」「检索报告文件类型对照」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 4.1.0
+  version: 4.2.0
 ---
 
 # 专利调研
@@ -53,6 +53,13 @@ metadata:
 proposal/诊断，不改变门禁口径；扩展未安装时脚本 exit 3 并给安装指引，原流程照常。
 细节与边界读 [`references/09-召回增强`](references/09-recall-enhancement.md)；
 零命中/停止 ≠ 查全，结论引用扩展输出时必须带该限定语。
+
+**4.2 扩展能力（同样 advisory，不改变门禁口径）**：`patent_intel contribution report`
+（贡献账本——哪条查询在带来新候选族、哪条在重复劳动，候选级核算≠相关）、
+`patent_intel bench run`（冻结语料上的批处理，`--approve` 为显式审批旗标）、
+`patent_intel doctor sources`（源诊断，五态：ready/blocked/skip/planned/unknown，
+默认离线）、`recall report --dates-file`（时间视图建议——建议永不改变召回与排序，
+日期冲突/缺失显式标注）。
 
 **撰写类需求转姊妹技能**（v3.0.0 起）：交底书/申请文件底稿、权利要求撰写、OA 答复、
 多轮改稿闭环 → 技能 `patent-drafting`（本技能只负责其前置：门禁、账本、溯源就绪）。

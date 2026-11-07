@@ -28,6 +28,9 @@ EXIT_OK = 0
 EXIT_FAIL = 1
 EXIT_WORKSPACE = 2
 EXIT_DEPENDENCY = 3
+#: alias of the kernel convention "2 = workspace/usage problem" (bad input files,
+#: malformed JSON…) — defined once here so commands never reach for an undefined name
+EXIT_USAGE = EXIT_WORKSPACE
 
 
 def _emit_json(data: object) -> None:
@@ -319,12 +322,40 @@ def _cmd_recall_report(args: argparse.Namespace) -> int:
     state_dir = resolve_state_dir(workspace, args.state_dir)
     layout = SidecarLayout(state_dir)
     layout.ensure(workspace=workspace)
+    dates_by_family = None
+    if args.dates_file:
+        dates_path = Path(args.dates_file)
+        if not dates_path.is_file():
+            message = f"dates file not found: {dates_path}"
+            if args.json:
+                _emit_json({"ok": False, "error": message})
+            else:
+                print(f"❌ {message}", file=sys.stderr)
+            return EXIT_USAGE
+        try:
+            dates_by_family = json.loads(dates_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            message = f"invalid JSON in {dates_path}: {exc}"
+            if args.json:
+                _emit_json({"ok": False, "error": message})
+            else:
+                print(f"❌ {message}", file=sys.stderr)
+            return EXIT_USAGE
+        if not isinstance(dates_by_family, dict):
+            message = f"dates file must be a JSON object mapping family_id → date entry: {dates_path}"
+            if args.json:
+                _emit_json({"ok": False, "error": message})
+            else:
+                print(f"❌ {message}", file=sys.stderr)
+            return EXIT_USAGE
     report = recall_report(
         workspace,
         state_dir,
         max_requests=args.max_requests,
         zero_gain_rounds=args.zero_gain_rounds,
         enable_dense=getattr(args, "dense", False),
+        dates_by_family=dates_by_family,
+        target_filing_date=args.target_filing_date,
     )
     if args.json:
         _emit_json({"ok": True, "report": report})
@@ -472,6 +503,320 @@ def _cmd_landscape_report(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+# ── contribution group (41A-2) ────────────────────────────────────────
+
+
+def _load_controller_outcomes(payload: object, source: Path) -> tuple[list[str], list[Any]]:
+    """Rebuild RunOutcome records from a dumped controller report (41A-2 CLI input).
+
+    Accepts ``{"outcomes": [...]}`` (+ optional ``queries_run``) or a wrapper
+    ``{"run": {...}}`` of the same shape. Summarized reports (hits/new_families
+    as *counts*, not lists) are rejected honestly — they cannot power
+    per-query contribution accounting.
+    """
+    from patent_intel.retrieval.controller import ControllerReport, RunOutcome
+
+    if isinstance(payload, dict) and isinstance(payload.get("run"), dict):
+        payload = payload["run"]
+    if not isinstance(payload, dict):
+        raise ValueError(f"{source}: expected a JSON object with an 'outcomes' list")
+    raw_outcomes = payload.get("outcomes")
+    if not isinstance(raw_outcomes, list):
+        raise ValueError(f"{source}: missing 'outcomes' list")
+    queries_run = payload.get("queries_run") or []
+    if not isinstance(queries_run, list):
+        raise ValueError(f"{source}: 'queries_run' must be a list when present")
+
+    outcomes: list[Any] = []
+    for index, entry in enumerate(raw_outcomes):
+        if not isinstance(entry, dict):
+            raise ValueError(f"{source}: outcome[{index}] is not an object")
+        for field in ("hits", "families"):
+            value = entry.get(field, [])
+            if not isinstance(value, list):
+                raise ValueError(
+                    f"{source}: outcome[{index}].{field} must be a list of ids — "
+                    "summarized reports (counts) cannot power contribution accounting; "
+                    "dump the full controller report instead"
+                )
+        outcomes.append(
+            RunOutcome(
+                query_id=str(entry.get("query_id") or f"outcome-{index}"),
+                hits=[str(h) for h in entry.get("hits") or []],
+                families=[str(f) for f in entry.get("families") or []],
+                new_families=[str(f) for f in entry.get("new_families") or []],
+                cost=float(entry.get("cost") or 0.0),
+                error=entry.get("error"),
+                family_basis=str(entry.get("family_basis") or "reported"),
+            )
+        )
+    return [str(q) for q in queries_run], outcomes
+
+
+def _cmd_contribution_report(args: argparse.Namespace) -> int:
+    """Per-query contribution ledger from a dumped controller report (read-only)."""
+    from patent_intel.retrieval.contribution import ContributionReport
+    from patent_intel.retrieval.controller import ControllerReport
+
+    path = Path(args.report)
+    if not path.is_file():
+        message = f"report file not found: {path}"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_USAGE
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        message = f"invalid JSON in {path}: {exc}"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_USAGE
+    try:
+        queries_run, outcomes = _load_controller_outcomes(payload, path)
+        ledger = ContributionReport.from_report(
+            ControllerReport(queries_run=queries_run, outcomes=outcomes)
+        )
+    except Exception as exc:  # noqa: BLE001 - contract violations reported, never crash
+        message = f"{type(exc).__name__}: {exc}"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_USAGE
+
+    described = ledger.describe()
+    if args.json:
+        _emit_json({"ok": True, "contribution": described})
+    else:
+        rows = described.get("queries") or []
+        duplicates = described.get("duplicates") or []
+        print(f"contribution ledger over {len(rows)} query row(s) from {path.name}")
+        if duplicates:
+            print(f"  duplicate queries (clean run, zero new families/documents): {len(duplicates)}")
+        print(f"  problems: {len(described.get('problems') or [])}")
+    return EXIT_OK
+
+
+# ── bench group (41A-5) ───────────────────────────────────────────────
+
+
+def _cmd_bench_run(args: argparse.Namespace) -> int:
+    """First-class batch retrieval over a frozen corpus snapshot (offline)."""
+    # usage problems are reported before the dependency check — a wrong path
+    # should never be masked by a missing optional package
+    from patent_intel.retrieval.batch import BatchConfig, run_batch
+    from patent_intel.retrieval.lexical import BM25Index, CorpusDoc
+
+    corpus_dir = Path(args.corpus_dir)
+    topics_path = Path(args.topics)
+    if not corpus_dir.is_dir():
+        message = f"corpus dir not found: {corpus_dir}"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_USAGE
+    if not topics_path.is_file():
+        message = f"topics manifest not found: {topics_path}"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_USAGE
+    if args.limit and args.split != "test":
+        message = "--limit is for test-split smoke runs only"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_USAGE
+
+    try:
+        manifest = json.loads(topics_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        message = f"invalid JSON in {topics_path}: {exc}"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_USAGE
+    topics = [t for t in manifest.get("topics", []) if t.get("split") == args.split]
+    if args.limit:
+        topics = topics[: args.limit]
+
+    try:
+        import pyarrow.parquet as pq
+    except ImportError:
+        message = "pyarrow required for parquet corpus loading (pip install pyarrow)"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"[FATAL] {message}", file=sys.stderr)
+        return EXIT_DEPENDENCY
+
+    def _parquet_column(table_path: Path, columns: list[str]) -> dict:
+        table = pq.read_table(table_path, columns=columns)
+        data = table.to_pydict()
+        del table
+        return data
+
+    docs_table = _parquet_column(
+        corpus_dir / "corpus.parquet", ["relevant_id", "title_en", "abstract_en", "claims_text"]
+    )
+    docs = [
+        CorpusDoc(
+            doc_id=docs_table["relevant_id"][i],
+            text=" ".join(
+                x
+                for x in (
+                    docs_table["title_en"][i],
+                    docs_table["abstract_en"][i],
+                    docs_table["claims_text"][i],
+                )
+                if x
+            ),
+            family_id=docs_table["relevant_id"][i],
+        )
+        for i in range(len(docs_table["relevant_id"]))
+    ]
+    index = BM25Index(docs, k1=args.k1, b=args.b)
+    queries_table = _parquet_column(
+        corpus_dir / "queries.parquet", ["query_id", "title_en", "abstract_en", "claims_text"]
+    )
+    queries_by_id = {
+        queries_table["query_id"][i]: {
+            "title_en": queries_table["title_en"][i],
+            "abstract_en": queries_table["abstract_en"][i],
+            "claims_text": queries_table["claims_text"][i],
+        }
+        for i in range(len(queries_table["query_id"]))
+    }
+    del docs_table, queries_table, docs
+
+    import time as _time
+
+    started = _time.time()
+    engine_params = {"k1": args.k1, "b": args.b, "k_per_request": args.k}
+    result = run_batch(
+        topics,
+        queries_by_id,
+        index,
+        BatchConfig(
+            side=args.side,
+            k_per_request=args.k,
+            budget_requests=args.budget,
+            engine_params=engine_params,
+            # 41A-5: benchmark-mode auto-approval is an explicit flag, never a silent offset
+            approve_queries=args.side == "extension" and args.approve,
+        ),
+        batch_mode=args.batch_mode or f"cli:bench-run:{args.side}",
+    )
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    meta = dict(result.meta)
+    meta.update(
+        {
+            "snapshot_sha256": {
+                p.name: _sha256_file(corpus_dir / p.name) for p in sorted(corpus_dir.glob("*.parquet"))
+            },
+            "manifest_sha256": _sha256_file(topics_path),
+            "split": args.split,
+            "elapsed_seconds": round(_time.time() - started, 1),
+            "network_requests": 0,
+        }
+    )
+    rows_path = out_dir / f"{args.side}.jsonl"
+    with open(rows_path, "w", encoding="utf-8", newline="\n") as fh:
+        for row in result.rows:
+            fh.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+    meta_path = out_dir / f"meta-{args.side}.json"
+    with open(meta_path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(meta, fh, ensure_ascii=False, indent=1, sort_keys=True)
+        fh.write("\n")
+    payload = {
+        "ok": True,
+        "rows": len(result.rows),
+        "requests_total": result.requests_total,
+        "topics_run": len(topics),
+        "batch_mode": meta["batch_mode"],
+        "rows_file": str(rows_path),
+        "meta_file": str(meta_path),
+    }
+    if args.json:
+        _emit_json(payload)
+    else:
+        print(f"bench run [{args.side}]: {len(result.rows)} rows, {result.requests_total} requests, {len(topics)} topics")
+        print(f"  rows: {rows_path}")
+        print(f"  meta: {meta_path}")
+    return EXIT_OK
+
+
+def _sha256_file(path: Path) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with open(path, "rb") as fh:
+        while chunk := fh.read(1 << 20):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+# ── doctor sources (41D-2) ────────────────────────────────────────────
+
+
+def _cmd_doctor_sources(args: argparse.Namespace) -> int:
+    """Source availability diagnostics (default offline; no implicit network)."""
+    from patent_intel.sources.diagnostics import diagnose_sources
+
+    workspace: Path | None = None
+    if args.root:
+        workspace = Path(args.root).expanduser()
+    try:
+        state_dir = resolve_state_dir(workspace, args.state_dir)
+        config = load_config(state_dir)
+    except Exception as exc:  # noqa: BLE001 - a missing/unreadable context is the finding
+        message = f"{type(exc).__name__}: {exc}"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_USAGE
+
+    try:
+        report = diagnose_sources(
+            config,
+            only=list(args.only) if args.only else None,
+            timeout_sec=args.timeout,
+        )
+    except Exception as exc:  # noqa: BLE001 - diagnostics contract violations reported honestly
+        message = f"{type(exc).__name__}: {exc}"
+        if args.json:
+            _emit_json({"ok": False, "error": message})
+        else:
+            print(f"❌ {message}", file=sys.stderr)
+        return EXIT_USAGE
+
+    described = report.describe()
+    blocked = described["status_counts"].get("blocked", 0)
+    if args.json:
+        _emit_json({"ok": blocked == 0, "diagnostics": described})
+    else:
+        print(f"source diagnostics (offline; state dir: {state_dir})")
+        for entry in described["sources"]:
+            note = f" — {entry['reason']}" if entry.get("reason") else ""
+            print(f"  [{entry['status']:>7}] {entry['source']}{note}")
+        counts = described["status_counts"]
+        print(
+            "result: "
+            + ", ".join(f"{name}={counts[name]}" for name in sorted(counts) if counts[name])
+        )
+    return EXIT_OK if blocked == 0 else EXIT_FAIL
+
+
 # ── parser assembly ───────────────────────────────────────────────────
 
 
@@ -492,6 +837,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_root_args(doctor)
     doctor.set_defaults(func=_cmd_doctor)
+    doctor_sub = doctor.add_subparsers(dest="doctor_command", metavar="<subcommand>")
+    dsrc = doctor_sub.add_parser(
+        "sources",
+        help="per-source availability diagnostics (consent/credentials/planned; default offline)",
+    )
+    _add_root_args(dsrc)
+    dsrc.add_argument(
+        "--only", nargs="*", metavar="ID", help="restrict to these source ids (default: every registered source)"
+    )
+    dsrc.add_argument("--timeout", type=int, default=10, metavar="SEC", help="timeout reported to probes (probes stay offline unless a transport is injected)")
+    dsrc.set_defaults(func=_cmd_doctor_sources)
 
     query = sub.add_parser(
         "query",
@@ -530,7 +886,61 @@ def build_parser() -> argparse.ArgumentParser:
         help="add the dense channel to per-query RRF fusion (requires the 'dense' extra; "
              "failure degrades to lexical-only with the reason recorded)",
     )
+    report.add_argument(
+        "--dates-file", default=None, metavar="FILE",
+        help="JSON mapping family_id → publication/priority date(s); attaches the advisory "
+             "41C-1 time view to the report (never changes recall or ranking)",
+    )
+    report.add_argument(
+        "--target-filing-date", default=None, metavar="YYYY-MM-DD",
+        help="target filing date for the time view's filter_publication_after_target suggestion",
+    )
     report.set_defaults(func=_cmd_recall_report)
+
+    contribution = sub.add_parser(
+        "contribution",
+        help="per-query contribution accounting (41A-2) — which queries earn their budget",
+    )
+    contribution_sub = contribution.add_subparsers(dest="contribution_command", metavar="<subcommand>", required=True)
+    creport = contribution_sub.add_parser(
+        "report",
+        help="contribution ledger from a dumped controller report (read-only)",
+    )
+    _add_root_args(creport)
+    creport.add_argument(
+        "--report", required=True, metavar="FILE",
+        help="JSON with a full outcomes list ({outcomes: [...], queries_run: [...]} — or the "
+             "same under a 'run' key); summarized reports (counts, not id lists) are rejected",
+    )
+    creport.set_defaults(func=_cmd_contribution_report)
+
+    bench = sub.add_parser(
+        "bench",
+        help="first-class batch retrieval over a frozen corpus snapshot (41A-5, offline)",
+    )
+    bench_sub = bench.add_subparsers(dest="bench_command", metavar="<subcommand>", required=True)
+    brun = bench_sub.add_parser(
+        "run",
+        help="run one side (baseline|extension) over a topic manifest + parquet corpus",
+    )
+    _add_root_args(brun)
+    brun.add_argument("--corpus-dir", required=True, metavar="DIR", help="frozen corpus snapshot dir (corpus.parquet + queries.parquet)")
+    brun.add_argument("--topics", required=True, metavar="FILE", help="topics manifest JSON ({topics: [...]})")
+    brun.add_argument("--split", default="test", choices=("train", "val", "test"))
+    brun.add_argument("--side", required=True, choices=("baseline", "extension"))
+    brun.add_argument("--k", type=int, default=200, help="k per request (default 200)")
+    brun.add_argument("--budget", type=int, default=3, help="per-topic request budget for the extension side (default 3)")
+    brun.add_argument("--k1", type=float, default=1.5, help="BM25 k1 (default 1.5)")
+    brun.add_argument("--b", type=float, default=0.75, help="BM25 b (default 0.75)")
+    brun.add_argument("--limit", type=int, default=0, help="only run the first N topics (test-split smoke, not an evaluation)")
+    brun.add_argument(
+        "--approve", action="store_true",
+        help="benchmark-mode auto-approval for extension plans (41A-5 explicit flag; "
+             "omitting it yields zero rows instead of bypassing the approval gate)",
+    )
+    brun.add_argument("--batch-mode", default=None, metavar="LABEL", help="label stamped into the meta (default: cli:bench-run:<side>)")
+    brun.add_argument("--out-dir", required=True, metavar="DIR", help="output dir for <side>.jsonl + meta-<side>.json")
+    brun.set_defaults(func=_cmd_bench_run)
 
     evidence = sub.add_parser(
         "evidence",

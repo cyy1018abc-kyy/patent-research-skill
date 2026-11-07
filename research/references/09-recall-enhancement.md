@@ -33,3 +33,16 @@
 
 自适应检索在「预算耗尽 / 连续零新增 / 人工终止」时停止——**停止 ≠ 查全**。
 报告的 caveat 字段会原样提醒；写结论时不要引用扩展输出来论证「没有更接近的文献」。
+
+## 4.2 新能力（W3/W4 接线，advisory 不变）
+
+| 能力 | 命令 | 性质 |
+|---|---|---|
+| 每查询贡献账本（新族/边际收益/重复查询） | `python -m patent_intel contribution report --report <完整 controller dump>` | 只读派生；汇总计数版报告会被诚实拒绝 |
+| 一等批处理入口（冻结语料 + 主题清单 → 结果文件） | `python -m patent_intel bench run --corpus-dir … --topics … --side baseline\|extension --out-dir …` | `--approve` 为显式审批旗标，缺省不批准=零行 |
+| 数据源五态诊断（ready/blocked/skip/planned/unknown） | `python -m patent_intel doctor sources [--only ID …]` | 默认离线零联网；`blocked>0` 退出码 1 |
+| 时间建议视图（公开日/优先权日结构化） | `recall report --dates-file <json> --target-filing-date YYYY-MM-DD` | 建议性输出，**永不改变召回与排序**；日期冲突/缺失显式标注 |
+
+边界不变：贡献账本是**候选级**核算（候选≠相关）；`planned` 源=许可未核实、
+不可执行；时间建议不构成相关性或现有技术结论；批处理产物遵守与交互运行
+相同的诚实记账（逐请求含零增益）。
