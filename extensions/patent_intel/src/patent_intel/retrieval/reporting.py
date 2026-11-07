@@ -11,6 +11,7 @@ The report is a diagnostic: it never asserts recall completeness.
 from __future__ import annotations
 
 import time
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -105,6 +106,31 @@ def _runner_for(
     return runner
 
 
+def _attach_time_view(
+    report: dict[str, Any],
+    discovery_order: list[str],
+    dates_by_family: Mapping[str, Mapping[str, Any]] | None,
+    *,
+    target_filing_date: str | None = None,
+) -> dict[str, Any]:
+    """41C-1: append the advisory time view of the discovered families (additive).
+
+    Only fires when ``dates_by_family`` carries at least one entry — a report
+    produced without date data stays byte-identical to its previous shape.
+    """
+    if not dates_by_family:
+        return report
+    from patent_intel.retrieval.time_view import time_view
+
+    view = time_view(
+        discovery_order,
+        dates_by_family,
+        target_filing_date=target_filing_date,
+    )
+    report["time_view"] = view.describe()
+    return report
+
+
 def recall_report(
     workspace: Path,
     state_dir: Path,
@@ -112,13 +138,20 @@ def recall_report(
     max_requests: int = 20,
     zero_gain_rounds: int = 3,
     enable_dense: bool = False,
+    dates_by_family: Mapping[str, Mapping[str, Any]] | None = None,
+    target_filing_date: str | None = None,
 ) -> dict[str, Any]:
     """Run the offline recall diagnostic. Returns the report dict (also written to
     the sidecar reports/ directory with a timestamped name).
 
     ``enable_dense`` adds the dense channel (requires the ``dense`` extra); its
     failure is recorded per query and fusion degrades to lexical-only — a channel
-    is never silently missing (WP-L1)."""
+    is never silently missing (WP-L1).
+
+    ``dates_by_family`` (41C-1) optionally supplies publication/priority dates for
+    the discovered families; the advisory time view is then attached under
+    ``time_view``. It never changes which queries run or how results rank —
+    reports without date data keep their exact previous shape."""
     started = time.time()
     workspace = Path(workspace)
     corpus_docs = build_workspace_corpus(workspace)
@@ -188,6 +221,12 @@ def recall_report(
             "停止/未覆盖 ≠ 查全或查无"
         ),
     }
+    report = _attach_time_view(
+        report,
+        controller.ledger.discovery_order_families,
+        dates_by_family,
+        target_filing_date=target_filing_date,
+    )
     write_json_atomic(
         Path(state_dir) / "reports" / f"recall_{time.strftime('%Y%m%d_%H%M%S')}.json",
         report,
