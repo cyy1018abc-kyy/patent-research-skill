@@ -13,6 +13,57 @@
 - 双门授权：`--confirm-network` 显式传入 **且** sidecar `config.json` 的
   `network_consent.allowed_sources` 含目标来源，缺一即拒。
 
+## 0.5 预检命令单（凭据到位后逐步复制执行）
+
+> 前置：仓库根目录、`pip install 'patent_intel[ops]'`、双门授权已配置
+> （sidecar `config.json`：`network_consent: true` + `allowed_sources` 含 `ops`）。
+
+```bash
+# 0) 凭据注入（当前会话；绝不写入任何文件）
+export OPS_OAUTH_KEY='<key>'
+export OPS_OAUTH_SECRET='<secret>'
+```
+
+```python
+# 1) OAuth 冒烟（仅取 token，一次请求）
+from patent_intel.sources.ops import OpsAdapter
+adapter = OpsAdapter()
+print("token ok:", adapter._access_token()[:8], "…")
+```
+
+```python
+# 2) dry-run → execute 一致性 + 2 页分页（raw 落 sidecar raw/，SHA-256 审计）
+from pathlib import Path
+from patent_intel.config import PatentIntelConfig
+from patent_intel.sources.ops import OpsAdapter
+plan = OpsAdapter().build_request(QuerySpec(
+    owner="WP-B", query_id="Q-OPS-REHEARSAL-1", axis_id="N1@REHEARSAL",
+    terms=["beacon timing"], language="en", query_type="single_feature", source="ops"))
+adapter = OpsAdapter()
+print("dry-run:", adapter.dry_run(plan, Path(".")).preview[0])
+result = adapter.execute(plan, Path("./ops-rehearsal-sidecar"), confirm_network=True,
+                         config=PatentIntelConfig(network_consent=True, allowed_sources=["ops"]),
+                         state_dir=Path("./ops-rehearsal-sidecar"), max_pages=2)
+print("runs:", [(r.status, r.complete, r.incomplete_reason) for r in result.runs])
+print("raw:", result.raw_refs)
+```
+
+```python
+# 3) raw 哈希审计：execute 的 raw_refs 经 RawArtifactRegistry 登记后 verify_all 全 ok
+from pathlib import Path
+from patent_intel.artifacts import RawArtifactRegistry
+reg = RawArtifactRegistry(base_dir=Path("./ops-rehearsal-sidecar"),
+                          index_path=Path("./ops-rehearsal-sidecar/raw_registry.json"))
+print([r["ok"] for r in reg.verify_all()])
+```
+
+```bash
+# 4) 403 演练（无效凭据 → 期望 FAILED + 审计账本记录 http_403，已采页保留）
+OPS_OAUTH_KEY=invalid OPS_OAUTH_SECRET=invalid python rehearse_403.py  # 同步骤 2，max_pages=1
+```
+
+全部通过后：按 §1 第 8-9 步回填能力矩阵 + 在 docs/policy-log.md 接入事件节登记实测行。
+
 ## 1. EPO OPS 联调步骤
 
 1. **登记**：`docs/policy-log.md` 新增一行（日期、操作者、目的、范围、预计请求量）。
