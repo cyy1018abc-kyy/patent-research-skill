@@ -8,7 +8,11 @@ Contract (interface rule 6, UT-D02):
   it returns one graded ``unverified`` instead;
 * :func:`verify_anchor` re-checks the raw file hash AND the paragraph text: a changed
   file, a drifted paragraph id, or a changed text yields ``stale`` — old locators are
-  never silently reused after the document changes.
+  never silently reused after the document changes;
+* 41C-2 extension: an anchor may additionally bind the corpus record's content hash
+  (``extra.record_content_sha256``). :func:`anchor_staleness` checks that binding —
+  a drifted or vanished record makes the anchor stale, and **every citation bound
+  to a stale anchor is invalid until re-anchored** (锚点失效即引用失效).
 """
 
 from __future__ import annotations
@@ -21,7 +25,7 @@ from patent_intel.documents.quality import QUALITY_THRESHOLD
 from patent_intel.documents.schema import StructuredPatentDocument
 from patent_intel.io.safe_io import sha256_file
 
-__all__ = ["make_anchor", "verify_anchor", "LocatorError"]
+__all__ = ["make_anchor", "verify_anchor", "anchor_staleness", "LocatorError"]
 
 _OWNER = "WP-C"
 
@@ -35,8 +39,15 @@ def make_anchor(
     para_id: str,
     *,
     quote: str | None = None,
+    record_content_sha256: str | None = None,
 ) -> DocumentAnchor:
-    """Create an anchor for one paragraph. ``quote`` selects the cited span (default: whole paragraph)."""
+    """Create an anchor for one paragraph. ``quote`` selects the cited span (default: whole paragraph).
+
+    ``record_content_sha256`` (41C-2) optionally binds the corpus record the
+    anchored document came from — the binding ``anchor_staleness`` later checks.
+    It is stored verbatim in ``extra``; anchors created without it simply carry
+    no corpus binding (staleness verdicts then honestly stay ``unknown``).
+    """
     para = doc.paragraph_by_id(para_id)
     if para is None:
         raise LocatorError(f"paragraph {para_id!r} not in parsed document {doc.source_document}")
@@ -68,6 +79,7 @@ def make_anchor(
             "paragraph_origin": para.origin,
             "section": para.section,
             "quality_score": quality.get("score"),
+            "record_content_sha256": record_content_sha256,
         },
     )
 
@@ -94,6 +106,70 @@ def verify_anchor(anchor: DocumentAnchor, doc: StructuredPatentDocument, *, raw_
     if quote and quote.strip() not in para.text:
         return AnchorVerification.STALE
     return anchor.verification_status
+
+
+def anchor_staleness(
+    anchor: DocumentAnchor,
+    records: Any,
+    *,
+    key: str | None = None,
+    content_sha_field: str = "_content_sha256",
+) -> dict[str, Any]:
+    """41C-2: is the anchor's corpus binding still current? (read-only; C-04 extension)
+
+    Checks the ``record_content_sha256`` binding carried in ``extra`` against the
+    corpus ``records`` mapping (record key → record dict, e.g. the production
+    store keyed by normalized publication number — pass ``key`` when the anchor's
+    ``source_document`` is not the record key). Verdicts:
+
+    * ``current``  — record exists and its content hash equals the binding;
+    * ``drifted``  — record exists with different content → **stale**;
+    * ``missing``  — record key vanished → **stale**;
+    * ``unknown``  — the anchor carries no binding (or the record none) →
+      currency cannot be confirmed; never reported as current.
+
+    A ``stale`` verdict invalidates every citation bound to this anchor until it
+    is re-anchored (锚点失效即引用失效). The anchor object is not mutated.
+    """
+    record_key = str(key) if key is not None else str(anchor.source_document)
+    binding = (anchor.extra or {}).get("record_content_sha256")
+    if not binding:
+        return {
+            "record_key": record_key,
+            "verdict": "unknown",
+            "stale": None,
+            "reason": "anchor carries no corpus content binding",
+        }
+    get = records.get if hasattr(records, "get") else (lambda k, default=None: default)  # type: ignore[union-attr]
+    record = get(record_key)
+    if record is None:
+        return {
+            "record_key": record_key,
+            "verdict": "missing",
+            "stale": True,
+            "reason": "bound record is no longer in the corpus",
+        }
+    current_sha = record.get(content_sha_field) if isinstance(record, dict) else None
+    if not current_sha:
+        return {
+            "record_key": record_key,
+            "verdict": "unknown",
+            "stale": None,
+            "reason": f"record carries no {content_sha_field!r} to compare against",
+        }
+    if str(current_sha) != str(binding):
+        return {
+            "record_key": record_key,
+            "verdict": "drifted",
+            "stale": True,
+            "reason": "record content changed since the anchor was created",
+        }
+    return {
+        "record_key": record_key,
+        "verdict": "current",
+        "stale": False,
+        "reason": None,
+    }
 
 
 def _hash_text(text: str) -> str:
