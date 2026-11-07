@@ -511,20 +511,20 @@ Transport = Callable[..., Any]
 
 
 def _default_transport(method: str, url: str, headers: dict[str, str], timeout: int) -> Any:
-    """Requests-based transport; requires the optional extra.
+    """No in-process network stack — a real transport must be injected (INT wave-gate fix).
 
-    Unreachable today: the license gate refuses every registered upstream before
-    any transport call, so the default transport can never emit a request while all
-    grants are ``planned``.
+    The extension-wide discipline is that network imports live ONLY in the
+    transport layer (ops.py; guard: test_extension_source_has_no_network_imports_
+    outside_transport). NPL acquisition therefore never carries a requests-based
+    fallback: callers inject a transport explicitly after their own consent and
+    licensing gates. Until then every default-transport call raises
+    ``NetworkNotConfirmed`` — unreachable in practice while all grants are
+    ``planned`` (the license gate refuses before any transport call).
     """
-    try:
-        import requests
-    except ImportError as exc:
-        raise NetworkNotConfirmed(
-            "the NPL full-text adapter requires the optional 'npl' extra: "
-            "pip install 'patent_intel[npl]'"
-        ) from exc
-    return requests.request(method, url, headers=headers, timeout=timeout)
+    raise NetworkNotConfirmed(
+        "the NPL full-text adapter has no built-in network stack: inject a transport "
+        "(and satisfy the license gate in docs/source-licensing.md) before acquisition"
+    )
 
 
 @register_source
