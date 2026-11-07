@@ -79,6 +79,9 @@ class CorpusManager:
         self._evaluation_path = self._state / "corpus" / "evaluation_corpora.json"
         self._snapshots_dir = self._state / "corpus" / "snapshots"
         self._manifests_dir = self._state / "corpus" / "manifests"
+        #: 41C-2: append-only snapshot hash chain + derived-state staleness sidecar
+        self._chain_path = self._snapshots_dir / "chain.jsonl"
+        self._staleness_path = self._state / "corpus" / "staleness.json"
         for directory in (self._snapshots_dir, self._manifests_dir):
             directory.mkdir(parents=True, exist_ok=True)
 
@@ -165,18 +168,80 @@ class CorpusManager:
     # -- snapshots ---------------------------------------------------------
 
     def create_snapshot(self, *, label: str | None = None) -> CorpusSnapshot:
-        """Content-addressed snapshot of the production corpus (idempotent)."""
+        """Content-addressed snapshot of the production corpus (idempotent).
+
+        41C-2: every snapshot is also appended to the snapshot hash chain
+        (``chain.jsonl``, parent = previous chain entry) so snapshot lineage is
+        verifiable, not just snapshot content.
+        """
         store = self._load_records()
         content_sha = _canonical_hash(sorted(store.items()))
         snapshot_id = f"CS-{content_sha[:16]}"
         path = self._snapshots_dir / f"{snapshot_id}.json"
         if not path.is_file():
             write_json_atomic(path, {"records": store, "content_sha256": content_sha})
+        self._append_chain_entry(snapshot_id, content_sha, len(store))
         snapshot = CorpusSnapshot(
             owner=_OWNER, snapshot_id=snapshot_id, corpus=_PRODUCTION,
             record_count=len(store), content_sha256=content_sha, label=label,
         )
         return snapshot
+
+    def _append_chain_entry(self, snapshot_id: str, content_sha: str, record_count: int) -> None:
+        """Append one chain entry; idempotent per snapshot_id (like the blob write)."""
+        chain = self.snapshot_chain()
+        if any(entry.get("snapshot_id") == snapshot_id for entry in chain):
+            return
+        parent = chain[-1] if chain else None
+        entry = {
+            "snapshot_id": snapshot_id,
+            "content_sha256": content_sha,
+            "record_count": record_count,
+            "parent_snapshot_id": parent["snapshot_id"] if parent else None,
+            "parent_content_sha256": parent["content_sha256"] if parent else None,
+        }
+        with open(self._chain_path, "a", encoding="utf-8", newline="\n") as fh:
+            fh.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+
+    def snapshot_chain(self) -> list[dict[str, Any]]:
+        """The snapshot hash chain, oldest first (41C-2)."""
+        if not self._chain_path.is_file():
+            return []
+        entries: list[dict[str, Any]] = []
+        for line in self._chain_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line:
+                entries.append(json.loads(line))
+        return entries
+
+    def verify_snapshot_chain(self) -> dict[str, Any]:
+        """Validate chain linkage and snapshot blob integrity (fail-closed).
+
+        Every entry's ``content_sha256`` must match its snapshot blob, and each
+        entry must name the previous entry as parent with the exact parent hash —
+        a broken link is reported, never silently accepted.
+        """
+        entries = self.snapshot_chain()
+        problems: list[str] = []
+        previous: dict[str, Any] | None = None
+        for entry in entries:
+            snapshot_id = str(entry.get("snapshot_id"))
+            path = self._snapshots_dir / f"{snapshot_id}.json"
+            if not path.is_file():
+                problems.append(f"{snapshot_id}: snapshot blob missing")
+            else:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                if payload.get("content_sha256") != entry.get("content_sha256"):
+                    problems.append(f"{snapshot_id}: blob content hash drift")
+            if previous is not None:
+                if entry.get("parent_snapshot_id") != previous.get("snapshot_id"):
+                    problems.append(
+                        f"{snapshot_id}: chain parent mismatch (expected {previous.get('snapshot_id')})"
+                    )
+                if entry.get("parent_content_sha256") != previous.get("content_sha256"):
+                    problems.append(f"{snapshot_id}: parent content hash mismatch")
+            previous = entry
+        return {"ok": not problems, "length": len(entries), "problems": problems}
 
     def verify_snapshot(self, snapshot_id: str) -> dict[str, Any]:
         """Is the current corpus still the snapshot? (drift is reported, never hidden)"""
@@ -356,3 +421,53 @@ class CorpusManager:
         history = [m for m in history if m["manifest_id"] != manifest.manifest_id]
         history.append(manifest.to_dict())
         write_json_atomic(self._manifests_dir / "manifests.json", history)
+
+    # -- staleness marking (41C-2) -------------------------------------------
+
+    def stale_index_manifests(self, *, write_sidecar: bool = True) -> dict[str, Any]:
+        """Mark derived indexes stale when their bound snapshot no longer matches
+        the current corpus content (41C-2: 增量失效).
+
+        Staleness is recorded in the sidecar ``corpus/staleness.json`` — the
+        manifest history itself is never rewritten (标注 not 篡改), so the old
+        active manifest survives a drift observation intact and a rebuild simply
+        activates a new manifest bound to the new content.
+        """
+        current = self._load_records()
+        current_sha = _canonical_hash(sorted(current.items()))
+        entries: dict[str, dict[str, Any]] = {}
+        for manifest in self._load_manifests():
+            if manifest.get("status") != IndexStatus.ACTIVE:
+                continue
+            snapshot_id = str(manifest.get("corpus_snapshot_id"))
+            path = self._snapshots_dir / f"{snapshot_id}.json"
+            if not path.is_file():
+                entries[str(manifest["manifest_id"])] = {
+                    "index_kind": manifest.get("index_kind"),
+                    "snapshot_id": snapshot_id,
+                    "verdict": "unknown",
+                    "stale": None,
+                    "reason": "snapshot blob missing — currency cannot be confirmed",
+                }
+                continue
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            snapshot_sha = payload.get("content_sha256")
+            stale = snapshot_sha != current_sha
+            entries[str(manifest["manifest_id"])] = {
+                "index_kind": manifest.get("index_kind"),
+                "snapshot_id": snapshot_id,
+                "snapshot_sha256": snapshot_sha,
+                "current_sha256": current_sha,
+                "verdict": "stale" if stale else "current",
+                "stale": stale,
+                "reason": "corpus content drifted since this snapshot" if stale else None,
+            }
+        report = {
+            "current_content_sha256": current_sha,
+            "manifests": entries,
+            "caveat": "staleness reflects the observed corpus content only; a current "
+            "manifest is not a completeness claim",
+        }
+        if write_sidecar:
+            write_json_atomic(self._staleness_path, report)
+        return report
