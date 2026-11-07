@@ -7,7 +7,11 @@ Produces the *query family* for one technical axis as ``QuerySpec`` proposals:
 * ``feature_cross``  — AND across required feature term groups (max 3 ANDs — the
   CNIPA constraint is enforced here and **only for CNIPA rendering**, never
   generalized to other databases, UT-Q02);
-* ``cross_domain``   — migration queries from cross-domain dictionary entries.
+* ``cross_domain``   — migration queries: corpus co-occurrence mining terms
+  (split-gated train/val mining, roadmap 41A-3) layered after the curated
+  dictionary path; with no mining table attached the dictionary fallback is the
+  behavior. Mined candidates carry a ``mining`` provenance block (splits,
+  parameters, digest) that flows into the query's provenance untouched.
 
 Hard rules:
 * negation features never become positive terms (they annotate the plan as filters);
@@ -22,8 +26,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from patent_intel.contracts import FeatureSpec, QuerySpec, Requiredness
+from patent_intel.retrieval.cooccurrence import MiningTable
 from patent_intel.retrieval.features import FeatureBundle
 from patent_intel.retrieval.query_expand import (
+    CrossDomainExpander,
     DictionaryExpander,
     Expander,
     TermCandidate,
@@ -71,10 +77,26 @@ class QueryPlan:
 
 
 class QueryPlanBuilder:
-    """Build the query family for one axis from extracted features + expanders."""
+    """Build the query family for one axis from extracted features + expanders.
 
-    def __init__(self, expanders: list[Expander] | None = None) -> None:
-        self._expanders = expanders or [DictionaryExpander()]
+    ``mining_table`` (roadmap 41A-3) is a convenience: when given without an
+    explicit expander list, the builder plans with a
+    :class:`CrossDomainExpander` over the mined table instead of the plain
+    dictionary expander. Passing ``expanders`` explicitly always wins.
+    """
+
+    def __init__(
+        self,
+        expanders: list[Expander] | None = None,
+        *,
+        mining_table: MiningTable | None = None,
+    ) -> None:
+        if expanders is not None:
+            self._expanders = list(expanders)
+        elif mining_table is not None:
+            self._expanders = [CrossDomainExpander(mining=mining_table)]
+        else:
+            self._expanders = [DictionaryExpander()]
 
     def build(
         self,
@@ -157,7 +179,10 @@ class QueryPlanBuilder:
                     )
                 )
 
-        # cross-domain migration queries
+        # cross-domain migration queries: dictionary entries plus (when a mining
+        # table is attached) mined co-occurrence terms — each candidate's own
+        # provenance travels onto the query, so mined terms record their mining
+        # splits/params/digest and dictionary terms record their dictionary source
         xd_terms = [
             cand
             for feature in positive
