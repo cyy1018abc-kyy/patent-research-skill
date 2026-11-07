@@ -149,3 +149,18 @@
 | raw/ 落盘前置 | 不适用（本轮无新增工具） |
 
 维持「只修 bug，不加工具」；下次复核随 4.1 立项。
+
+## 4.2 命令面（W3-INT 接线，2026-11-07）
+
+4.2 特性包的库入口统一接进 `python -m patent_intel`（命令面即集成面，MCP 冻结口径不变）：
+
+| 命令 | 库入口 | 语义与边界 |
+|---|---|---|
+| `contribution report --report FILE` | `retrieval/contribution.py` | 从**完整** controller report dump（`{outcomes: [...]}`，hits/families 必须是 id 列表）派生每查询贡献账本；只读，汇总版（计数）报告被诚实拒绝——计数无法做重复查询识别 |
+| `bench run --corpus-dir DIR --topics FILE --side baseline\|extension --out-dir DIR` | `retrieval/batch.py` | 冻结语料快照 + 主题 manifest → 结果文件（`<side>.jsonl` + `meta-<side>.json`）；`--approve` 是 41A-5 的显式审批旗标（缺省 = 不审批 = 零行，绝不静默绕过审批门）；pyarrow 缺失 → exit 3 |
+| `doctor sources [--only ID …]` | `sources/diagnostics.py` | 每源可用性诊断（consent/凭据/planned 五态）；默认离线、零隐性联网——联网探测的 transport 注入点尚不存在，CLI 不提供 probe 旗标（诚实拒绝优于假开关）；`blocked>0` → exit 1 |
+| `recall report --dates-file FILE --target-filing-date DATE` | `retrieval/time_view.py` | 41C-1 建议性时间视图挂进 recall 报告（`time_view` 键）；无日期数据时报告形状逐字节不变——建议不改召回与排序 |
+
+输入/产物契约：`contribution report` 消费的对象必须来自完整 RunOutcome 记录；
+`bench run` 产物与 `benchmarks/retrieval/run_benchmark.py` 薄壳逐字节同格式
+（41A-5 逐字节一致测试锁定）；所有命令遵守「exit 2 = 用法/工作区问题、3 = 缺依赖」。
