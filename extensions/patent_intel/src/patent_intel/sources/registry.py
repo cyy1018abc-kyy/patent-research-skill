@@ -66,5 +66,6 @@ def describe_sources() -> list[dict[str, Any]]:
 # support_level=planned blocks execution at the base-class gate).
 from patent_intel.sources import kernel_sources as _kernel_sources  # noqa: E402,F401
 from patent_intel.sources import ops as _ops  # noqa: E402,F401
+from patent_intel.sources import npl as _npl  # noqa: E402,F401
 
 _ = Capability  # re-export touchpoint for type checkers
