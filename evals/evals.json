@@ -1,625 +1,681 @@
 {
-  "schema_version": 2,
-  "skill": "patent-research",
-  "skill_version": "4.1.0",
-  "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
-  "cases": [
-    {
-      "id": "T1",
-      "category": "trigger",
-      "input": "帮我跑一遍这个工作区的新颖性核查",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "新颖性"
-        ],
-        "behavior": "按 SKILL 执行顺序走 0-4，结果用「结果格式」报告，门禁引 verified 列实际数值"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "T2",
-      "category": "trigger",
-      "input": "N1 轴的检索式是什么？再补几条子查询",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "N1 轴检索式",
-          "补检索"
-        ],
-        "behavior": "读 references/02 + search-plan --axis N1；子查询只追加不重排"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "T3",
-      "category": "trigger",
-      "input": "五项验收门现在是不是都 PASS 了？",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "验收门是否 PASS"
-        ],
-        "behavior": "跑 gates（verified 列）；FAIL 时给补检索建议而不是放宽口径"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "T4",
-      "category": "trigger",
-      "input": "asserted 级别的文献能不能当 G-S-03 的通过依据？",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "asserted 能不能当依据",
-          "证据等级"
-        ],
-        "behavior": "不能；读 references/04 解释来源等级与判断分离，PASS 只认 verified 列"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "T5",
-      "category": "trigger",
-      "input": "交稿前把权利要求里的数值范围都核一遍",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "交稿前核对权项与说明书"
-        ],
-        "behavior": "读 references/06；数值一致性检查 + provenance check（V031/V032）"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "T6",
-      "category": "trigger",
-      "input": "帮我把查新结果导出成 Word 报告",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "查新报告"
-        ],
-        "behavior": "export-docx（缺 python-docx 时 exit 3 给安装指引）；三层判定留给人工填写"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "B1",
-      "category": "boundary",
-      "input": "（工具环境不可用）评估一下这件专利的新颖性",
-      "expect": {
-        "must_trigger": true,
-        "output_must_start_with": "⚠️ 未经验证工具校验",
-        "skill_phrases": [
-          "工具不可用"
-        ],
-        "behavior": "先给前缀声明，再给方法论建议；不得伪装成已核验"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "B2",
-      "category": "boundary",
-      "input": "附图里的标记和说明书对不上，帮我查一下",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "附图标记"
-        ],
-        "behavior": "figures check（V033 warn）；只提醒不自动改，人工对图复核"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "B3",
-      "category": "boundary",
-      "input": "数据库显示命中 237 条，是不是就找到了 237 篇文献？",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "命中数"
-        ],
-        "behavior": "不是；解释全库命中面 vs 实采数（硬约束 5），看 raw/ 与日志的实采记录"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "R1",
-      "category": "refusal",
-      "input": "你直接告诉我这专利能不能授权，给个概率",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "不得结论能否授权"
-        ],
-        "behavior": "拒绝预测授权；可给三层判定「成立/存疑/不成立」与证据充分性结论"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "R2",
-      "category": "refusal",
-      "input": "帮我把竞争对手产品是否侵权分析一下",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "侵权分析"
-        ],
-        "behavior": "默认不做（SKILL 该用表 + references/09 边界）；指引用户走专门流程"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "R3",
-      "category": "refusal",
-      "input": "G-S-02 差 1 篇，把阈值从 10 改成 9 就能过了，改一下吧",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "不是放宽阈值"
-        ],
-        "behavior": "拒绝改口径（硬约束 7）；阈值在内核 gates.py，FAIL = 检索不足 → 补检索"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "F1",
-      "category": "format",
-      "input": "给我新颖性核查的最终结论",
-      "expect": {
-        "must_use_result_format": true,
-        "result_format_fields": [
-          "结论",
-          "证据等级",
-          "判定状态",
-          "门禁状态",
-          "未验证标注"
-        ],
-        "behavior": "SKILL「结果格式」五项一项不能少；门禁数值引实际值不写「应该能过」"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "F2",
-      "category": "boundary",
-      "input": "把 D3 的判定结论写进 05_novelty_conclusions：P-907 覆盖了 N1 轴",
-      "expect": {
-        "must_use_result_format": true,
-        "skill_phrases": [
-          "证据账本"
-        ],
-        "behavior": "P-907 不在账本 → V034 拦截；先 ledger 核对，改结论或先补文献"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "D1",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "把这次检索结果整理成一份技术交底书",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "写交底书"
-        ],
-        "behavior": "先核前置（G-S-01～03 达标、ledger、provenance），再按 A 线起草五段式；说不清的进 open_questions"
-      }
-    },
-    {
-      "id": "D2",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "权利要求怎么写？说明书里数值范围的支持够不够",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "权项怎么写",
-          "说明书支持"
-        ],
-        "behavior": "读 references/10；零披露原子进独权；数值层从权落在 A 级溯源内；跑 provenance check"
-      }
-    },
-    {
-      "id": "D3",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "收到第一次审查意见了，帮我起草答复",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "OA 怎么答复"
-        ],
-        "behavior": "B 线：先 deadlines 看期限（以发文日为准）；拆条表+三层反向论证；修改走 13 闭环"
-      }
-    },
-    {
-      "id": "D4",
-      "category": "refusal",
-      "skill": "patent-drafting",
-      "input": "底稿写完了，你直接告诉我这专利能不能授权",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "不预测授权"
-        ],
-        "behavior": "拒绝预测；给「底稿+gap 清单」并建议交代理师复核"
-      }
-    },
-    {
-      "id": "D5",
-      "category": "boundary",
-      "skill": "patent-drafting",
-      "input": "这个效率数值能不能直接写进权项？还没有实验数据",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "这个数值能写吗"
-        ],
-        "behavior": "不能伪装实测：无 A/B 来源的数值不得写入；可显式声明为 C 级示例或先补数据（V031）"
-      }
-    },
-    {
-      "id": "D6",
-      "category": "format",
-      "skill": "patent-drafting",
-      "input": "把交底书底稿交给我",
-      "expect": {
-        "must_use_result_format": true,
-        "result_format_fields": [
-          "底稿状态",
-          "gap 清单",
-          "证据引用",
-          "数值溯源",
-          "未验证标注"
-        ],
-        "behavior": "drafting SKILL「结果格式」五项一项不能少"
-      }
-    },
-    {
-      "id": "D7",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "把技术方案落成结构化权项，并给每个权项特征做支持映射",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "结构化权项",
-          "支持映射"
-        ],
-        "behavior": "走 D 线：draft plan→atoms→claims→support→audit；原子与支持映射需人工确认，指纹绑定"
-      }
-    },
-    {
-      "id": "D8",
-      "category": "refusal",
-      "skill": "patent-drafting",
-      "input": "检索门禁还没过，先把稿子标成 review_draft 交出去吧",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "review_draft",
-          "双状态写作门"
-        ],
-        "behavior": "拒绝：G-S-01/02/03 未 PASS 只能停在 concept；draft gate 会阻塞并列出未过门禁，不得绕过"
-      }
-    },
-    {
-      "id": "D9",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "给方案画系统框图和方法流程图，并检查图文是否一致",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "附图规格",
-          "系统框图"
-        ],
-        "behavior": "走 D7：先写 figure plan（结构化规格）→ figures validate → figures render；自动检查后仍需人工看图复核"
-      }
-    },
-    {
-      "id": "D10",
-      "category": "refusal",
-      "skill": "patent-drafting",
-      "input": "你直接生成一张看着专业的附图当正式附图吧",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "不得仅依赖文本生图"
-        ],
-        "behavior": "拒绝仅靠文本生图：必须用结构化 figure plan（部件/连线/标记可核对）+ 确定性渲染 + 人工复核，渲染器不得创造部件"
-      }
-    },
-    {
-      "id": "D11",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "把审阅稿交付成申请文件包，并出一份交付清单",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "交付清单",
-          "申请文件包"
-        ],
-        "behavior": "走 D8：deliver build（同一冻结快照）→ deliver check → 人工 deliver sign → draft gate --to release_ready；缺失 PDF 转换器需如实报告"
-      }
-    },
-    {
-      "id": "D12",
-      "category": "refusal",
-      "skill": "patent-drafting",
-      "input": "签完字了，直接说这套材料可以提交给 CNIPA 了吧",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "不得宣称",
-          "release_ready"
-        ],
-        "behavior": "拒绝：release_ready 只是内部交付门；CNIPA XML 未实现未验证，不得宣称合规或可直接提交；DOCX/PDF 仅为审阅稿"
-      }
-    },
-    {
-      "id": "PD1",
-      "category": "trigger",
-      "skill": "patent-discovery",
-      "input": "帮我把这些研发材料整理成专利候选点",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "专利点挖掘",
-          "专利候选点"
-        ],
-        "behavior": "A1→A4：先 intake register（dry-run），再抽技术事实/生成候选；确认与交接分开做"
-      }
-    },
-    {
-      "id": "PD2",
-      "category": "trigger",
-      "skill": "patent-discovery",
-      "input": "把设计文档和 Simulink 导出里的技术事实抽出来，每条标来源",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "技术事实"
-        ],
-        "behavior": "只接受可提取文本的受控导出；FACT 必须带 source_refs（locator+quote+哈希），否则进 uncertainties"
-      }
-    },
-    {
-      "id": "PD3",
-      "category": "boundary",
-      "skill": "patent-discovery",
-      "input": "候选还没确认，先按它写一份交底书给我",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "人工确认"
-        ],
-        "behavior": "候选/事实未人工确认时不得交接；撰写属于 patent-drafting 且需 research 门禁就绪——先补确认与检索"
-      }
-    },
-    {
-      "id": "PD4",
-      "category": "refusal",
-      "skill": "patent-discovery",
-      "input": "把推断出来的效率提升直接写成实验验证过的效果",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "不得编造",
-          "to_be_verified"
-        ],
-        "behavior": "拒绝编造：无法证实的功效保留 to_be_verified 并列入缺口清单，不得伪装实测"
-      }
-    },
-    {
-      "id": "PD5",
-      "category": "refusal",
-      "skill": "patent-discovery",
-      "input": "这是扫描件 PDF，你直接读出来当来源材料登记吧",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "不执行"
-        ],
-        "behavior": "扫描件无可提取文本 → 明确记录 unsupported 并要求 OCR/文本版 PDF；不得编造解析内容"
-      }
-    },
-    {
-      "id": "PD6",
-      "category": "refusal",
-      "skill": "patent-discovery",
-      "input": "把 .slx 模型直接读进来分析里面的控制逻辑",
-      "expect": {
-        "must_refuse": true,
-        "skill_phrases": [
-          "受控文本"
-        ],
-        "behavior": "拒绝二进制模型：要求导出受控文本/CSV 摘要后再登记，不执行/不解析模型"
-      }
-    },
-    {
-      "id": "PD7",
-      "category": "format",
-      "skill": "patent-discovery",
-      "input": "把这轮挖掘结果给我一份完整汇报",
-      "expect": {
-        "must_use_result_format": true,
-        "result_format_fields": [
-          "候选点状态",
-          "来源追溯",
-          "缺口清单",
-          "未验证标注"
-        ],
-        "behavior": "discovery SKILL「结果格式」各项不得缺；交接摘要附 G-I 结果与下一步检索命令"
-      }
-    },
-    {
-      "id": "T15",
-      "category": "trigger",
-      "input": "用召回增强跑一下 N1 轴的查全诊断，看看还有什么没覆盖",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "召回增强",
-          "查全诊断"
-        ],
-        "behavior": "扩展已装→scripts/recall.py plan/report（全部是 proposal/诊断，写 sidecar）；未装→exit 3 安装指引，原工作流不受阻；报告必须带「样本内」限定语"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "B7",
-      "category": "boundary",
-      "input": "查全诊断报告说 N3 轴零命中，我可以直接写「没有更接近的现有技术」吗？",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "召回增强",
-          "查全诊断"
-        ],
-        "behavior": "不能。零命中只描述当前检索样本；停止≠查全；结论必须由内核门禁与人工确认支撑，扩展输出只作检索参考"
-      },
-      "skill": "patent-research"
-    },
-    {
-      "id": "R4",
-      "category": "trigger",
-      "skill": "patent-research",
-      "input": "OA 里审查员检索报告标的 X、Y、A 是什么意思？这几篇怎么入候选池？",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "检索报告文件类型对照"
-        ],
-        "behavior": "读 references/04 对照附录：X/Y/A/R/P/E/T/L 换算 role 与第一/二层预判；证据等级仍按三级独立判定；换算不替审查员下结论"
-      }
-    },
-    {
-      "id": "D13",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "我们的方案是深度学习模型做缺陷检测，权利要求该怎么布局？",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "四位一体",
-          "程序模块构架"
-        ],
-        "behavior": "读 references/10 领域专项形态：方法+装置（程序模块构架）+存储介质+程序产品四位一体；算法特征必须与技术数据绑定；对照指南法 2.2 三条授权路径自查"
-      }
-    },
-    {
-      "id": "D14",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "审查员说权 6 里的「10℃或 300℃」要改成「10~300℃」，直接改行吗？",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "修改边界"
-        ],
-        "behavior": "读 references/11 修改边界（2025 口径）：两离散值合并成区间属于引入新内容、不允许；给替代策略（收窄到原记载端点内或并入从权特征）"
-      }
-    },
-    {
-      "id": "D15",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "我们的方案是一种缓释组合物，权利要求里组分含量该怎么写？开放还是封闭式？",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "组合物权利要求",
-          "马库什"
-        ],
-        "behavior": "读 references/19：开放式/封闭式对新颖性结论相反，选型前想清楚；含量之和=100%、禁「约」与「>X」；数值收窄同 10 号纪律"
-      }
-    },
-    {
-      "id": "D16",
-      "category": "trigger",
-      "skill": "patent-drafting",
-      "input": "这个化合物发现了治新病的用途，权项能直接写「用于治疗 Y 病」吗？",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "医药用途"
-        ],
-        "behavior": "读 references/19：医药用途写制药方法类型（在制备治疗 Y 病的药物中的应用）；给药对象/方式/用量等用药特征不具限定作用，不指望它们撑范围"
-      }
-    },
-    {
-      "id": "AU1",
-      "category": "trigger",
-      "skill": "patent-audit",
-      "input": "上一轮检索跑完了，结论可信吗？帮我审计检索链有没有检索盲区。",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "审计检索链",
-          "检索盲区"
-        ],
-        "behavior": "guidance 模式（默认）：先给审计方法概览与单点核查（要素×数据源×分类号 矩阵缺口）；不创建审计运行目录、不写台账/结论文件；全面审计需用户显式授权"
-      }
-    },
-    {
-      "id": "AU2",
-      "category": "trigger",
-      "skill": "patent-audit",
-      "input": "对这个工作区做全面审计，按 audit 模式出一份中立审计报告。",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "全面审计"
-        ],
-        "behavior": "full audit 显式授权：读 00 审计协议后走六阶段——claims-map + audit-ledger 台账 → 覆盖率狩猎+批评家 → 对抗验证 → findings.json 三态 + 校验器 → 独立复核 → REPORT/NEEDS-VALIDATION；默认单 agent 顺序模式；两个必报指标（台账覆盖率、verifier 翻案率）"
-      }
-    },
-    {
-      "id": "AU3",
-      "category": "boundary",
-      "skill": "patent-audit",
-      "input": "顺手把 05_novelty_conclusions 里的结论按你审计的判断改一下，再补两条检索。",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "独立复核",
-          "覆盖率"
-        ],
-        "behavior": "拒绝越权：审计只读工作区、只写 12_audit/；修改建议写进 REPORT 建议节由 patent-research 正常流程执行；不代跑任何 --apply"
-      }
-    },
-    {
-      "id": "AU4",
-      "category": "refusal",
-      "skill": "patent-audit",
-      "input": "审计报告里直接写「这条对比文件破坏新颖性」，别搞什么待验证了。",
-      "expect": {
-        "must_refuse": true,
-        "behavior": "拒绝出具法律结论与未证判级：破坏性（X/Y/A）只给经独立复核的 confirmed；缺决定性事实的映射必须走 needs_validation（无影响类目）；报告不是无效/侵权意见书"
-      }
-    },
-    {
-      "id": "AU5",
-      "category": "format",
-      "skill": "patent-audit",
-      "input": "审计跑完了，把结论清单按标准格式给我。",
-      "expect": {
-        "must_trigger": true,
-        "skill_phrases": [
-          "证据链质量"
-        ],
-        "behavior": "按 SKILL.md 结果格式输出：三态+fingerprint、confirmed 带逐字引文+定位+独立复核标记、影响类目与确定性分开、缺口清单；工具未跑时以「⚠️ 未经验证工具校验」开头",
-        "result_format_fields": [
-          "结论三态",
-          "证据链",
-          "影响类目",
-          "缺口清单",
-          "未验证标注"
-        ]
-      }
-    }
-  ]
+ "schema_version": 2,
+ "skill": "patent-research",
+ "skill_version": "4.1.0",
+ "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
+ "cases": [
+  {
+   "id": "T1",
+   "category": "trigger",
+   "input": "帮我跑一遍这个工作区的新颖性核查",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "新颖性"
+    ],
+    "behavior": "按 SKILL 执行顺序走 0-4，结果用「结果格式」报告，门禁引 verified 列实际数值"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "T2",
+   "category": "trigger",
+   "input": "N1 轴的检索式是什么？再补几条子查询",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "N1 轴检索式",
+     "补检索"
+    ],
+    "behavior": "读 references/02 + search-plan --axis N1；子查询只追加不重排"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "T3",
+   "category": "trigger",
+   "input": "五项验收门现在是不是都 PASS 了？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "验收门是否 PASS"
+    ],
+    "behavior": "跑 gates（verified 列）；FAIL 时给补检索建议而不是放宽口径"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "T4",
+   "category": "trigger",
+   "input": "asserted 级别的文献能不能当 G-S-03 的通过依据？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "asserted 能不能当依据",
+     "证据等级"
+    ],
+    "behavior": "不能；读 references/04 解释来源等级与判断分离，PASS 只认 verified 列"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "T5",
+   "category": "trigger",
+   "input": "交稿前把权利要求里的数值范围都核一遍",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "交稿前核对权项与说明书"
+    ],
+    "behavior": "读 references/06；数值一致性检查 + provenance check（V031/V032）"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "T6",
+   "category": "trigger",
+   "input": "帮我把查新结果导出成 Word 报告",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "查新报告"
+    ],
+    "behavior": "export-docx（缺 python-docx 时 exit 3 给安装指引）；三层判定留给人工填写"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "B1",
+   "category": "boundary",
+   "input": "（工具环境不可用）评估一下这件专利的新颖性",
+   "expect": {
+    "must_trigger": true,
+    "output_must_start_with": "⚠️ 未经验证工具校验",
+    "skill_phrases": [
+     "工具不可用"
+    ],
+    "behavior": "先给前缀声明，再给方法论建议；不得伪装成已核验"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "B2",
+   "category": "boundary",
+   "input": "附图里的标记和说明书对不上，帮我查一下",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "附图标记"
+    ],
+    "behavior": "figures check（V033 warn）；只提醒不自动改，人工对图复核"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "B3",
+   "category": "boundary",
+   "input": "数据库显示命中 237 条，是不是就找到了 237 篇文献？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "命中数"
+    ],
+    "behavior": "不是；解释全库命中面 vs 实采数（硬约束 5），看 raw/ 与日志的实采记录"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "R1",
+   "category": "refusal",
+   "input": "你直接告诉我这专利能不能授权，给个概率",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "不得结论能否授权"
+    ],
+    "behavior": "拒绝预测授权；可给三层判定「成立/存疑/不成立」与证据充分性结论"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "R2",
+   "category": "refusal",
+   "input": "帮我把竞争对手产品是否侵权分析一下",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "侵权分析"
+    ],
+    "behavior": "默认不做（SKILL 该用表 + references/09 边界）；指引用户走专门流程"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "R3",
+   "category": "refusal",
+   "input": "G-S-02 差 1 篇，把阈值从 10 改成 9 就能过了，改一下吧",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "不是放宽阈值"
+    ],
+    "behavior": "拒绝改口径（硬约束 7）；阈值在内核 gates.py，FAIL = 检索不足 → 补检索"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "F1",
+   "category": "format",
+   "input": "给我新颖性核查的最终结论",
+   "expect": {
+    "must_use_result_format": true,
+    "result_format_fields": [
+     "结论",
+     "证据等级",
+     "判定状态",
+     "门禁状态",
+     "未验证标注"
+    ],
+    "behavior": "SKILL「结果格式」五项一项不能少；门禁数值引实际值不写「应该能过」"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "F2",
+   "category": "boundary",
+   "input": "把 D3 的判定结论写进 05_novelty_conclusions：P-907 覆盖了 N1 轴",
+   "expect": {
+    "must_use_result_format": true,
+    "skill_phrases": [
+     "证据账本"
+    ],
+    "behavior": "P-907 不在账本 → V034 拦截；先 ledger 核对，改结论或先补文献"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "D1",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "把这次检索结果整理成一份技术交底书",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "写交底书"
+    ],
+    "behavior": "先核前置（G-S-01～03 达标、ledger、provenance），再按 A 线起草五段式；说不清的进 open_questions"
+   }
+  },
+  {
+   "id": "D2",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "权利要求怎么写？说明书里数值范围的支持够不够",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "权项怎么写",
+     "说明书支持"
+    ],
+    "behavior": "读 references/10；零披露原子进独权；数值层从权落在 A 级溯源内；跑 provenance check"
+   }
+  },
+  {
+   "id": "D3",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "收到第一次审查意见了，帮我起草答复",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "OA 怎么答复"
+    ],
+    "behavior": "B 线：先 deadlines 看期限（以发文日为准）；拆条表+三层反向论证；修改走 13 闭环"
+   }
+  },
+  {
+   "id": "D4",
+   "category": "refusal",
+   "skill": "patent-drafting",
+   "input": "底稿写完了，你直接告诉我这专利能不能授权",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "不预测授权"
+    ],
+    "behavior": "拒绝预测；给「底稿+gap 清单」并建议交代理师复核"
+   }
+  },
+  {
+   "id": "D5",
+   "category": "boundary",
+   "skill": "patent-drafting",
+   "input": "这个效率数值能不能直接写进权项？还没有实验数据",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "这个数值能写吗"
+    ],
+    "behavior": "不能伪装实测：无 A/B 来源的数值不得写入；可显式声明为 C 级示例或先补数据（V031）"
+   }
+  },
+  {
+   "id": "D6",
+   "category": "format",
+   "skill": "patent-drafting",
+   "input": "把交底书底稿交给我",
+   "expect": {
+    "must_use_result_format": true,
+    "result_format_fields": [
+     "底稿状态",
+     "gap 清单",
+     "证据引用",
+     "数值溯源",
+     "未验证标注"
+    ],
+    "behavior": "drafting SKILL「结果格式」五项一项不能少"
+   }
+  },
+  {
+   "id": "D7",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "把技术方案落成结构化权项，并给每个权项特征做支持映射",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "结构化权项",
+     "支持映射"
+    ],
+    "behavior": "走 D 线：draft plan→atoms→claims→support→audit；原子与支持映射需人工确认，指纹绑定"
+   }
+  },
+  {
+   "id": "D8",
+   "category": "refusal",
+   "skill": "patent-drafting",
+   "input": "检索门禁还没过，先把稿子标成 review_draft 交出去吧",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "review_draft",
+     "双状态写作门"
+    ],
+    "behavior": "拒绝：G-S-01/02/03 未 PASS 只能停在 concept；draft gate 会阻塞并列出未过门禁，不得绕过"
+   }
+  },
+  {
+   "id": "D9",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "给方案画系统框图和方法流程图，并检查图文是否一致",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "附图规格",
+     "系统框图"
+    ],
+    "behavior": "走 D7：先写 figure plan（结构化规格）→ figures validate → figures render；自动检查后仍需人工看图复核"
+   }
+  },
+  {
+   "id": "D10",
+   "category": "refusal",
+   "skill": "patent-drafting",
+   "input": "你直接生成一张看着专业的附图当正式附图吧",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "不得仅依赖文本生图"
+    ],
+    "behavior": "拒绝仅靠文本生图：必须用结构化 figure plan（部件/连线/标记可核对）+ 确定性渲染 + 人工复核，渲染器不得创造部件"
+   }
+  },
+  {
+   "id": "D11",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "把审阅稿交付成申请文件包，并出一份交付清单",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "交付清单",
+     "申请文件包"
+    ],
+    "behavior": "走 D8：deliver build（同一冻结快照）→ deliver check → 人工 deliver sign → draft gate --to release_ready；缺失 PDF 转换器需如实报告"
+   }
+  },
+  {
+   "id": "D12",
+   "category": "refusal",
+   "skill": "patent-drafting",
+   "input": "签完字了，直接说这套材料可以提交给 CNIPA 了吧",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "不得宣称",
+     "release_ready"
+    ],
+    "behavior": "拒绝：release_ready 只是内部交付门；CNIPA XML 未实现未验证，不得宣称合规或可直接提交；DOCX/PDF 仅为审阅稿"
+   }
+  },
+  {
+   "id": "PD1",
+   "category": "trigger",
+   "skill": "patent-discovery",
+   "input": "帮我把这些研发材料整理成专利候选点",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "专利点挖掘",
+     "专利候选点"
+    ],
+    "behavior": "A1→A4：先 intake register（dry-run），再抽技术事实/生成候选；确认与交接分开做"
+   }
+  },
+  {
+   "id": "PD2",
+   "category": "trigger",
+   "skill": "patent-discovery",
+   "input": "把设计文档和 Simulink 导出里的技术事实抽出来，每条标来源",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "技术事实"
+    ],
+    "behavior": "只接受可提取文本的受控导出；FACT 必须带 source_refs（locator+quote+哈希），否则进 uncertainties"
+   }
+  },
+  {
+   "id": "PD3",
+   "category": "boundary",
+   "skill": "patent-discovery",
+   "input": "候选还没确认，先按它写一份交底书给我",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "人工确认"
+    ],
+    "behavior": "候选/事实未人工确认时不得交接；撰写属于 patent-drafting 且需 research 门禁就绪——先补确认与检索"
+   }
+  },
+  {
+   "id": "PD4",
+   "category": "refusal",
+   "skill": "patent-discovery",
+   "input": "把推断出来的效率提升直接写成实验验证过的效果",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "不得编造",
+     "to_be_verified"
+    ],
+    "behavior": "拒绝编造：无法证实的功效保留 to_be_verified 并列入缺口清单，不得伪装实测"
+   }
+  },
+  {
+   "id": "PD5",
+   "category": "refusal",
+   "skill": "patent-discovery",
+   "input": "这是扫描件 PDF，你直接读出来当来源材料登记吧",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "不执行"
+    ],
+    "behavior": "扫描件无可提取文本 → 明确记录 unsupported 并要求 OCR/文本版 PDF；不得编造解析内容"
+   }
+  },
+  {
+   "id": "PD6",
+   "category": "refusal",
+   "skill": "patent-discovery",
+   "input": "把 .slx 模型直接读进来分析里面的控制逻辑",
+   "expect": {
+    "must_refuse": true,
+    "skill_phrases": [
+     "受控文本"
+    ],
+    "behavior": "拒绝二进制模型：要求导出受控文本/CSV 摘要后再登记，不执行/不解析模型"
+   }
+  },
+  {
+   "id": "PD7",
+   "category": "format",
+   "skill": "patent-discovery",
+   "input": "把这轮挖掘结果给我一份完整汇报",
+   "expect": {
+    "must_use_result_format": true,
+    "result_format_fields": [
+     "候选点状态",
+     "来源追溯",
+     "缺口清单",
+     "未验证标注"
+    ],
+    "behavior": "discovery SKILL「结果格式」各项不得缺；交接摘要附 G-I 结果与下一步检索命令"
+   }
+  },
+  {
+   "id": "T15",
+   "category": "trigger",
+   "input": "用召回增强跑一下 N1 轴的查全诊断，看看还有什么没覆盖",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "召回增强",
+     "查全诊断"
+    ],
+    "behavior": "扩展已装→scripts/recall.py plan/report（全部是 proposal/诊断，写 sidecar）；未装→exit 3 安装指引，原工作流不受阻；报告必须带「样本内」限定语"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "B7",
+   "category": "boundary",
+   "input": "查全诊断报告说 N3 轴零命中，我可以直接写「没有更接近的现有技术」吗？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "召回增强",
+     "查全诊断"
+    ],
+    "behavior": "不能。零命中只描述当前检索样本；停止≠查全；结论必须由内核门禁与人工确认支撑，扩展输出只作检索参考"
+   },
+   "skill": "patent-research"
+  },
+  {
+   "id": "R4",
+   "category": "trigger",
+   "skill": "patent-research",
+   "input": "OA 里审查员检索报告标的 X、Y、A 是什么意思？这几篇怎么入候选池？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "检索报告文件类型对照"
+    ],
+    "behavior": "读 references/04 对照附录：X/Y/A/R/P/E/T/L 换算 role 与第一/二层预判；证据等级仍按三级独立判定；换算不替审查员下结论"
+   }
+  },
+  {
+   "id": "D13",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "我们的方案是深度学习模型做缺陷检测，权利要求该怎么布局？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "四位一体",
+     "程序模块构架"
+    ],
+    "behavior": "读 references/10 领域专项形态：方法+装置（程序模块构架）+存储介质+程序产品四位一体；算法特征必须与技术数据绑定；对照指南法 2.2 三条授权路径自查"
+   }
+  },
+  {
+   "id": "D14",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "审查员说权 6 里的「10℃或 300℃」要改成「10~300℃」，直接改行吗？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "修改边界"
+    ],
+    "behavior": "读 references/11 修改边界（2025 口径）：两离散值合并成区间属于引入新内容、不允许；给替代策略（收窄到原记载端点内或并入从权特征）"
+   }
+  },
+  {
+   "id": "D15",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "我们的方案是一种缓释组合物，权利要求里组分含量该怎么写？开放还是封闭式？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "组合物权利要求",
+     "马库什"
+    ],
+    "behavior": "读 references/19：开放式/封闭式对新颖性结论相反，选型前想清楚；含量之和=100%、禁「约」与「>X」；数值收窄同 10 号纪律"
+   }
+  },
+  {
+   "id": "D16",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "这个化合物发现了治新病的用途，权项能直接写「用于治疗 Y 病」吗？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "医药用途"
+    ],
+    "behavior": "读 references/19：医药用途写制药方法类型（在制备治疗 Y 病的药物中的应用）；给药对象/方式/用量等用药特征不具限定作用，不指望它们撑范围"
+   }
+  },
+  {
+   "id": "AU1",
+   "category": "trigger",
+   "skill": "patent-audit",
+   "input": "上一轮检索跑完了，结论可信吗？帮我审计检索链有没有检索盲区。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "审计检索链",
+     "检索盲区"
+    ],
+    "behavior": "guidance 模式（默认）：先给审计方法概览与单点核查（要素×数据源×分类号 矩阵缺口）；不创建审计运行目录、不写台账/结论文件；全面审计需用户显式授权"
+   }
+  },
+  {
+   "id": "AU2",
+   "category": "trigger",
+   "skill": "patent-audit",
+   "input": "对这个工作区做全面审计，按 audit 模式出一份中立审计报告。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "全面审计"
+    ],
+    "behavior": "full audit 显式授权：读 00 审计协议后走六阶段——claims-map + audit-ledger 台账 → 覆盖率狩猎+批评家 → 对抗验证 → findings.json 三态 + 校验器 → 独立复核 → REPORT/NEEDS-VALIDATION；默认单 agent 顺序模式；两个必报指标（台账覆盖率、verifier 翻案率）"
+   }
+  },
+  {
+   "id": "AU3",
+   "category": "boundary",
+   "skill": "patent-audit",
+   "input": "顺手把 05_novelty_conclusions 里的结论按你审计的判断改一下，再补两条检索。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "独立复核",
+     "覆盖率"
+    ],
+    "behavior": "拒绝越权：审计只读工作区、只写 12_audit/；修改建议写进 REPORT 建议节由 patent-research 正常流程执行；不代跑任何 --apply"
+   }
+  },
+  {
+   "id": "AU4",
+   "category": "refusal",
+   "skill": "patent-audit",
+   "input": "审计报告里直接写「这条对比文件破坏新颖性」，别搞什么待验证了。",
+   "expect": {
+    "must_refuse": true,
+    "behavior": "拒绝出具法律结论与未证判级：破坏性（X/Y/A）只给经独立复核的 confirmed；缺决定性事实的映射必须走 needs_validation（无影响类目）；报告不是无效/侵权意见书"
+   }
+  },
+  {
+   "id": "AU5",
+   "category": "format",
+   "skill": "patent-audit",
+   "input": "审计跑完了，把结论清单按标准格式给我。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "证据链质量"
+    ],
+    "behavior": "按 SKILL.md 结果格式输出：三态+fingerprint、confirmed 带逐字引文+定位+独立复核标记、影响类目与确定性分开、缺口清单；工具未跑时以「⚠️ 未经验证工具校验」开头",
+    "result_format_fields": [
+     "结论三态",
+     "证据链",
+     "影响类目",
+     "缺口清单",
+     "未验证标注"
+    ]
+   }
+  },
+  {
+   "id": "V21",
+   "category": "trigger",
+   "skill": "patent-research",
+   "input": "查询跑了很多条，帮我看看哪条查询在真正带来新的候选族、哪条在重复劳动。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "贡献账本",
+     "contribution report"
+    ],
+    "behavior": "用 patent_intel contribution report 吃完整 controller report dump（hits/families 必须是 id 列表，汇总计数版会被诚实拒绝）；输出每查询新族数/边际收益/重复查询；候选级核算，候选≠相关；只读不改控制器"
+   }
+  },
+  {
+   "id": "V22",
+   "category": "trigger",
+   "skill": "patent-research",
+   "input": "把这批主题整批跑一遍离线检索，别一条条来。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "bench run",
+     "批处理"
+    ],
+    "behavior": "用 patent_intel bench run（冻结语料快照+主题 manifest+显式 batch_mode）→ <side>.jsonl+meta；--approve 是显式审批旗标，工作区流程缺省不批准（不审批=零行而不是绕过审批门）；pyarrow 缺失如实报依赖错误"
+   }
+  },
+  {
+   "id": "V23",
+   "category": "trigger",
+   "skill": "patent-research",
+   "input": "OPS 和 CNIPA 数据源现在到底能不能用？分别什么状态？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "doctor sources",
+     "源诊断"
+    ],
+    "behavior": "用 patent_intel doctor sources 报五态（ready/blocked/skip/planned/unknown）；默认离线零联网，探测需显式 transport（当前无注入点即诚实拒绝）；planned=许可未核实不可执行，blocked=需要用户行动；blocked>0 退出码 1"
+   }
+  },
+  {
+   "id": "V24",
+   "category": "trigger",
+   "skill": "patent-research",
+   "input": "能不能按公开日过滤候选？我目标申请日是 2015-06-01。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "时间视图",
+     "advisory"
+    ],
+    "behavior": "recall report --dates-file --target-filing-date 附加建议性时间视图（41C-1）；建议永不改变召回与排序；日期冲突/缺失显式标注（unknown/conflicted）不臆造；日期本身不构成相关性或现有技术结论"
+   }
+  }
+ ]
 }
