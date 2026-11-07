@@ -309,7 +309,10 @@ def test_report_is_deterministic_same_input_same_bytes(monkeypatch, tmp_path) ->
 def test_status_counts_cover_full_vocabulary(monkeypatch) -> None:
     _without_ops_credentials(monkeypatch)
 
-    report = diagnose_sources(_consenting_config("cnipa", "crossref", "ops"))
+    # INT (4.2 wave gate): pin the closed-vocabulary accounting to an explicit
+    # source set — the registry legitimately grows (41B-1 registered `npl`), so
+    # a no-`only` run must keep passing whatever the population is.
+    report = diagnose_sources(_consenting_config("cnipa", "crossref", "ops"), only=["cnipa", "crossref", "ops"])
 
     assert set(report.status_counts) == set(STATUSES)
     assert report.status_counts["ready"] == 2
