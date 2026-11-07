@@ -1,0 +1,99 @@
+# 检索消融判定门 V2 —— 预注册冻结（4.2 / W4-EVAL，41A-3 跨域迁移）
+# 本文件与 protocol-prereg-v2.md 同一提交冻结；此后门值与规则不得修改。
+# 协议指纹 = protocol-prereg-v2.md 的 SHA-256（预注册时点快照）。
+# 与主门 gate.yaml / 消融门 gate-ablation.yaml 的关系：主门结论（FAIL → 实验性
+# 增强）与 ABL-1 结论（BM25F 否决 / RRF 过门）都保持不变；本门只管辖 4.2 组件
+# 阶梯的逐步宣称；改主门/改 gold/改本门 = 评测作废。
+
+schema_version: 1
+gate_kind: ablation_v2
+preregistered_at: "2026-11-07"
+protocol_sha256: "0fc2c33bf9e334e71d3b1f9ab354e7e4f5c7f60cf7e5d05ad3830a303c51c0fc"  # = benchmarks/retrieval/protocol-prereg-v2.md @ preregistration 2026-11-07
+preregistration_rule: >
+  本文件与协议的提交必须早于任何 runs/ 评测产物与 results/ 报告，也必须早于
+  topics/public/cooccurrence.json 挖掘产物的生成（挖掘参数在本文件冻结，产物
+  哈希记入 run meta 而非本门——门冻结的是规则，不是数据）；git 历史顺序即预注册
+  证明。smoke 与全量的执行顺序固定 V2-0→V2-1→V2-2→V2-3，全部主题重跑不得择优；
+  缺陷返工时门值不变、新旧报告都归档。
+
+dataset:
+  name: DAPFAM_patent
+  source: datalyes/DAPFAM_patent (HuggingFace; Ayaou et al., 2025, arXiv:2506.22141)
+  license: CC-BY-NC-SA-4.0
+  snapshot_date: "2026-10-29"
+  snapshot_sha256:   # 与 gate-ablation.yaml 同一冻结快照（2026-11-07 实测逐字节一致）
+    corpus_parquet: "469fe8e04d8bd8775a1116eccf0983e570a03444bef9c6e14c97aabafb7526d6"
+    qrels_all_parquet: "e51ae4e13abee0fc7523560ecddd272bc85dc98befc8ab4466155a0c2d2d4f74"
+    queries_parquet: "b5ad91a650349a0096911fadcb7bc35a0399eb12d1470fb2601d73af5fc2bcbe"
+  corpus_view: TAC (title_en + abstract_en + claims_text; description_en excluded)
+  network: fully offline — zero network requests during any scored run (hard gate)
+
+splits:
+  key: earliest_claim_date
+  rule: identical to gate.yaml (60/15/25 chronological); test split = 312 topics
+  enforced_by: benchmarks/retrieval/check_leakage.py (unchanged, rerun before scoring)
+
+mining:   # 41A-3 共现挖掘输入纪律（泄漏硬门，先于一切计分运行）
+  tool: benchmarks/retrieval/mine_cooccurrence.py
+  splits: [train, val]          # test 永不参与；签名层拒绝
+  seed_view: title_en + abstract_en (claims excluded)
+  params_frozen:
+    min_cooccurrence: 2
+    min_lift: 2.0
+    min_df: 2
+    max_df_ratio: 0.05
+    max_terms_per_seed: 8
+  artifact: topics/public/cooccurrence.json (digest-stamped; sha256 recorded in every V2-3 run meta)
+  leakage_gate_before_scoring: check_leakage.py --manifest … --cooccurrence … must exit 0 (hard gate)
+
+configs:
+  V2-0_baseline: BM25 uniform fields; 3 mechanical requests (full TAC / title+abstract / claims); per-document max merge; must byte-match archived Phase V baseline.jsonl (same engine version)
+  V2-1_features: V2-0 index; feature-derived single_feature queries from topic TAC (extract_features + DictionaryExpander defaults), first 3 by plan order; per-document max merge (BM25F deliberately absent — rejected by ABL-1)
+  V2-2_rrf: V2-1 requests fused by RRF (k=60, equal weights) replacing max merge
+  V2-3_cross_domain: V2-2 requests + at most 1 cross-domain request (cross_domain plan query expanded via the mined co-occurrence table through CrossDomainExpander; dictionary fallback when no mined entry — fallback is part of the config); RRF fusion over all (≤4) channels
+  constants_locked_in: benchmarks/retrieval/protocol-prereg-v2.md §3
+
+budget:
+  requests_per_topic_max: 3     # V2-0 / V2-1 / V2-2
+  requests_per_topic_max_v2_3: 4  # 3 feature + ≤1 cross-domain
+  requests_accounted: every executed request counts, including zero-gain ones
+
+primary_metric: family_recall_at_100
+secondary_metrics:
+  - family_recall_at_50
+  - family_recall_at_200
+  - ndcg_at_100
+  - mrr
+  - unique_relevant_yield_per_100_requests
+
+step_claim_gate:
+  comparison: V2-k vs V2-(k-1) for k in {1,2,3} (macro mean over test topics)
+  min_mean_gain_pp: 2.0
+  paired_bootstrap_ci_lower_pp: 0.0   # per-topic paired bootstrap, 95%, n=10000, seed 20261107
+  report_all_step_deltas: true        # negative/null deltas published as-is
+  groups_must_be_reported:
+    - domain (IN / OUT / MIXED, same topic-level definition as gate.yaml; OUT is the first-class axis of this round — the motivation of 41A-3)
+    - era (first vs second half of test topic dates)
+  failed_groups_must_be_published: true
+
+claim_rule: >
+  「组件 X 提升检索」宣称 = 该步 (V2-k − V2-(k-1)) 同时满足 min_mean_gain_pp 与
+  paired_bootstrap_ci_lower_pp 两门。主协议整体宣称（5.0pp 门）与 ABL-1 宣称
+  （RRF 优于逐文档 max）均不在本协议重开；V2-3−V2-0 只作归因陈述。任何门未过 ⇒
+  该组件标注「可用但无宣称」。负增益照实发表。不得为过门修改 gold、门值、
+  评测协议或挖掘参数（协议哈希锁定）。
+
+smoke:
+  subset: first 24 test topics by split order
+  pass_condition: all four configs complete without crash AND V2-0 smoke family_recall_at_100 > 0 AND request budgets respected AND V2-3's cross-domain request (if any) stays within budget
+  smoke_results_enter_claims: false
+
+reproduction:
+  V2-0_vs_archived_baseline: byte-identical (sha256) to benchmarks/retrieval/runs/baseline.jsonl from the Phase V run 2026-10-31 (same file ABL-1's A0 verified against)
+  on_mismatch: harness defect — fix, then full rerun of all configs (gate values unchanged)
+
+audit_integrity:
+  unauthorized_network_requests: 0   # hard gate: > 0 ⇒ 本轮评测不通过
+  artifact_hash_consistency: run 元数据与文件哈希逐条一致（score 审计门）
+  mining_artifact_digest: V2-3 run meta 必须携带 mining_artifact_sha256 且与产物实测一致
+  locator_verification: 族级检索评测，不涉及原文定位引用
