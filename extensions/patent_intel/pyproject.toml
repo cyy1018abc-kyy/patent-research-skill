@@ -20,8 +20,12 @@ dependencies = []
 kernel = ["patentkit>=0.8.0"]
 # PDF/OCR document parsing (WP-C).
 pdf = ["docling>=2"]
-# Dense retrieval / RRF fusion (WP-A). numpy only; no model download happens at install time.
-dense = ["numpy>=1.26"]
+# Dense retrieval / RRF fusion (WP-A; 4.3 DE1, G3 route B): numpy + fastembed ONNX
+# runtime. No model download happens at install time — and none at import/run time
+# either: the snowflake-arctic-embed-m-v2.0 weights are a one-time local snapshot
+# (default F:\GitHub项目合集\专利调研与润色\_models\snowflake-arctic-embed-m-v2.0, override
+# with PATENT_INTEL_DENSE_MODEL_DIR) consumed read-only; see hybrid.dense_unavailable_message.
+dense = ["numpy>=1.26", "fastembed>=0.7"]
 # EPO OPS live acquisition (WP-B).
 ops = ["requests>=2.31"]
 
