@@ -1,5 +1,14 @@
 """Corpus co-occurrence mining for cross-domain query expansion (roadmap 41A-3).
 
+Status (4.2 W4-EVAL verdict, do not re-litigate without new evidence): the
+mining pipeline is **engineering-verified** (leakage gate, split isolation, E-10
+discipline all pass) but its **retrieval face was rejected by the preregistered
+V2 ladder** — step V2-3 scored −0.67pp (CI fully negative) and the mined table
+produced zero OUT-group hits. Downgraded to "experimental, no claim"; this
+module is kept for audit and reproduction, NOT as a default retrieval path.
+See docs/retrieval-evaluation.md §8; 4.3 P0-GAP re-examines the OUT gap at the
+index level (field coverage / passages) — that is a different lever.
+
 Upgrades the cross-domain path from a hand-curated dictionary to **corpus
 co-occurrence mining**: seed terms come from *topic text of the train/val
 splits only*, co-occurrence statistics come from the frozen corpus snapshot,

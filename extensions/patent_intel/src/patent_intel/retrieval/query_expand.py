@@ -193,6 +193,12 @@ class CrossDomainExpander:
 
     Mined terms stay *reviewable proposals*: they broaden the net (broadening
     relation) and never touch requiredness.
+
+    Status (4.2 W4-EVAL, honest registry): the mining path is engineering-verified
+    but retrieval-rejected (V2-3 −0.67pp, CI fully negative; zero OUT hits) —
+    experimental, no claim; kept for audit/reproduction. Do not enable it as a
+    default retrieval path without new preregistered evidence. See
+    docs/retrieval-evaluation.md §8 and retrieval/cooccurrence.py module note.
     """
 
     def __init__(
