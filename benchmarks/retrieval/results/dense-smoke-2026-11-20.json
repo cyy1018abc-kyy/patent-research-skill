@@ -1,0 +1,595 @@
+{
+ "caveats": [
+  "5,000-row evenly-spaced subset: gold families may fall outside the subset, so absolute recall is depressed vs full-corpus numbers; the same-subset lexical control is the fair comparator",
+  "doc-level title+abstract index (no description/passage chunking — that is the P0-GAP lane)",
+  "smoke is not a gate; V3-2 (+Dense RRF) is the preregistered decision point"
+ ],
+ "config": {
+  "corpus_file": "F:\\GitHub项目合集\\专利调研与润色\\_wt-quality\\benchmarks\\retrieval\\corpus\\dapfam\\corpus.parquet",
+  "corpus_sha256": "469fe8e04d8bd8775a1116eccf0983e570a03444bef9c6e14c97aabafb7526d6",
+  "fastembed_alias": "snowflake/snowflake-arctic-embed-m",
+  "index_count": 5000,
+  "index_dims": 768,
+  "index_dir": "E:\\tmp-pk\\dense-idx",
+  "index_fields": [
+   "title",
+   "abstract"
+  ],
+  "index_manifest_sha256": "80e6c66b3e587c8b296e6ae641f46951a7fd43d20ca39e02c85719d64e2aaf45",
+  "index_name": "dense-smoke-5000",
+  "index_row_selector": "evenly-spaced stride over file order (5000 of 45336 rows)",
+  "index_sha256": "3f8c4982fcb9f7d8d5b26ac9fbf29b41bf5bd80e6d7469d9a3508ffed7a6a431",
+  "k": 100,
+  "metric": "family recall@100 (macro over topics; hits are doc ids == family ids)",
+  "model_dir": "F:\\GitHub项目合集\\专利调研与润色\\_models\\snowflake-arctic-embed-m-v2.0",
+  "model_id": "Snowflake/snowflake-arctic-embed-m-v2.0",
+  "model_source": "local snapshot via fastembed specific_model_path (local_files_only=True; zero downloads)",
+  "network_downloads_during_smoke": 0,
+  "query_view": "tac (title+abstract+claims of source query; preregistered mechanical variant)"
+ },
+ "date": "2026-11-20",
+ "dense": {
+  "IN": {
+   "n_topics": 24,
+   "per_topic": [
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0005"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0006"
+    },
+    {
+     "hits_in_top100": 2,
+     "n_gold": 20,
+     "recall": 0.1,
+     "split": "train",
+     "topic_id": "TP-0018"
+    },
+    {
+     "hits_in_top100": 3,
+     "n_gold": 20,
+     "recall": 0.15,
+     "split": "train",
+     "topic_id": "TP-0021"
+    },
+    {
+     "hits_in_top100": 4,
+     "n_gold": 20,
+     "recall": 0.2,
+     "split": "train",
+     "topic_id": "TP-0032"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0036"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0040"
+    },
+    {
+     "hits_in_top100": 4,
+     "n_gold": 20,
+     "recall": 0.2,
+     "split": "train",
+     "topic_id": "TP-0049"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0052"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0056"
+    },
+    {
+     "hits_in_top100": 2,
+     "n_gold": 20,
+     "recall": 0.1,
+     "split": "train",
+     "topic_id": "TP-0058"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0064"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0070"
+    },
+    {
+     "hits_in_top100": 4,
+     "n_gold": 20,
+     "recall": 0.2,
+     "split": "train",
+     "topic_id": "TP-0071"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0072"
+    },
+    {
+     "hits_in_top100": 2,
+     "n_gold": 20,
+     "recall": 0.1,
+     "split": "train",
+     "topic_id": "TP-0079"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0084"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0092"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0093"
+    },
+    {
+     "hits_in_top100": 3,
+     "n_gold": 20,
+     "recall": 0.15,
+     "split": "train",
+     "topic_id": "TP-0095"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0096"
+    },
+    {
+     "hits_in_top100": 4,
+     "n_gold": 20,
+     "recall": 0.2,
+     "split": "train",
+     "topic_id": "TP-0098"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0102"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0106"
+    }
+   ],
+   "recall_at_100_macro": 0.077083
+  },
+  "MIXED": {
+   "n_topics": 24,
+   "per_topic": [
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0001"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0002"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0003"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0004"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0007"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0008"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0009"
+    },
+    {
+     "hits_in_top100": 2,
+     "n_gold": 20,
+     "recall": 0.1,
+     "split": "train",
+     "topic_id": "TP-0010"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0011"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0012"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0013"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0014"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0015"
+    },
+    {
+     "hits_in_top100": 2,
+     "n_gold": 20,
+     "recall": 0.1,
+     "split": "train",
+     "topic_id": "TP-0016"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0019"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0020"
+    },
+    {
+     "hits_in_top100": 2,
+     "n_gold": 20,
+     "recall": 0.1,
+     "split": "train",
+     "topic_id": "TP-0022"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0023"
+    },
+    {
+     "hits_in_top100": 3,
+     "n_gold": 20,
+     "recall": 0.15,
+     "split": "train",
+     "topic_id": "TP-0024"
+    },
+    {
+     "hits_in_top100": 2,
+     "n_gold": 20,
+     "recall": 0.1,
+     "split": "train",
+     "topic_id": "TP-0025"
+    },
+    {
+     "hits_in_top100": 4,
+     "n_gold": 20,
+     "recall": 0.2,
+     "split": "train",
+     "topic_id": "TP-0026"
+    },
+    {
+     "hits_in_top100": 2,
+     "n_gold": 20,
+     "recall": 0.1,
+     "split": "train",
+     "topic_id": "TP-0027"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0028"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0029"
+    }
+   ],
+   "recall_at_100_macro": 0.05625
+  },
+  "OUT": {
+   "n_topics": 24,
+   "per_topic": [
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0017"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0042"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0100"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0175"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0247"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0302"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0324"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0328"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0442"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0490"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0523"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "train",
+     "topic_id": "TP-0599"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0608"
+    },
+    {
+     "hits_in_top100": 3,
+     "n_gold": 20,
+     "recall": 0.15,
+     "split": "train",
+     "topic_id": "TP-0613"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0614"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "train",
+     "topic_id": "TP-0663"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "val",
+     "topic_id": "TP-0749"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "val",
+     "topic_id": "TP-0776"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "val",
+     "topic_id": "TP-0817"
+    },
+    {
+     "hits_in_top100": 1,
+     "n_gold": 20,
+     "recall": 0.05,
+     "split": "val",
+     "topic_id": "TP-0824"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "val",
+     "topic_id": "TP-0828"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "val",
+     "topic_id": "TP-0832"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "val",
+     "topic_id": "TP-0883"
+    },
+    {
+     "hits_in_top100": 0,
+     "n_gold": 20,
+     "recall": 0.0,
+     "split": "val",
+     "topic_id": "TP-0885"
+    }
+   ],
+   "recall_at_100_macro": 0.014583
+  }
+ },
+ "elapsed_seconds": 61.9,
+ "generated_at": "2026-11-21T07:18:08+00:00",
+ "lexical_bm25_same_subset": {
+  "note": "single BM25 request (tac), k=100, over the identical 5,000-row subset — apples-to-apples control; NOT the preregistered 3-request baseline",
+  "results": {
+   "IN": {
+    "n_topics": 24,
+    "recall_at_100_macro": 0.077083
+   },
+   "MIXED": {
+    "n_topics": 24,
+    "recall_at_100_macro": 0.052083
+   },
+   "OUT": {
+    "n_topics": 24,
+    "recall_at_100_macro": 0.00625
+   }
+  }
+ },
+ "query_selection": {
+  "IN": 24,
+  "MIXED": 24,
+  "OUT": 24,
+  "rule": "OUT: all train+val; IN/MIXED: first 24 in manifest order among train+val; test-split topics untouched (evaluation isolation, F8)"
+ },
+ "reference_full_corpus_lexical": {
+  "IN": 28.05,
+  "MIXED": 26.13,
+  "OUT": 0.0,
+  "metric": "family recall@100 (%)",
+  "source": "benchmarks/retrieval/results/2026-10-31-phase-v.json (BM25 baseline, 312 test topics)"
+ },
+ "reference_paper_dense": {
+  "IN_recall_at_100": 0.4973,
+  "OUT_recall_at_100": 0.1538,
+  "note": "paper metrics on full corpus + passage index; our smoke is doc-level on a 5k subset — not comparable 1:1, direction only",
+  "source": "DAPFAM paper (Ayaou et al. 2025, arXiv:2506.22141), snowflake-arctic-embed-m-v2.0"
+ },
+ "status": "smoke — directional only, NOT a preregistered gate; no OUT-repair claim (paper calibrates dense OUT ≈ BM25, IN/MIXED is the value surface)",
+ "tool": "patent-research-skill DE1 dense smoke (4.3)"
+}
