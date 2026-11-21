@@ -8,8 +8,9 @@ selected fields with **snowflake-arctic-embed-m-v2.0** via fastembed ONNX
 manifest JSON to ``E:/tmp-pk/dense-idx/`` by default.
 
 Index artifacts are runtime outputs and never enter git. The corpus directory is
-gitignored per the DAPFAM license boundary (CC-BY-NC-SA-4.0); point ``--corpus``
-at whichever worktree holds the frozen snapshot (read-only consumption).
+gitignored per the DAPFAM license boundary (CC-BY-NC-SA-4.0): ``--corpus``
+overrides everything; otherwise a worktree-local frozen copy is used when
+present, else the read-only frozen snapshot held by the quality worktree.
 
 No model download happens here: fastembed runs ``local_files_only`` against the
 local weights snapshot (default
@@ -18,8 +19,8 @@ override with ``PATENT_INTEL_DENSE_MODEL_DIR``). A missing/failed snapshot abort
 with materialization instructions instead of touching the network.
 
 Usage:
-    python benchmarks/retrieval/build_dense_index.py --limit 5000 --index-name dense-smoke-5000 \
-        --corpus <path-to-frozen-dapfam>/corpus.parquet
+    python benchmarks/retrieval/build_dense_index.py --limit 5000 --index-name dense-smoke-5000
+    python benchmarks/retrieval/build_dense_index.py --full
     python benchmarks/retrieval/build_dense_index.py --full --corpus <path>/corpus.parquet
 
 Subset selection (``--limit N``) is deterministic without RNG: the N evenly
@@ -54,9 +55,23 @@ FIELD_COLUMNS = {
     "claims": "claims_text",
     "description": "description_en",
 }
-QUALITY_TREE_CORPUS = (
+# Read-only frozen snapshot (main-session environment fact): corpus/ is
+# gitignored in every worktree, so the shared snapshot in the quality worktree
+# is the default fallback when no worktree-local copy exists.
+FROZEN_CORPUS = Path(
     "F:/GitHub项目合集/专利调研与润色/_wt-quality/benchmarks/retrieval/corpus/dapfam/corpus.parquet"
 )
+
+
+def resolve_corpus(explicit: str | None) -> Path:
+    """Resolve the corpus parquet: ``--corpus`` override wins; then the
+    worktree-local frozen copy if present; finally the read-only frozen
+    snapshot (consumed read-only — never written)."""
+    if explicit:
+        return Path(explicit)
+    if DEFAULT_CORPUS.is_file():
+        return DEFAULT_CORPUS
+    return FROZEN_CORPUS
 
 
 def sha256_file(path: Path) -> str:
@@ -127,7 +142,9 @@ def _pin_utf8_stdio() -> None:
 def main() -> int:
     _pin_utf8_stdio()
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--corpus", default=str(DEFAULT_CORPUS), help="frozen corpus.parquet (read-only)")
+    parser.add_argument("--corpus", default=None,
+                        help="frozen corpus.parquet (read-only); default: worktree-local copy, "
+                             "else the frozen snapshot")
     parser.add_argument("--limit", type=int, default=0, help="deterministic evenly-spaced subset of N rows")
     parser.add_argument("--full", action="store_true", help="embed every corpus row")
     parser.add_argument("--fields", default="title,abstract",
@@ -142,12 +159,12 @@ def main() -> int:
                         help="onnxruntime session threads (0 = onnxruntime default)")
     args = parser.parse_args()
 
-    corpus = Path(args.corpus)
+    corpus = resolve_corpus(args.corpus)
     if not corpus.is_file():
         raise SystemExit(
             f"[FATAL] corpus not found: {corpus}\n"
             "The corpus directory is gitignored (CC-BY-NC-SA-4.0); point --corpus at a "
-            f"worktree holding the frozen snapshot, e.g. {QUALITY_TREE_CORPUS}"
+            f"worktree holding the frozen snapshot, e.g. {FROZEN_CORPUS}"
         )
     fields = parse_fields(args.fields)
     index_name = args.index_name or ("dense-full" if args.full else f"dense-limit{args.limit}")
