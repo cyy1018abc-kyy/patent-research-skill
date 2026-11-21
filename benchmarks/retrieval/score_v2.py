@@ -42,7 +42,7 @@ SCORER = REPO_ROOT / "tools" / "score_retrieval.py"
 CONFIGS = ("V2-0", "V2-1", "V2-2", "V2-3")
 STEPS = (("V2-1", "V2-0"), ("V2-2", "V2-1"), ("V2-3", "V2-2"))
 BUDGET_PER_TOPIC = {"V2-0": 3, "V2-1": 3, "V2-2": 3, "V2-3": 4}
-ARCHIVED_BASELINE = Path("E:/Users/amdir/Desktop/专利调研与润色/patent-research-skill/benchmarks/retrieval/runs/baseline.jsonl")
+ARCHIVED_BASELINE = Path("F:/GitHub项目合集/专利调研与润色/patent-research-skill/benchmarks/retrieval/runs/baseline.jsonl")
 
 
 def _pin_utf8_stdio() -> None:
