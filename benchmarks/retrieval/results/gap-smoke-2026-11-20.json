@@ -1,0 +1,1392 @@
+{
+  "report_type": "gap-smoke",
+  "date": "2026-11-20",
+  "smoke": true,
+  "gate": false,
+  "topic_sets": {
+    "OUT": 24,
+    "IN": 24,
+    "MIXED": 24
+  },
+  "desc_cap_words": 2500,
+  "memory_note": "full-TACD (~500M token occurrences, ~30GB postings) MemoryError on first attempt; desc capped to first 2500 words (~165M occ, feasible); passage axis (chunk+maxP, engineered+tested in passage.py) deferred to EVAL3 engine decision (disk-backed postings)",
+  "word_token_note": "8192 BPE tokens ≈ 6100 words at ~0.75 words/token (approximation, no tokenizer)",
+  "k_per_request": 200,
+  "b": 0.75,
+  "engine": "BM25Index",
+  "snapshot_sha256": {
+    "corpus.parquet": "469fe8e04d8bd8775a1116eccf0983e570a03444bef9c6e14c97aabafb7526d6",
+    "qrels_all.parquet": "e51ae4e13abee0fc7523560ecddd272bc85dc98befc8ab4466155a0c2d2d4f74",
+    "queries.parquet": "b5ad91a650349a0096911fadcb7bc35a0399eb12d1470fb2601d73af5fc2bcbe"
+  },
+  "manifest_sha256": "5259716de48add9a04da60593b66e941c80bb66ab5e1eb64763af7dea0c56acd",
+  "elapsed_seconds": 4744.1,
+  "network_requests": 0,
+  "results": [
+    {
+      "config": "A",
+      "params": {
+        "view": "tac-doc",
+        "k1": 1.5
+      },
+      "summary": {
+        "OUT": {
+          "n": 24,
+          "mean_recall@100": 0.041667
+        },
+        "IN": {
+          "n": 24,
+          "mean_recall@100": 0.275
+        },
+        "MIXED": {
+          "n": 24,
+          "mean_recall@100": 0.225
+        }
+      },
+      "topics": [
+        {
+          "topic_id": "TP-0017",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0042",
+          "domain": "OUT",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0100",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0175",
+          "domain": "OUT",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0247",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0302",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0324",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0328",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0442",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0490",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0523",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0599",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0608",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0613",
+          "domain": "OUT",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0614",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0663",
+          "domain": "OUT",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0749",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0776",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0817",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0824",
+          "domain": "OUT",
+          "recall@100": 0.6,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0828",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0832",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0883",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0885",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0005",
+          "domain": "IN",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0006",
+          "domain": "IN",
+          "recall@100": 0.4,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0018",
+          "domain": "IN",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0021",
+          "domain": "IN",
+          "recall@100": 0.5,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0032",
+          "domain": "IN",
+          "recall@100": 0.3,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0036",
+          "domain": "IN",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0040",
+          "domain": "IN",
+          "recall@100": 0.55,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0049",
+          "domain": "IN",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0052",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0056",
+          "domain": "IN",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0058",
+          "domain": "IN",
+          "recall@100": 0.4,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0064",
+          "domain": "IN",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0070",
+          "domain": "IN",
+          "recall@100": 0.8,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0071",
+          "domain": "IN",
+          "recall@100": 0.55,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0072",
+          "domain": "IN",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0079",
+          "domain": "IN",
+          "recall@100": 0.45,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0084",
+          "domain": "IN",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0092",
+          "domain": "IN",
+          "recall@100": 0.45,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0093",
+          "domain": "IN",
+          "recall@100": 0.45,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0095",
+          "domain": "IN",
+          "recall@100": 0.5,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0096",
+          "domain": "IN",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0098",
+          "domain": "IN",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0102",
+          "domain": "IN",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0106",
+          "domain": "IN",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0001",
+          "domain": "MIXED",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0002",
+          "domain": "MIXED",
+          "recall@100": 0.6,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0003",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0004",
+          "domain": "MIXED",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0007",
+          "domain": "MIXED",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0008",
+          "domain": "MIXED",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0009",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0010",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0011",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0012",
+          "domain": "MIXED",
+          "recall@100": 0.75,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0013",
+          "domain": "MIXED",
+          "recall@100": 0.4,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0014",
+          "domain": "MIXED",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0015",
+          "domain": "MIXED",
+          "recall@100": 0.65,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0016",
+          "domain": "MIXED",
+          "recall@100": 0.3,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0019",
+          "domain": "MIXED",
+          "recall@100": 0.35,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0020",
+          "domain": "MIXED",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0022",
+          "domain": "MIXED",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0023",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0024",
+          "domain": "MIXED",
+          "recall@100": 0.3,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0025",
+          "domain": "MIXED",
+          "recall@100": 0.55,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0026",
+          "domain": "MIXED",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0027",
+          "domain": "MIXED",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0028",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0029",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        }
+      ]
+    },
+    {
+      "config": "B",
+      "params": {
+        "view": "tacd-head-doc",
+        "k1": 1.5
+      },
+      "summary": {
+        "OUT": {
+          "n": 24,
+          "mean_recall@100": 0.047917
+        },
+        "IN": {
+          "n": 24,
+          "mean_recall@100": 0.36875
+        },
+        "MIXED": {
+          "n": 24,
+          "mean_recall@100": 0.264583
+        }
+      },
+      "topics": [
+        {
+          "topic_id": "TP-0017",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0042",
+          "domain": "OUT",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0100",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0175",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0247",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0302",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0324",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0328",
+          "domain": "OUT",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0442",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0490",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0523",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0599",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0608",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0613",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0614",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0663",
+          "domain": "OUT",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0749",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0776",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0817",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0824",
+          "domain": "OUT",
+          "recall@100": 0.8,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0828",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0832",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0883",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0885",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0005",
+          "domain": "IN",
+          "recall@100": 0.3,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0006",
+          "domain": "IN",
+          "recall@100": 0.45,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0018",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0021",
+          "domain": "IN",
+          "recall@100": 0.65,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0032",
+          "domain": "IN",
+          "recall@100": 0.45,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0036",
+          "domain": "IN",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0040",
+          "domain": "IN",
+          "recall@100": 0.65,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0049",
+          "domain": "IN",
+          "recall@100": 0.35,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0052",
+          "domain": "IN",
+          "recall@100": 0.3,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0056",
+          "domain": "IN",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0058",
+          "domain": "IN",
+          "recall@100": 0.5,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0064",
+          "domain": "IN",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0070",
+          "domain": "IN",
+          "recall@100": 0.85,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0071",
+          "domain": "IN",
+          "recall@100": 0.7,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0072",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0079",
+          "domain": "IN",
+          "recall@100": 0.6,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0084",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0092",
+          "domain": "IN",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0093",
+          "domain": "IN",
+          "recall@100": 0.8,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0095",
+          "domain": "IN",
+          "recall@100": 0.65,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0096",
+          "domain": "IN",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0098",
+          "domain": "IN",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0102",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0106",
+          "domain": "IN",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0001",
+          "domain": "MIXED",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0002",
+          "domain": "MIXED",
+          "recall@100": 0.75,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0003",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0004",
+          "domain": "MIXED",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0007",
+          "domain": "MIXED",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0008",
+          "domain": "MIXED",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0009",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0010",
+          "domain": "MIXED",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0011",
+          "domain": "MIXED",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0012",
+          "domain": "MIXED",
+          "recall@100": 0.75,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0013",
+          "domain": "MIXED",
+          "recall@100": 0.35,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0014",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0015",
+          "domain": "MIXED",
+          "recall@100": 0.8,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0016",
+          "domain": "MIXED",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0019",
+          "domain": "MIXED",
+          "recall@100": 0.65,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0020",
+          "domain": "MIXED",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0022",
+          "domain": "MIXED",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0023",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0024",
+          "domain": "MIXED",
+          "recall@100": 0.4,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0025",
+          "domain": "MIXED",
+          "recall@100": 0.5,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0026",
+          "domain": "MIXED",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0027",
+          "domain": "MIXED",
+          "recall@100": 0.4,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0028",
+          "domain": "MIXED",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0029",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        }
+      ]
+    },
+    {
+      "config": "D",
+      "params": {
+        "view": "tacd-head-doc",
+        "k1": 1.2
+      },
+      "summary": {
+        "OUT": {
+          "n": 24,
+          "mean_recall@100": 0.047917
+        },
+        "IN": {
+          "n": 24,
+          "mean_recall@100": 0.354167
+        },
+        "MIXED": {
+          "n": 24,
+          "mean_recall@100": 0.26875
+        }
+      },
+      "topics": [
+        {
+          "topic_id": "TP-0017",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0042",
+          "domain": "OUT",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0100",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0175",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0247",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0302",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0324",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0328",
+          "domain": "OUT",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0442",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0490",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0523",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0599",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0608",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0613",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0614",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0663",
+          "domain": "OUT",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0749",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0776",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0817",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0824",
+          "domain": "OUT",
+          "recall@100": 0.8,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0828",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0832",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0883",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0885",
+          "domain": "OUT",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0005",
+          "domain": "IN",
+          "recall@100": 0.3,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0006",
+          "domain": "IN",
+          "recall@100": 0.4,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0018",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0021",
+          "domain": "IN",
+          "recall@100": 0.55,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0032",
+          "domain": "IN",
+          "recall@100": 0.4,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0036",
+          "domain": "IN",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0040",
+          "domain": "IN",
+          "recall@100": 0.65,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0049",
+          "domain": "IN",
+          "recall@100": 0.35,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0052",
+          "domain": "IN",
+          "recall@100": 0.3,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0056",
+          "domain": "IN",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0058",
+          "domain": "IN",
+          "recall@100": 0.5,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0064",
+          "domain": "IN",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0070",
+          "domain": "IN",
+          "recall@100": 0.85,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0071",
+          "domain": "IN",
+          "recall@100": 0.65,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0072",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0079",
+          "domain": "IN",
+          "recall@100": 0.6,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0084",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0092",
+          "domain": "IN",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0093",
+          "domain": "IN",
+          "recall@100": 0.75,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0095",
+          "domain": "IN",
+          "recall@100": 0.6,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0096",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0098",
+          "domain": "IN",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0102",
+          "domain": "IN",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0106",
+          "domain": "IN",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0001",
+          "domain": "MIXED",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0002",
+          "domain": "MIXED",
+          "recall@100": 0.75,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0003",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0004",
+          "domain": "MIXED",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0007",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0008",
+          "domain": "MIXED",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0009",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0010",
+          "domain": "MIXED",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0011",
+          "domain": "MIXED",
+          "recall@100": 0.0,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0012",
+          "domain": "MIXED",
+          "recall@100": 0.75,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0013",
+          "domain": "MIXED",
+          "recall@100": 0.35,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0014",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0015",
+          "domain": "MIXED",
+          "recall@100": 0.8,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0016",
+          "domain": "MIXED",
+          "recall@100": 0.15,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0019",
+          "domain": "MIXED",
+          "recall@100": 0.65,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0020",
+          "domain": "MIXED",
+          "recall@100": 0.25,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0022",
+          "domain": "MIXED",
+          "recall@100": 0.2,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0023",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0024",
+          "domain": "MIXED",
+          "recall@100": 0.4,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0025",
+          "domain": "MIXED",
+          "recall@100": 0.5,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0026",
+          "domain": "MIXED",
+          "recall@100": 0.3,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0027",
+          "domain": "MIXED",
+          "recall@100": 0.4,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0028",
+          "domain": "MIXED",
+          "recall@100": 0.1,
+          "gold_n": 20
+        },
+        {
+          "topic_id": "TP-0029",
+          "domain": "MIXED",
+          "recall@100": 0.05,
+          "gold_n": 20
+        }
+      ]
+    }
+  ]
+}
