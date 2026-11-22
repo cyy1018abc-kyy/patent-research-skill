@@ -1,0 +1,104 @@
+# 检索组件判定门 V3 —— 预注册冻结（4.3 / W3-EVAL，P0-GAP 字段覆盖 · Dense 通道）
+# 本文件与 protocol-prereg-v3.md 同一提交冻结；此后门值与规则不得修改。
+# 协议指纹 = protocol-prereg-v3.md 的 SHA-256（预注册时点快照）。
+# 与主门 gate.yaml / 消融门 gate-ablation.yaml / V2 门 gate-v2.yaml 的关系：主门
+# 结论（FAIL → 实验性增强）与 ABL-1（BM25F 否决 / RRF 过门）/ V2（跨域共现否决）
+# 结论都保持不变；本门只管辖 4.3 两步的逐步宣称；改主门/改 gold/改本门 = 评测作废。
+# G4 裁定记录（2026-11-20 项目方「按推荐」）：Cross-Encoder 不入本阶梯（CE1 smoke
+# 负先验在册）；V3-1 门值 5.0pp（自草案 3.0pp 上调，依据 2026-11-20 gap-smoke A→B
+# 实测 ~6.5pp 差并留噪声余量）。
+
+schema_version: 1
+gate_kind: ablation_v3
+preregistered_at: "2026-11-21"
+protocol_sha256: "f6fd5ed4d29d0df8522103c48ae958cb6a31f890a785f4f23a790d44afef16be"  # = benchmarks/retrieval/protocol-prereg-v3.md @ preregistration 2026-11-21
+preregistration_rule: >
+  本文件与协议、run_v3_ladder.py、score_v3.py 的提交必须早于任何 runs/ 评测产物与
+  results/ 报告；git 历史顺序即预注册证明。全量执行顺序固定 V3-0→V3-1→V3-2，
+  全部主题重跑不得择优；V3-0 复现门无论 smoke 结果都必须全量执行；缺陷返工时门值
+  不变、新旧报告都归档。
+
+dataset:
+  name: DAPFAM_patent
+  source: datalyes/DAPFAM_patent (HuggingFace; Ayaou et al., 2025, arXiv:2506.22141)
+  license: CC-BY-NC-SA-4.0
+  snapshot_date: "2026-10-29"
+  snapshot_sha256:   # 与 gate.yaml / gate-ablation.yaml / gate-v2.yaml 同一冻结快照
+    corpus_parquet: "469fe8e04d8bd8775a1116eccf0983e570a03444bef9c6e14c97aabafb7526d6"
+    qrels_all_parquet: "e51ae4e13abee0fc7523560ecddd272bc85dc98befc8ab4466155a0c2d2d4f74"
+    queries_parquet: "b5ad91a650349a0096911fadcb7bc35a0399eb12d1470fb2601d73af5fc2bcbe"
+  corpus_views:
+    lexical_V3_0: TAC (title_en + abstract_en + claims_text; description_en excluded) — 与 4.2 基线同
+    lexical_V3_1: TACD-head (title_en + abstract_en + claims_text + description_en capped to first 2500 whitespace words)
+    dense_V3_2: title_en + abstract_en (persisted DenseIndex doc view; build_dense_index.py --fields default)
+  network: fully offline — zero network requests during any scored run (hard gate)
+
+splits:
+  key: earliest_claim_date
+  rule: identical to gate.yaml (60/15/25 chronological); test split = 312 topics
+  enforced_by: benchmarks/retrieval/check_leakage.py (unchanged, rerun before scoring)
+
+dense_index:   # V3-2 dense 通道 provenance（硬门：corpus_sha256 必须与冻结快照一致）
+  model: snowflake-arctic-embed-m-v2.0 (Apache-2.0; local weights snapshot, zero download; fastembed ONNX route B)
+  index_kind: DenseIndex (ids + float32 matrix + manifest; brute-force numpy cosine, deterministic ties)
+  built_at: "2026-11-21"
+  corpus_sha256_must_equal: "469fe8e04d8bd8775a1116eccf0983e570a03444bef9c6e14c97aabafb7526d6"
+  manifest_sha256_recorded_in: V3-2 run meta (dense_index_manifest_sha256)
+  implementation: "load_configured_dense_index() (INT2 wiring); encoder = DenseRetriever.encode_query; zero network"
+
+configs:
+  V3-0_config: identical to V2-0 / ABL-1 A0 — BM25 uniform fields; 3 mechanical requests (full TAC / title+abstract / claims); per-document max merge; k1=1.5 b=0.75 k_per_request=200; must byte-match archived Phase V baseline.jsonl (same engine version)
+  V3-1_config: index swapped to TACD-head (description capped to first 2500 whitespace words — full-text infeasible on this engine/machine, measured ceiling recorded in results/gap-smoke-2026-11-20.json memory_note); requests/merge/params otherwise identical to V3-0 — isolates field coverage
+  V3-2_config: V3-1's 3 lexical request rankings + 1 dense ranking (persisted DenseIndex full-corpus cosine; query text = query-family title+abstract, aligned with the index doc view); RRF fusion (k=60, equal weights) over ≤4 channels — compound step vs V3-1 (dense + RRF-replacing-max-merge; RRF carries the ABL-1 positive prior, recorded not reopened)
+  constants_locked_in: benchmarks/retrieval/protocol-prereg-v3.md §2
+
+budget:
+  requests_per_topic_max: 3     # V3-0 / V3-1
+  requests_per_topic_max_v3_2: 4  # 3 lexical + 1 dense
+  requests_accounted: every executed request counts, including zero-gain ones
+
+primary_metric: family_recall_at_100
+secondary_metrics:
+  - family_recall_at_50
+  - family_recall_at_200
+  - ndcg_at_100
+  - mrr
+  - unique_relevant_yield_per_100_requests
+
+step_claim_gate:
+  comparison: per-step (macro mean over test topics)
+  V3-1_field_coverage:
+    vs: V3-0
+    min_mean_gain_pp: 5.0
+    paired_bootstrap_ci_lower_pp: 0.0
+  V3-2_dense_rrf:
+    vs: V3-1
+    min_mean_gain_pp: 2.0
+    paired_bootstrap_ci_lower_pp: 0.0
+  paired_bootstrap: per-topic paired, 95%, n=10000, seed 20261121
+  report_all_step_deltas: true        # negative/null deltas published as-is
+  groups_must_be_reported:
+    - domain (IN / OUT / MIXED; OUT first-class — the gap-closure motivation)
+    - era (first vs second half of test topic dates)
+  failed_groups_must_be_published: true
+
+claim_rule: >
+  「组件 X 提升检索」宣称 = 该步同时满足本门 min_mean_gain_pp 与 paired_bootstrap
+  CI 下界 > 0 两门。主门（Phase V，5.0pp）不重开；ABL-1 宣称不重开。任一门未过 ⇒
+  该组件标注「可用但无宣称」；负增益照实发表。不得为过门修改 gold、门值、协议或
+  配置常量（协议哈希锁定）。OUT 参照线（论文 0.1368 doc / 0.1521 passage）仅作
+  归因对照，不构成本门。
+
+smoke:
+  subset: first 24 test topics by split order
+  pass_condition: all three configs complete without crash AND V3-0 smoke family_recall_at_100 > 0 AND request budgets respected AND dense channel (V3-2) loads with zero network
+  smoke_results_enter_claims: false
+
+reproduction:
+  V3-0_vs_archived_baseline: byte-identical (sha256) to benchmarks/retrieval/runs/baseline.jsonl from the Phase V run 2026-10-31 (same file ABL-1 A0 / V2-0 verified against)
+  on_mismatch: harness defect — fix, then full rerun of all configs (gate values unchanged)
+
+audit_integrity:
+  unauthorized_network_requests: 0   # hard gate: > 0 ⇒ 本轮评测不通过
+  artifact_hash_consistency: run 元数据与文件哈希逐条一致（score 审计门，含 V3-2 dense index manifest sha256）
+  locator_verification: 族级检索评测，不涉及原文定位引用
