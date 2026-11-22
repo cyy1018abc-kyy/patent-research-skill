@@ -31,7 +31,13 @@ __all__ = [
     "DENSE_FASTEMBED_ALIAS",
     "DEFAULT_DENSE_MODEL_DIR",
     "DENSE_MODEL_DIR_ENV",
+    "DENSE_INDEX_DIR_ENV",
+    "DENSE_INDEX_NAME_ENV",
+    "DENSE_INDEX_NAME_DEFAULT",
     "dense_unavailable_message",
+    "dense_backend_info",
+    "dense_index_status",
+    "load_configured_dense_index",
 ]
 
 # ── 4.3 DE1 dense constants ──────────────────────────────────────────────────
@@ -51,6 +57,14 @@ DENSE_FASTEMBED_ALIAS = "snowflake/snowflake-arctic-embed-m"
 # git), consumed read-only at runtime. Override with the env var below.
 DENSE_MODEL_DIR_ENV = "PATENT_INTEL_DENSE_MODEL_DIR"
 DEFAULT_DENSE_MODEL_DIR = Path(r"F:\GitHub项目合集\专利调研与润色\_models\snowflake-arctic-embed-m-v2.0")
+
+# Persisted dense index location (4.3 INT2): when configured, the dense channel
+# consumes the prebuilt index (brute-force cosine, no per-call encoding) instead
+# of encoding the whole corpus per query. Unset ⇒ per-call mode (small corpora)
+# or an honestly-absent dense channel.
+DENSE_INDEX_DIR_ENV = "PATENT_INTEL_DENSE_INDEX_DIR"
+DENSE_INDEX_NAME_ENV = "PATENT_INTEL_DENSE_INDEX_NAME"
+DENSE_INDEX_NAME_DEFAULT = "dense-full"
 
 # Manifest fields every persisted index must carry (DE1 contract).
 DENSE_INDEX_REQUIRED_MANIFEST_FIELDS = (
@@ -90,6 +104,67 @@ def dense_unavailable_message() -> str:
         f"snapshot_download; snapshot_download('{DENSE_MODEL_ID}', local_dir="
         f"'{_resolve_model_dir()}')\"); until then ranking degrades to BM25-only"
     )
+
+
+def dense_backend_info() -> dict[str, Any]:
+    """Doctor/runtime-facing snapshot of the semantic lane (loads no model).
+
+    Pure environment introspection: extra importability, local weights snapshot
+    completeness, evaluation-lane availability. Never touches the network.
+    """
+    import importlib.util
+
+    model_dir = _resolve_model_dir()
+    return {
+        "model_id": DENSE_MODEL_ID,
+        "model_dir": str(model_dir),
+        "model_dir_env": DENSE_MODEL_DIR_ENV,
+        "snapshot_complete": _fastembed_snapshot_complete(model_dir),
+        "dense_extra_importable": importlib.util.find_spec("fastembed") is not None,
+        "rerank_eval_lane_importable": importlib.util.find_spec("sentence_transformers") is not None,
+    }
+
+
+def _configured_index_paths() -> tuple[Path | None, str]:
+    """(index_dir, name) from the env pair; (None, default) when unset."""
+    index_dir = os.environ.get(DENSE_INDEX_DIR_ENV)
+    if not index_dir:
+        return None, DENSE_INDEX_NAME_DEFAULT
+    name = os.environ.get(DENSE_INDEX_NAME_ENV, DENSE_INDEX_NAME_DEFAULT)
+    return Path(index_dir), name
+
+
+def dense_index_status() -> dict[str, Any]:
+    """Doctor-facing persisted-index check: manifest presence/fields + sha256 of
+    the index file. Verifies integrity without loading vectors into memory."""
+    index_dir, name = _configured_index_paths()
+    if index_dir is None:
+        return {"configured": False, "env": DENSE_INDEX_DIR_ENV,
+                "note": "persisted dense index not configured; the dense channel "
+                        "falls back to per-call encoding (small corpora) or stays absent"}
+    manifest_path = index_dir / f"{name}.manifest.json"
+    if not manifest_path.is_file():
+        return {"configured": True, "index_dir": str(index_dir), "name": name,
+                "manifest_found": False}
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    index_file = manifest.get("index_file", f"{name}.npz")
+    sha_ok: bool | None = None
+    if manifest.get("index_sha256"):
+        sha_ok = _sha256_file(index_dir / index_file) == manifest["index_sha256"]
+    return {"configured": True, "index_dir": str(index_dir), "name": name,
+            "manifest_found": True, "count": manifest.get("count"),
+            "dims": manifest.get("dims"), "model_id": manifest.get("model_id"),
+            "sha256_ok": sha_ok, "corpus_sha256": manifest.get("corpus_sha256")}
+
+
+def load_configured_dense_index() -> "DenseIndex | None":
+    """Load the persisted dense index when configured via the env pair; ``None``
+    when unset. Raises (FileNotFoundError/ValueError) on a configured-but-broken
+    index — callers record the error as a channel failure, never silently drop."""
+    index_dir, name = _configured_index_paths()
+    if index_dir is None:
+        return None
+    return DenseIndex.load(index_dir, name)
 
 
 def rrf_fuse(
@@ -203,6 +278,14 @@ class DenseRetriever:
         self._threads = threads
         self._batch_size = max(1, int(batch_size))
         self._model: Any = None
+        self._index: Any = None  # persisted DenseIndex when attached (INT2)
+
+    def attach_index(self, index: Any) -> None:
+        """Route ``rank()`` through a persisted :class:`DenseIndex` (no per-call
+        document encoding). The index's text queries are embedded by THIS
+        retriever's encoder, keeping the query view identical to the one that
+        built the index."""
+        self._index = index
 
     # ── backend resolution ────────────────────────────────────────────
     def _require_model(self) -> Any:
@@ -292,7 +375,14 @@ class DenseRetriever:
 
     # ── ranking ───────────────────────────────────────────────────────
     def rank(self, query: str, docs: list[tuple[str, str]], *, top: int = 10) -> list[tuple[str, float]]:
-        """Rank (doc_id, text) pairs by cosine similarity. Deterministic per model."""
+        """Rank (doc_id, text) pairs by cosine similarity. Deterministic per model.
+
+        With a persisted index attached (:meth:`attach_index`), ``docs`` is
+        ignored and the prebuilt matrix answers via brute-force cosine — the
+        query is embedded by this retriever's encoder, so the query view stays
+        the caller's choice."""
+        if self._index is not None:
+            return list(self._index.search(query, top=top))
         model = self._require_model()
         import numpy as np  # provided by the dense extra
 
@@ -431,9 +521,11 @@ class DenseIndex:
 
     @classmethod
     def load(cls, out_dir: str | Path, name: str) -> "DenseIndex":
-        """Load ``<name>.npz`` + sidecar manifest; validates the required fields."""
-        import numpy as np  # provided by the dense extra
+        """Load ``<name>.npz`` + sidecar manifest; validates the required fields.
 
+        Manifest validation runs BEFORE the numpy import: a configured-but-broken
+        index must surface its configuration error honestly on every lane, not be
+        masked by a missing-optional-dependency error."""
         out_path = Path(out_dir)
         manifest_path = out_path / f"{name}.manifest.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -448,6 +540,7 @@ class DenseIndex:
                     f"index file {index_file} sha256 mismatch: manifest "
                     f"{manifest['index_sha256'][:12]}… vs actual {actual[:12]}…"
                 )
+        import numpy as np  # provided by the dense extra
         data = np.load(out_path / index_file, allow_pickle=False)
         index = cls(
             ids=[str(x) for x in data["ids"].tolist()],

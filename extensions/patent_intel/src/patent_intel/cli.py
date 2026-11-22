@@ -143,6 +143,31 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
         "note": "no network access is performed by doctor or any offline command",
     }
 
+    # 5) semantic lane (4.3 INT2): dense channel is optional — an unavailable
+    #    model/extra is an honest UNAVAILABLE note, never a blocking failure; a
+    #    CONFIGURED persisted index that is broken (manifest missing / sha256
+    #    mismatch) IS blocking, because the caller explicitly pointed at it.
+    try:
+        from patent_intel.retrieval.hybrid import dense_backend_info, dense_index_status
+
+        info = dense_backend_info()
+        semantic: dict[str, object] = {
+            "dense_extra_importable": info["dense_extra_importable"],
+            "rerank_eval_lane_importable": info["rerank_eval_lane_importable"],
+            "model_dir": info["model_dir"],
+            "snapshot_complete": info["snapshot_complete"],
+            "note": "dense channel is optional; ranking degrades to lexical-only "
+                    "with the reason recorded when the backend or weights are unavailable",
+        }
+        status = dense_index_status()
+        if status["configured"]:
+            semantic["index"] = status
+            if not status.get("manifest_found", False) or status.get("sha256_ok") is False:
+                blocking += 1
+        checks["semantic"] = semantic
+    except Exception as exc:  # noqa: BLE001 - doctor reports, never crashes
+        checks["semantic"] = {"error": f"{type(exc).__name__}: {exc}"}
+
     report["checks"] = checks
     report["ok"] = (blocking + workspace_blocking) == 0
     report["blocking_issues"] = blocking + workspace_blocking

@@ -168,10 +168,28 @@ def recall_report(
         concepts_by_axis[axis_id] = [f.feature_id for f in bundle.features]
 
     dense_retriever = None
+    dense_info: dict[str, Any] = {}
     if enable_dense:
-        from patent_intel.retrieval.hybrid import DenseRetriever
+        from patent_intel.retrieval.hybrid import DenseRetriever, load_configured_dense_index
 
         dense_retriever = DenseRetriever()
+        # 4.3 INT2: a configured persisted index (PATENT_INTEL_DENSE_INDEX_DIR)
+        # turns the dense channel into index-backed cosine — no per-call corpus
+        # encoding. A configured-but-broken index records the load error and
+        # falls back to per-call mode (or honest absence), never silently.
+        try:
+            persisted = load_configured_dense_index()
+        except Exception as exc:  # noqa: BLE001 - channel config failure is recorded
+            persisted = None
+            dense_info["index_load_error"] = f"{type(exc).__name__}: {exc}"
+        if persisted is not None:
+            persisted.encoder = dense_retriever.encode_query
+            dense_retriever.attach_index(persisted)
+            dense_info["mode"] = "persisted-index"
+            dense_info["docs"] = len(persisted.ids)
+            dense_info["model_id"] = persisted.model_id
+        else:
+            dense_info["mode"] = "per-call"
     controller = AdaptiveController(
         _runner_for(index, corpus_docs, dense_retriever=dense_retriever),
         max_requests=max_requests,
@@ -215,6 +233,7 @@ def recall_report(
         "ledger": ledger,
         "fusion": fusion_summary,
         "elapsed_sec": round(time.time() - started, 3),
+        "dense": dense_info,
         "caveat": (
             "offline diagnostic over the workspace's own candidate corpus — "
             "it measures coverage of THAT corpus, not external databases; "
