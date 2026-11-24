@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-24 · 4.3.0（kernel 0.10.0 → 0.11.0）— 撰写交付线：实用新型优先（扩展 0.3.0 延续）
+
+- **方案**：`docs/4.3-drafting-delivery-plan.md`（原 4.3 G0 方案遗失，按废弃处理；本方案独立成立）。
+  里程碑 M1 实用新型基础本轮落地；M2 正文一致性校验 / M3 正文骨架 / M4 书式 DOCX v2 / M0 撰写基准排后。
+- **内核 0.11.0（契约向后兼容，schema 1.0 不变）**：`application_type`（invention|utility_model）、
+  `abstract_figure`、`claim_category`（product|method|use，从属继承）；`draft plan --type`；
+  审计码 D-020…D-025；外部结构附图 `figures import/review`（PNG、SHA-256 钉住、确认绑定哈希+标记清单，
+  F-015/F-016）；`figures plan` 不再用框图冒充结构视图（needs_import）；交付 E-013/E-014/E-015 + W-003；
+  DOCX 名称行与摘要附图节。旧计划重建模型逐字节一致（回归测试锁定）。
+- **方法论**：drafting 20 号参考（中英镜像）、SKILL 硬约束 13、14/16/17 码表、evals 49→51、术语锚定 +2。
+- **README 卫生**：修复 bash 安装示例 wheel 名（曾为 0.2.0）、扩展版本陈述（曾为 0.1.0）、
+  评估协议链接路径。
+- 测试基线：内核 777 passed（+25）；仓库与扩展套件见 notes。
+
 ## 2026-11-07 · 4.2.0（kernel 0.10.0 延续，未重发）— 41A-D 落地：组件阶梯、命令面与预注册 V2 证据（扩展 0.3.0）
 
 - **扩展 patent_intel 0.2.0 → 0.3.0**（独立版本）：41A-2/3/4/5、41B-1/2、41C-1/2、

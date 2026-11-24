@@ -13,12 +13,12 @@ description: >
   「证据链质量」「检索盲区」等说法时优先触发。
 license: Apache-2.0
 metadata:
-  version: 4.2.0
+  version: 4.3.0
 ---
 
 # 检索证据链审计（Audit）
 
-> **配套**：`patentkit >= 0.10.0`（工作区契约与校验命令）+ 姊妹技能 `patent-research`
+> **配套**：`patentkit >= 0.11.0`（工作区契约与校验命令）+ 姊妹技能 `patent-research`
 > （被审计对象的产生方）。方法论改编自 Cloudflare `security-audit-skill`（MIT，
 > 见仓库 README Credits）：覆盖率台账、对抗验证、独立复核、三态结构化结论。
 > **定位**：回答「这份检索证据链**能不能被信任**」——用独立于检索者的角色重新

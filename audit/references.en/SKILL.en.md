@@ -19,12 +19,12 @@ description: >
   quality", "search blind spots".
 license: Apache-2.0
 metadata:
-  version: 4.2.0
+  version: 4.3.0
 ---
 
 # Prior-Art Search Evidence Audit (Audit)
 
-> **Companion**: `patentkit >= 0.10.0` (workspace contract and validation
+> **Companion**: `patentkit >= 0.11.0` (workspace contract and validation
 > commands) and the sibling skill `patent-research` (the producer of the audited
 > chain). The methodology is adapted from Cloudflare `security-audit-skill` (MIT,
 > see the repository README Credits): coverage ledger, adversarial validation,

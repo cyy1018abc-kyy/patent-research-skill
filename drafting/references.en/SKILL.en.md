@@ -16,15 +16,16 @@ description: >
   Prefer triggering on phrases such as "write a disclosure", "how to write the claims",
   "specification support", "how to answer the OA", "revision loop",
   "can this number be written in", "structured claims", "support mapping",
-  "application document package", "delivery manifest", "composition claims", "Markush", "medical use (manufacturing use)".
+  "application document package", "delivery manifest", "composition claims", "Markush", "medical use (manufacturing use)",
+  "utility model", "structure drawing", "abstract drawing".
 license: Apache-2.0
 metadata:
-  version: 4.2.0
+  version: 4.3.0
 ---
 
 # Patent Drafting (draft-grade)
 
-> **Companions**: `patentkit >= 0.10.0` (the single implementation of the rules) and the
+> **Companions**: `patentkit >= 0.11.0` (the single implementation of the rules) and the
 > sibling skill `patent-research` (evidence chain and acceptance gates).
 > **Position**: convert the search results into deliverable drafts — disclosure, claims /
 > specification skeleton, OA response. The output is always "draft + gap list"; it is not
@@ -82,13 +83,13 @@ the hand-off may not proceed with "pending" rows uncleared.
 
 | # | Step | Read | Do |
 |---|---|---|---|
-| D1 | Drafting plan | [14](14-drafting-pipeline.md) | `patentkit draft plan --idea IDEA-001 --apply` (candidate/facts must be human-confirmed) |
+| D1 | Drafting plan | [14](14-drafting-pipeline.md) | `patentkit draft plan --idea IDEA-001 --apply` (candidate/facts must be human-confirmed); utility models add `--type utility_model`, see [20](20-utility-model.md) |
 | D2 | Claim atoms | [15](15-claims-and-support.md) | `draft atoms import` → inventor `draft atoms review` (fingerprint-bound) |
 | D3 | Structured claims | [15](15-claims-and-support.md) | `draft claims import`: numbering/order/cycles/atoms validated by the kernel |
 | D4 | Support mapping | [15](15-claims-and-support.md) | `draft support import` + `draft support review`: claim atom → paragraphs/facts/figures |
 | D5 | Audit & gate | [14](14-drafting-pipeline.md) | `draft audit` → `draft status` → `draft gate --to review_draft` (requires G-S-01/02/03 PASS) |
 | D6 | Change impact | [14](14-drafting-pipeline.md) | `draft impact --claim-no N` reports affected paragraphs/figures/dependents, then use the revision loop |
-| D7 | Professional figures | [16](16-figures.md) | `figures plan` (system block diagram / method flowchart) → `figures validate` → `figures render`; figure-text consistency plus human visual review |
+| D7 | Professional figures | [16](16-figures.md) | `figures plan` (system block diagram / method flowchart) → `figures validate` → `figures render`; structure drawings (mandatory for utility models) are human-drawn, then `figures import` → `figures review`; figure-text consistency plus human visual review |
 | D8 | Delivery | [17](17-delivery.md) | write `07_drafting/manuscript/{claims,specification,abstract}.md` → `deliver build` (DOCX, optional PDF) → `deliver check` → human `deliver sign` → `draft gate --to release_ready` |
 
 ## Hard constraints (must not be violated)
@@ -130,6 +131,13 @@ the hand-off may not proceed with "pending" rows uncleared.
     manuscript/figure spec/gates) invalidates the old delivery — rebuild and re-sign. Until
     CNIPA XML is implemented and verified, **never claim** the material is compliant or
     "ready to submit"; `release_ready` is only an internal delivery gate.
+13. **Utility models follow utility-model rules** ([20](20-utility-model.md)): the plan declares
+    `application_type: utility_model`; claims are product claims only (method/use claims are
+    blocked by D-020, independent claims must declare `product`); the specification must have
+    drawings showing the product's shape, structure, or their combination (delivery E-013) and an
+    abstract drawing (E-014); structure drawings are **never faked with block diagrams** — they are
+    human-drawn, imported and visually confirmed (hash-bound; changing the drawing invalidates it).
+    Wording reminders (D-023) only warn; a human decides.
 
 ## Result format (use it for every draft delivery; nothing may be omitted)
 
@@ -139,7 +147,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | **Gap list** | every unclear point listed: what material is missing, who supplies it, which section it blocks |
 | **Evidence citations** | every cited document = ledger ID + evidence level + judgment state |
 | **Numerical provenance** | count of numerical statements in this draft and the A/B/C distribution; unsourced numbers must not appear |
-| **Structured state** | plan/atom/claim/support counts + `draft audit` result + current gate (concept / review_draft, stale or not) |
+| **Structured state** | application type (invention / utility model) + plan/atom/claim/support counts + `draft audit` result + current gate (concept / review_draft, stale or not) |
 | **Figure consistency** | `figures validate` result (F-001…F-014 summary) + rendered figure ids + whether human visual review is done |
 | **Delivery state** | `deliver check` summary (E-xxx/W-xxx) + artifacts and hashes + sign-off state + current gate (`release_ready` stale or not) |
 | **Unverified annotation** | when tools did not run or data is incomplete, state "⚠️ Unverified by tool checks" explicitly |
@@ -158,6 +166,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | [`15-claims-and-support.md`](15-claims-and-support.md) | claim atom / structured claim / support mapping fields, validation rules and review checklist |
 | [`16-figures.md`](16-figures.md) | **P3** professional figures: figure plan spec, deterministic rendering, F-001…F-014 checks, human review discipline |
 | [`17-delivery.md`](17-delivery.md) | **P4** delivery pipeline: frozen snapshot, DOCX/PDF, delivery manifest, E-001…E-012, sign-off/invalidation, CNIPA XML status |
+| [`20-utility-model.md`](20-utility-model.md) | **utility model**: application type / claim category, structure-drawing import and confirmation, D-020…D-025 / F-015…F-016 / E-013…E-015 |
 | [`19-chemistry-practice.md`](19-chemistry-practice.md) | chemistry/materials/medical-use subjects: the three enablement elements, composition wording, Markush unity, genus/spec novelty direction |
 | [`glossary.md`](../references/glossary.md) | zh⇄en glossary (shared with patent-research; CI keeps the copies identical) |
 

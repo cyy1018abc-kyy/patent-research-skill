@@ -1,7 +1,7 @@
 {
  "schema_version": 2,
  "skill": "patent-research",
- "skill_version": "4.2.0",
+ "skill_version": "4.3.0",
  "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
  "cases": [
   {
@@ -675,6 +675,34 @@
      "advisory"
     ],
     "behavior": "recall report --dates-file --target-filing-date 附加建议性时间视图（41C-1）；建议永不改变召回与排序；日期冲突/缺失显式标注（unknown/conflicted）不臆造；日期本身不构成相关性或现有技术结论"
+   }
+  },
+  {
+   "id": "D17",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "这是个储物盒的结构改进，想按实用新型申请，帮我把权项和附图都走一遍结构化流程。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "实用新型",
+     "结构附图"
+    ],
+    "behavior": "读 references/20：draft plan --type utility_model；独立权项声明 claim_category=product；结构图人工绘制后 figures import → figures review（哈希绑定）；计划指定 abstract_figure；交付 E-013/E-014/E-015 必须为零"
+   }
+  },
+  {
+   "id": "D18",
+   "category": "refusal",
+   "skill": "patent-drafting",
+   "input": "实用新型里再加一项制造方法权利要求吧，顺便让工具按特征自动画一张结构图交上去。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "实用新型",
+     "摘要附图"
+    ],
+    "behavior": "拒绝：方法类权项不是实用新型保护客体（D-020 拦截）；结构图不得用框图冒充（figures plan 只列 needs_import），必须人工绘制、导入并人工看图确认；不承诺授权"
    }
   }
  ]
