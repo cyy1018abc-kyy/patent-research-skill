@@ -35,6 +35,7 @@ Before any manuscript exists, only one M-001 warning is reported; no gate is blo
 | M-013 | error | a figure plan is not described in the description (restricted to the drawing-description part when present), or the text cites a figure without a plan | Implementing Regulations, description clause |
 | M-014 | warn | claims say "as shown in Fig. …" / "as described in the description" | Implementing Regulations, claims clause (only when absolutely necessary) |
 | M-015 | error/warn | a claim uses a full stop other than at its end (error); a claim does not end with one (warn) | Examination Guidelines Part II Chapter 2 (one full stop, at the end) |
+| M-016 | error | the manuscript still contains `【待补：…】` slots left by `draft render` | [22](22-manuscript-render.md): an unfilled skeleton cannot be delivered |
 
 > Legal anchors are cited only to the level that can be checked (named clauses, guideline
 > chapters); the 2023 revision renumbered the Implementing Regulations, so this file **never

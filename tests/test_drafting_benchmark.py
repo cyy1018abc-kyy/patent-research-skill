@@ -33,8 +33,8 @@ class DraftingBenchmark(unittest.TestCase):
         # Both application types have a clean case (false-positive control) and a defect case.
         clean = [case for case in result["cases"] if case["expected"] == 0]
         self.assertGreaterEqual(len(clean), 2)
-        # Every lint code M-002…M-015 is exercised by at least one seeded defect.
-        self.assertEqual(result["codes_covered"], [f"M-{n:03d}" for n in range(2, 16)])
+        # Every lint code M-002…M-016 is exercised by at least one seeded defect.
+        self.assertEqual(result["codes_covered"], [f"M-{n:03d}" for n in range(2, 17)])
 
     def test_dropping_an_expectation_surfaces_a_false_positive(self):
         case = copy.deepcopy(self.cases["dm02-um-defects"])

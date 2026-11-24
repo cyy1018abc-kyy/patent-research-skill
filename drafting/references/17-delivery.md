@@ -73,7 +73,7 @@ python -m patentkit deliver status --root .\workspace
 | E-014 | error | 实用新型有附图但未指定摘要附图，或摘要附图不在交付件中 |
 | E-015 | error | 外部附图在交付后被改动或失去人工确认 |
 | W-003 | warn | 声明了申请类型的发明有附图但未指定摘要附图 |
-| E-016 | error | 稿件正文一致性校验（`draft lint`，M-001…M-015）存在 error，详见 [21 号](21-manuscript-lint.md) |
+| E-016 | error | 稿件正文一致性校验（`draft lint`，M-001…M-016）存在 error，详见 [21 号](21-manuscript-lint.md) |
 
 ## 5. 签核与失效语义
 

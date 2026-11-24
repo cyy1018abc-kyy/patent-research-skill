@@ -8778,10 +8778,10 @@ index 0000000..648e680
 +    raise SystemExit(main())
 diff --git a/patentkit/draft.py b/patentkit/draft.py
 new file mode 100644
-index 0000000..cdefd71
+index 0000000..e7be6b9
 --- /dev/null
 +++ b/patentkit/draft.py
-@@ -0,0 +1,1476 @@
+@@ -0,0 +1,1484 @@
 +"""Structured drafting pipeline (P2 / plan §5.2): Plan → ClaimAtom → Claim → Support → gates.
 +
 +The kernel owns the **structure and audit**, while the AI/skill owns the prose. This module
@@ -10151,7 +10151,7 @@ index 0000000..cdefd71
 +    configure_stdio()
 +    argv = list(sys.argv[1:] if argv is None else argv)
 +    if not argv or argv[0] in {"-h", "--help"}:
-+        print("usage: python -m patentkit draft <plan|atoms import|atoms review|claims import|support import|support review|audit|lint|status|gate|impact> [--root X] [--apply] [--json]")
++        print("usage: python -m patentkit draft <plan|atoms import|atoms review|claims import|support import|support review|audit|lint|render|status|gate|impact> [--root X] [--apply] [--force] [--json]")
 +        return 0
 +    action = argv[0]
 +    rest = argv[1:]
@@ -10216,6 +10216,10 @@ index 0000000..cdefd71
 +            from . import manuscript_lint
 +
 +            data = manuscript_lint.lint(root)
++        elif action == "render":
++            from . import manuscript_render
++
++            data = manuscript_render.render(root, apply=apply, force=force)
 +        elif action == "status":
 +            data = status(root)
 +        elif action == "gate":
@@ -10229,7 +10233,7 @@ index 0000000..cdefd71
 +        else:
 +            print(f"unknown draft action: {action!r}", file=sys.stderr)
 +            return 64
-+    except (DraftError, discovery.DiscoveryError, ValueError) as exc:
++    except (DraftError, discovery.DiscoveryError, ValueError, RuntimeError) as exc:
 +        print(f"[FATAL] {exc}", file=sys.stderr)
 +        return 1
 +
@@ -10241,6 +10245,10 @@ index 0000000..cdefd71
 +        from . import manuscript_lint
 +
 +        print(manuscript_lint.render(data))
++    elif action == "render":
++        from . import manuscript_render
++
++        print(manuscript_render.render_text(data))
 +    elif action == "status":
 +        print(render_status(data))
 +    elif action == "gate":
@@ -16485,10 +16493,10 @@ index 0000000..ca87d66
 +    raise SystemExit(main())
 diff --git a/patentkit/manuscript_lint.py b/patentkit/manuscript_lint.py
 new file mode 100644
-index 0000000..51b9886
+index 0000000..515af18
 --- /dev/null
 +++ b/patentkit/manuscript_lint.py
-@@ -0,0 +1,505 @@
+@@ -0,0 +1,514 @@
 +"""Manuscript consistency lint (4.3 / M2): ``draft lint`` — manuscript text ↔ structured model.
 +
 +The structured pipeline (P2) checks the *model* (atoms, claims, support); P4 delivery froze the
@@ -16511,7 +16519,8 @@ index 0000000..51b9886
 +* M-012 subject wording of the wrong application type (本发明 in a utility model and vice versa);
 +* M-013 figures missing from the description of drawings, or cited figures without a figure plan;
 +* M-014 claims refer to figures/the description ("如图…所示");
-+* M-015 a claim uses a full stop (。) other than at its end, or does not end with one.
++* M-015 a claim uses a full stop (。) other than at its end, or does not end with one;
++* M-016 an unfilled ``【待补：…】`` slot left by ``draft render`` (4.3 / M3) — always an error.
 +
 +Legal anchors (registered in drafting/references/21-manuscript-lint.md, article numbers of
 +the 2023 Implementing Regulations are deliberately not cited): the Implementing Regulations'
@@ -16543,6 +16552,8 @@ index 0000000..51b9886
 +_FIGURE_REF = re.compile(r"图\s*(\d{1,3})")
 +_CLAIM_REF = re.compile(r"权利要求\s*(\d{1,3}(?:\s*(?:或|至|到|-|－|～|~|、|和|及)\s*\d{1,3})*)")
 +_CJK = re.compile(r"[一-鿿]")
++#: Slots left by ``draft render`` (manuscript_render.SLOT_RE; duplicated to avoid an import cycle).
++_SLOT = re.compile(r"【待补[：:][^】]*】")
 +
 +#: Five parts of a description, in order. ``{content}`` is 发明内容 / 实用新型内容.
 +_HEADINGS = ("技术领域", "背景技术", "{content}", "附图说明", "具体实施方式")
@@ -16684,6 +16695,12 @@ index 0000000..51b9886
 +    _check_headings(headings, app_type, bool(figures), add)
 +    _check_figure_descriptions(paragraphs, headings, figures, add)
 +    _check_subject_wording(claims_text, specification_text, abstract_text, app_type, add)
++
++    for label, text in (("claims", claims_text), ("specification", specification_text), ("abstract", abstract_text)):
++        slots = _SLOT.findall(text)
++        if slots:
++            preview = "; ".join(item[4:-1] for item in slots[:3])
++            add("error", "M-016", label, f"{len(slots)} unfilled 【待补：…】 slot(s) from `draft render`: {preview}")
 +
 +    abstract_chars = len(re.sub(r"\s", "", abstract_text))
 +    if abstract_chars > ABSTRACT_LIMIT:
@@ -16993,6 +17010,307 @@ index 0000000..51b9886
 +        lines.append("")
 +        lines.append("Warnings (human judgement):")
 +        lines.extend(f"  ⚠️ [{f['code']}] {f['path']}: {f['message']}" for f in data["warnings"])
++    return "\n".join(lines)
+diff --git a/patentkit/manuscript_render.py b/patentkit/manuscript_render.py
+new file mode 100644
+index 0000000..6473472
+--- /dev/null
++++ b/patentkit/manuscript_render.py
+@@ -0,0 +1,295 @@
++"""Manuscript skeleton (4.3 / M3): ``draft render`` — structured model → claims/description/abstract.
++
++P2 made the *model* structured (plan → atoms → claims → support) but the manuscript stayed
++free text, so numbering, dependency wording, paragraph numbers and drawing descriptions were
++re-typed by hand and drifted (what M2's ``draft lint`` now catches). This module generates
++the manuscript **skeleton** directly from the model:
++
++* ``claims.md`` — one claim per structured claim, the dependency wording ("根据权利要求N所述的…")
++  derived from ``parent_claim_no``, claim features taken verbatim from the claim atoms;
++* ``specification.md`` — the five parts as standalone headings (subject wording by application
++  type), consecutive ``[0001]`` paragraphs, one summary paragraph per claim (so every claim atom
++  has a paragraph to map support to), the description of drawings generated from the figure
++  plans, and one embodiment paragraph per figure listing its reference signs;
++* ``abstract.md`` — subject + independent-claim features.
++
++Anything the model does not contain (technical field, background, the problem solved, beneficial
++effects, the preamble of an independent claim, embodiment prose) is left as an explicit
++``【待补：…】`` slot. The renderer **never invents technical content**; ``draft lint`` reports
++every unfilled slot as M-016 (error), so a skeleton cannot be delivered until a human or the
++AI fills it in. A support-mapping *suggestion* (claim/atom → paragraphs) is written beside it;
++it is a proposal only — it still goes through ``draft support import`` and human review.
++
++Existing manuscript files are never overwritten without ``--force`` (they hold the prose).
++"""
++
++from __future__ import annotations
++
++import json
++import re
++from pathlib import Path
++from typing import Any
++
++from . import contracts
++
++SLOT_OPEN = "【待补："
++SLOT_CLOSE = "】"
++SLOT_RE = re.compile(r"【待补[：:][^】]*】")
++RENDER_DIR = Path("07_drafting") / "render"
++SUPPORT_SUGGESTION_REL = RENDER_DIR / "support_suggestion.json"
++
++_SUBJECT_WORD = {"invention": "本发明", "utility_model": "本实用新型"}
++_CONTENT_HEADING = {"invention": "发明内容", "utility_model": "实用新型内容"}
++_TRAILING_PUNCT = "。；;，,、 "
++
++
++class RenderError(RuntimeError):
++    """Raised when the structured model is not complete enough to render a skeleton."""
++
++
++def slot(text: str) -> str:
++    return f"{SLOT_OPEN}{text}{SLOT_CLOSE}"
++
++
++def _clean(text: str) -> str:
++    return str(text).strip().rstrip(_TRAILING_PUNCT).replace("。", "；")
++
++
++def _short_subject(subject: str) -> str:
++    text = subject.strip()
++    return text[2:] if text.startswith("一种") else text
++
++
++def _claim_subject(claim: dict[str, Any], plan: dict[str, Any], category: str | None, first_independent: bool, app_type: str) -> str:
++    subject = str(plan.get("protected_subject") or "").strip()
++    if not subject:
++        return "一种" + slot("保护主题名称")
++    is_method_subject = subject.endswith(("方法", "工艺"))
++    if app_type == "utility_model" and is_method_subject:
++        # A utility model protects a product; never render a method-like subject as its claim.
++        return "一种" + slot(f"产品名称（实用新型保护对象是产品；计划主题「{_short_subject(subject)}」像方法，请改写）")
++    if category == "method" and not is_method_subject:
++        return "一种" + slot(f"方法主题名称（与「{_short_subject(subject)}」对应）")
++    if category == "use":
++        return slot(f"用途主题（如「{_short_subject(subject)}在……中的应用」）")
++    if category in (None, "product") and is_method_subject and not first_independent:
++        return "一种" + slot("产品主题名称")
++    return subject
++
++
++def _ordered(items: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
++    return sorted(items, key=lambda item: int(item[key]) if key == "claim_no" else str(item[key]))
++
++
++def render_texts(
++    *,
++    plan: dict[str, Any],
++    atoms: list[dict[str, Any]],
++    claims: list[dict[str, Any]],
++    figures: list[dict[str, Any]],
++) -> dict[str, Any]:
++    """Pure renderer. ``figures``: ``[{figure_id, title, parts: [{label, mark}]}]``.
++
++    Returns ``{claims, specification, abstract, support_rows, slots}``.
++    """
++    if not claims:
++        raise RenderError("no structured claims; run `draft claims import` first")
++    from .draft import application_type, claim_category  # local import (draft imports this lazily)
++
++    app_type = application_type(plan)
++    subject_word = _SUBJECT_WORD[app_type]
++    atoms_by_id = {str(atom["atom_id"]): atom for atom in atoms}
++    by_no = {int(claim["claim_no"]): claim for claim in claims}
++    ordered = _ordered(claims, "claim_no")
++
++    # ── claims.md ───────────────────────────────────────────────────────────────────
++    claim_lines: list[str] = []
++    subjects: dict[int, str] = {}
++    first_independent_seen = False
++    for claim in ordered:
++        number = int(claim["claim_no"])
++        features = [_clean(atoms_by_id[atom_id]["text"]) for atom_id in claim.get("atom_ids", []) if atom_id in atoms_by_id]
++        missing = [atom_id for atom_id in claim.get("atom_ids", []) if atom_id not in atoms_by_id]
++        if missing:
++            raise RenderError(f"claim {number} references unknown atoms {missing}")
++        body = "；".join(features) if features else slot("附加技术特征")
++        category = claim_category(claim, by_no)
++        if claim.get("claim_type") == "independent" or claim.get("parent_claim_no") is None:
++            subject = _claim_subject(claim, plan, category, not first_independent_seen, app_type)
++            first_independent_seen = True
++            subjects[number] = subject
++            claim_lines.append(
++                f"{number}. {subject}，包括{slot('与最接近现有技术共有的技术特征（前序部分）')}，其特征在于，{body}。"
++            )
++        else:
++            parent = int(claim["parent_claim_no"])
++            subject = subjects.get(parent) or subjects.get(min(subjects) if subjects else 0) or str(plan.get("protected_subject", ""))
++            subjects[number] = subject
++            claim_lines.append(f"{number}. 根据权利要求{parent}所述的{_short_subject(subject)}，其特征在于，{body}。")
++
++    # ── specification.md ────────────────────────────────────────────────────────────
++    lines: list[str] = []
++    counter = 0
++    support_rows: list[dict[str, Any]] = []
++    paragraphs_by_claim: dict[int, str] = {}
++
++    def para(text: str) -> str:
++        nonlocal counter
++        counter += 1
++        number = f"{counter:04d}"
++        lines.append(f"[{number}] {text}")
++        return number
++
++    first_no = int(ordered[0]["claim_no"])
++    main_subject = subjects.get(first_no) or ("一种" + slot("保护主题名称"))
++    lines.append("技术领域")
++    para(f"{subject_word}涉及{slot('所属技术领域')}，具体涉及{main_subject}。")
++    lines.append("背景技术")
++    para(slot("背景技术：只写证据账本内的文献（patentkit ledger），每条缺陷对应对比矩阵中的差异点，不得编造"))
++    lines.append(_CONTENT_HEADING[app_type])
++    para(f"{subject_word}要解决的技术问题是{slot('技术问题（对应区别特征）')}。")
++    for claim in ordered:
++        number = int(claim["claim_no"])
++        features = [_clean(atoms_by_id[atom_id]["text"]) for atom_id in claim.get("atom_ids", [])]
++        if claim.get("claim_type") == "independent" or claim.get("parent_claim_no") is None:
++            text = f"为解决上述技术问题，{subject_word}提供{subjects[number]}，其中，{'；'.join(features)}。"
++        else:
++            text = f"进一步地，{'；'.join(features)}。"
++        paragraphs_by_claim[number] = para(text)
++    para(f"{subject_word}的有益效果是：{slot('有益效果（逐条对应区别特征，量化优先；数值须在 provenance 登记）')}。")
++
++    figure_numbers: list[tuple[int, dict[str, Any]]] = []
++    for figure in figures:
++        match = re.fullmatch(r"FIG-(\d{1,3})", str(figure.get("figure_id", "")))
++        if match:
++            figure_numbers.append((int(match.group(1)), figure))
++    figure_numbers.sort(key=lambda item: item[0])
++    if figure_numbers:
++        lines.append("附图说明")
++        for number, figure in figure_numbers:
++            title = re.sub(rf"^\s*图\s*{number}\s*", "", str(figure.get("title") or "")).strip()
++            para(f"图{number}为{subject_word}{title or slot('附图名称')}。")
++    lines.append("具体实施方式")
++    para(f"下面结合{'附图和' if figure_numbers else ''}具体实施例对{subject_word}作进一步说明。")
++    for number, figure in figure_numbers:
++        parts = [f"{part['label']}{part['mark']}" for part in figure.get("parts") or [] if part.get("label") and part.get("mark")]
++        listing = f"{_short_subject(main_subject)}包括{'、'.join(parts)}。" if parts else ""
++        how = "各部件的形状、构造、相对位置与连接关系" if app_type == "utility_model" else "该图所示实施例的具体描述"
++        para(f"如图{number}所示，{listing}{slot(how)}。")
++    para(slot("实施例：至少一个可实施实施例；数值取自 provenance 登记，C 级示例值须显式标注「示例值」"))
++
++    # ── abstract.md ─────────────────────────────────────────────────────────────────
++    first = ordered[0]
++    first_features = "；".join(_clean(atoms_by_id[atom_id]["text"]) for atom_id in first.get("atom_ids", []))
++    abstract = f"{subject_word}公开了{subjects[int(first['claim_no'])]}，{first_features}。{slot('主要用途与有益效果（全文不超过300字）')}"
++
++    # ── support suggestion (proposal only) ─────────────────────────────────────────
++    for claim in ordered:
++        number = int(claim["claim_no"])
++        for atom_id in claim.get("atom_ids", []):
++            atom = atoms_by_id[atom_id]
++            support_rows.append(
++                {
++                    "claim_no": number,
++                    "atom_id": atom_id,
++                    "paragraphs": [paragraphs_by_claim[number]],
++                    "fact_refs": [str(ref) for ref in atom.get("fact_refs", [])],
++                    "figures": [],
++                    "prior_art_diff": "",
++                }
++            )
++
++    texts = {
++        "claims": "\n".join(claim_lines) + "\n",
++        "specification": "\n".join(lines) + "\n",
++        "abstract": abstract + "\n",
++    }
++    return {
++        **texts,
++        "support_rows": support_rows,
++        "slots": {label: len(SLOT_RE.findall(text)) for label, text in texts.items()},
++        "application_type": app_type,
++    }
++
++
++def render(root: Path, *, apply: bool = False, force: bool = False) -> dict[str, Any]:
++    """Render the skeleton for a workspace (dry-run unless ``apply``)."""
++    from . import draft, figure_plan, manuscript_lint
++
++    root = Path(root).resolve()
++    plan = draft.load_plan(root)
++    if plan is None:
++        raise RenderError("no drafting_plan.yml; run `draft plan` first")
++    figures = []
++    for figure_id, (figure, _path) in sorted(figure_plan.load_plans(root).items()):
++        marks = figure.get("mark_mapping") or {}
++        parts = []
++        if figure.get("type") in {"external_drawing", "block_diagram", "connection"}:
++            parts = [
++                {"label": str(node.get("label", "")), "mark": str(marks.get(str(node.get("id")), ""))}
++                for node in figure_plan._content_nodes(figure)
++            ]
++        figures.append({"figure_id": figure_id, "title": str(figure.get("title", "")), "parts": parts})
++    result = render_texts(plan=plan, atoms=draft.load_atoms(root), claims=draft.load_claims(root), figures=figures)
++
++    targets = {
++        "claims": root / manuscript_lint.CLAIMS_MD,
++        "specification": root / manuscript_lint.SPECIFICATION_MD,
++        "abstract": root / manuscript_lint.ABSTRACT_MD,
++    }
++    existing = [path.relative_to(root).as_posix() for path in targets.values() if path.is_file()]
++    if existing and apply and not force:
++        raise RenderError(
++            f"manuscript already exists ({', '.join(existing)}); pass --force to overwrite it with a fresh skeleton "
++            "(the current prose would be lost — back it up first)"
++        )
++    written: list[str] = []
++    if apply:
++        for label, path in targets.items():
++            path.parent.mkdir(parents=True, exist_ok=True)
++            path.write_text(result[label], encoding="utf-8", newline="\n")
++            written.append(path.relative_to(root).as_posix())
++        suggestion = contracts.make("support_mapping", rows=result["support_rows"], review_status="pending")
++        target = root / SUPPORT_SUGGESTION_REL
++        target.parent.mkdir(parents=True, exist_ok=True)
++        target.write_text(json.dumps(suggestion, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
++        written.append(SUPPORT_SUGGESTION_REL.as_posix())
++        draft.append_audit(root, {"event": "manuscript_rendered", "slots": result["slots"], "force": force})
++    return {
++        "ok": True,
++        "dry_run": not apply,
++        "action": "draft render",
++        "workspace": str(root),
++        "application_type": result["application_type"],
++        "slots": result["slots"],
++        "existing": existing,
++        "written": written,
++        "support_suggestion": SUPPORT_SUGGESTION_REL.as_posix(),
++        "claims": result["claims"],
++        "specification": result["specification"],
++        "abstract": result["abstract"],
++        "next": [
++            "fill every 【待补：…】 slot (draft lint reports leftovers as M-016)",
++            f"python -m patentkit draft support import {SUPPORT_SUGGESTION_REL.as_posix()} --apply  # then human review",
++            "python -m patentkit draft lint",
++        ],
++    }
++
++
++def render_text(data: dict[str, Any]) -> str:
++    slots = data.get("slots") or {}
++    lines = [
++        f"Workspace : {data.get('workspace', '')}",
++        f"Type      : {data.get('application_type', '-')}",
++        f"Mode      : {'DRY-RUN' if data.get('dry_run') else 'APPLIED'}",
++        "Slots     : " + ", ".join(f"{label}={count}" for label, count in slots.items()),
++    ]
++    if data.get("existing") and data.get("dry_run"):
++        lines.append(f"Existing  : {', '.join(data['existing'])} (applying needs --force)")
++    if data.get("written"):
++        lines.append("Written   : " + ", ".join(data["written"]))
++    if data.get("dry_run"):
++        lines.extend(["", "── claims.md ──", data["claims"].rstrip(), "", "── specification.md ──", data["specification"].rstrip(), "", "── abstract.md ──", data["abstract"].rstrip()])
++    lines.append("")
++    lines.extend(f"next: {step}" for step in data.get("next", []))
 +    return "\n".join(lines)
 diff --git a/patentkit/map.py b/patentkit/map.py
 new file mode 100644
@@ -31223,6 +31541,168 @@ index 0000000..20b1ade
 +    test_delivery._fake_gates(monkeypatch, test_delivery.PASS_GATES)
 +    with pytest.raises(delivery.DeliveryError, match="manuscript lint errors"):
 +        delivery.build(root, apply=True)
+diff --git a/tests/test_manuscript_render.py b/tests/test_manuscript_render.py
+new file mode 100644
+index 0000000..6cbe207
+--- /dev/null
++++ b/tests/test_manuscript_render.py
+@@ -0,0 +1,156 @@
++"""4.3 / M3 manuscript skeleton tests — `draft render` (structured model → manuscript skeleton).
++
++Synthetic data only. Pins: dry-run / no-overwrite discipline, dependency wording derived from the
++structure, five-part specification with consecutive paragraphs, utility-model subject guard,
++the "skeleton is lint-clean except for its slots" property, the support-mapping suggestion, and
++the end-to-end delivery path (render → fill → support import/review → gate → build → check).
++"""
++
++from __future__ import annotations
++
++import json
++import re
++
++import pytest
++
++from patentkit import cli, contracts, delivery, draft, manuscript_lint as ml, manuscript_render as mr
++import test_utility_model as tu
++from upgrade_test_utils import seed_confirmed_idea
++
++
++def _um_with_drawings(tmp_path):
++    root = tu._um_model(tmp_path)
++    tu._import_drawing(root, tmp_path, "FIG-1")
++    tu._import_drawing(root, tmp_path, "FIG-2", seed=1, parts="2=盖板,3=卡扣")
++    return root
++
++
++def _invention(tmp_path, *, method: bool = True):
++    root, _ = seed_confirmed_idea(tmp_path)
++    assert draft.generate_plan(root, "IDEA-001", apply=True)["ok"]
++    atoms = [tu._atom("ATOM-001", "检测负载变化率"), tu._atom("ATOM-002", "在变化率超过阈值时切换运行模式")]
++    assert draft.import_atoms(root, tu._write_docs(tmp_path, "atom", atoms), apply=True)["ok"]
++    claims = [tu._claim(1, None, ["ATOM-001"], category="method" if method else None), tu._claim(2, 1, ["ATOM-002"])]
++    assert draft.import_claims(root, tu._write_docs(tmp_path, "claim", claims), apply=True)["ok"]
++    return root
++
++
++def _fill(root, filler: str = "填写内容") -> None:
++    for rel in (ml.CLAIMS_MD, ml.SPECIFICATION_MD, ml.ABSTRACT_MD):
++        path = root / rel
++        path.write_text(mr.SLOT_RE.sub(filler, path.read_text(encoding="utf-8")), encoding="utf-8")
++
++
++def test_render_needs_plan_and_claims(tmp_path):
++    root, _ = seed_confirmed_idea(tmp_path)
++    with pytest.raises(mr.RenderError, match="drafting_plan"):
++        mr.render(root)
++    assert draft.generate_plan(root, "IDEA-001", apply=True)["ok"]
++    with pytest.raises(mr.RenderError, match="no structured claims"):
++        mr.render(root)
++
++
++def test_dry_run_writes_nothing_and_apply_never_overwrites(tmp_path):
++    root = _invention(tmp_path)
++    data = mr.render(root)
++    assert data["dry_run"] and not (root / ml.CLAIMS_MD).exists()
++    assert mr.render(root, apply=True)["written"]
++    (root / ml.CLAIMS_MD).write_text("1. 人工写好的权项。\n", encoding="utf-8")
++    with pytest.raises(mr.RenderError, match="already exists"):
++        mr.render(root, apply=True)
++    assert mr.render(root)["existing"]  # dry-run still allowed, reports the existing files
++    assert mr.render(root, apply=True, force=True)["written"]
++    assert "人工写好的权项" not in (root / ml.CLAIMS_MD).read_text(encoding="utf-8")
++
++
++def test_claims_follow_the_structure(tmp_path):
++    root = _invention(tmp_path)
++    claims = mr.render(root)["claims"]
++    parsed = ml.parse_claims(claims)
++    assert [claim["claim_no"] for claim in parsed] == [1, 2]
++    assert ml.claim_references(parsed[1]["text"]) == [1]
++    assert "检测负载变化率" in parsed[0]["text"] and "其特征在于" in parsed[0]["text"]
++    assert all(claim["text"].endswith("。") and claim["text"].count("。") == 1 for claim in parsed)
++
++
++def test_specification_shape(tmp_path):
++    root = _um_with_drawings(tmp_path)
++    spec = mr.render(root)["specification"]
++    paragraphs, headings = ml.parse_specification(spec)
++    assert [heading for _i, heading in headings] == ["技术领域", "背景技术", "实用新型内容", "附图说明", "具体实施方式"]
++    assert [int(p["paragraph_no"]) for p in paragraphs] == list(range(1, len(paragraphs) + 1))
++    drawing_section = [p["text"] for p in paragraphs if p["section"] == "附图说明"]
++    assert any(text.startswith("图1为本实用新型") for text in drawing_section)
++    assert any(text.startswith("图2为本实用新型") for text in drawing_section)
++    assert "本发明" not in spec
++
++
++def test_utility_model_never_renders_a_method_subject(tmp_path):
++    root = _um_with_drawings(tmp_path)  # the fixture plan's subject ends with 方法
++    first = ml.parse_claims(mr.render(root)["claims"])[0]["text"]
++    assert first.startswith("一种【待补：产品名称")
++
++
++def test_skeleton_lints_only_as_unfilled_slots(tmp_path):
++    root = _um_with_drawings(tmp_path)
++    rendered = mr.render(root, apply=True)
++    report = ml.lint(root)
++    assert {finding["code"] for finding in report["errors"]} == {"M-016"}
++    assert not report["warnings"]
++    assert sum(rendered["slots"].values()) == sum(
++        int(re.match(r"(\d+)", f["message"]).group(1)) for f in report["errors"]
++    )
++
++
++@pytest.mark.parametrize("kind", ["utility_model", "invention"])
++def test_filled_skeleton_is_lint_clean(tmp_path, kind):
++    root = _um_with_drawings(tmp_path) if kind == "utility_model" else _invention(tmp_path)
++    mr.render(root, apply=True)
++    _fill(root)
++    report = ml.lint(root)
++    assert report["ok"] and not report["warnings"], report
++
++
++def test_support_suggestion_is_importable(tmp_path):
++    root = _invention(tmp_path)
++    mr.render(root, apply=True)
++    suggestion = json.loads((root / mr.SUPPORT_SUGGESTION_REL).read_text(encoding="utf-8"))
++    assert contracts.validate("support_mapping", suggestion) == []
++    paragraphs, _ = ml.parse_specification((root / ml.SPECIFICATION_MD).read_text(encoding="utf-8"))
++    numbers = {p["paragraph_no"] for p in paragraphs}
++    assert {(row["claim_no"], row["atom_id"]) for row in suggestion["rows"]} == {(1, "ATOM-001"), (2, "ATOM-002")}
++    assert all(set(row["paragraphs"]) <= numbers for row in suggestion["rows"])
++    assert draft.import_support(root, [root / mr.SUPPORT_SUGGESTION_REL], apply=True)["ok"]
++    # Imported support stays pending until a human reviews it (the suggestion is only a proposal).
++    assert any(f["code"] == "D-012" for f in draft.check(root)["warnings"])
++
++
++def test_cli_draft_render(tmp_path, capsys):
++    root = _invention(tmp_path)
++    assert cli.main(["draft", "render", "--root", str(root), "--json"]) == 0
++    data = json.loads(capsys.readouterr().out)
++    assert data["dry_run"] and data["slots"]["claims"] == 1
++    assert cli.main(["draft", "render", "--root", str(root), "--apply"]) == 0
++    assert cli.main(["draft", "render", "--root", str(root), "--apply"]) == 1  # refuses to overwrite
++    assert "already exists" in capsys.readouterr().err
++
++
++def test_render_to_delivery_end_to_end(tmp_path, monkeypatch):
++    root = _um_with_drawings(tmp_path)
++    tu._edit_plan(root, abstract_figure="FIG-1", protected_subject="一种卡扣式储物盒")
++    assert draft.review_atoms(root, ["ATOM-001", "ATOM-002"], decision="confirmed", apply=True)["ok"]
++    mr.render(root, apply=True)
++    assert draft.import_support(root, [root / mr.SUPPORT_SUGGESTION_REL], apply=True)["ok"]
++    assert draft.review_support(root, [(1, "ATOM-001"), (2, "ATOM-002")], decision="confirmed", apply=True)["ok"]
++    tu._fake_gates(monkeypatch, tu.PASS_GATES)
++    assert draft.gate(root, apply=True)["ok"]
++
++    # Slots left in → the build refuses (M-016 → manuscript lint errors).
++    with pytest.raises(delivery.DeliveryError, match="M-016"):
++        delivery.build(root, apply=True)
++
++    _fill(root, "壳体与盖板卡合")
++    assert delivery.build(root, apply=True)["ok"]
++    assert [f["code"] for f in delivery.check(root)["errors"]] == ["E-009"]
++    assert delivery.sign(root, "inventor", apply=True)["ok"]
++    assert delivery.check(root)["ok"]
 diff --git a/tests/test_new_features.py b/tests/test_new_features.py
 new file mode 100644
 index 0000000..867de5c

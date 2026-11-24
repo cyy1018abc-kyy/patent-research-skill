@@ -8,7 +8,7 @@
 ## 1. 命令
 
 ```powershell
-python -m patentkit draft lint --root .\workspace          # 人读报告
+python -m patentkit draft lint --root .\workspace          # 人读报告（M-001…M-016）
 python -m patentkit draft lint --root .\workspace --json   # 机器可读
 ```
 
@@ -33,6 +33,7 @@ python -m patentkit draft lint --root .\workspace --json   # 机器可读
 | M-013 | error | 有附图规格但说明书（有「附图说明」部分时限定在该部分）未描述该图；或正文引用了没有附图规格的图 | 实施细则说明书条款 |
 | M-014 | warn | 权项中使用「如图…所示」「如说明书…」 | 实施细则权利要求书条款（除绝对必要外不得使用） |
 | M-015 | error/warn | 一项权项在结尾之外使用句号（error）；结尾没有句号（warn） | 审查指南第二部分第二章（每项权利要求只允许在结尾使用句号） |
+| M-016 | error | 正文仍有 `draft render` 留下的 `【待补：…】` 空槽 | [22 号](22-manuscript-render.md)：骨架未填完不得交付 |
 
 > 法规口径只写到能核对的层级（法律/细则条款名、指南章节）；2023 年细则修订后条号有变动，
 > 本文件**不臆造条号**，需要引用时以官方现行文本核对并登记 `docs/policy-log.md`。

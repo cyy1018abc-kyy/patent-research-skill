@@ -9,10 +9,10 @@ the release builder, and release notes.
 **No real project data, patent drafts, target IDs, or candidate IDs are included**;
 the sample workspace is synthetic (`TGT-0002`).
 
-## Skill 4.3.0 / kernel 0.11.0 — drafting & delivery: utility model first, manuscript lint
+## Skill 4.3.0 / kernel 0.11.0 — drafting & delivery: utility model first, manuscript lint & skeleton
 
 Headline of this release — the drafting/delivery line (plan:
-[docs/4.3-drafting-delivery-plan.md](docs/4.3-drafting-delivery-plan.md), milestones M1 + M2):
+[docs/4.3-drafting-delivery-plan.md](docs/4.3-drafting-delivery-plan.md), milestones M1–M3):
 
 - **Application type & claim category**: `draft plan --type utility_model`; optional
   `application_type` / `abstract_figure` on the plan and `claim_category`
@@ -31,10 +31,13 @@ Headline of this release — the drafting/delivery line (plan:
   model and formal requirements (M-001…M-015: reference wording ↔ structure, paragraph numbers, five
   description parts, abstract/title length, vague wording, antecedent basis, reference signs, drawing
   descriptions); errors block delivery (E-016), heuristics only warn. A synthetic drafting benchmark
-  ([benchmarks/drafting/](benchmarks/drafting/README.md), 23 seeded defects) is gated in CI at
+  ([benchmarks/drafting/](benchmarks/drafting/README.md), 24 seeded defects) is gated in CI at
   "all detected, zero false positives".
+- **Manuscript skeleton (M3)**: `draft render` generates claims/description/abstract skeletons from the
+  structured model (numbering, dependency wording, five parts, drawing descriptions, reference signs);
+  anything the model lacks stays an explicit `【待补：…】` slot (M-016 blocks delivery) — no invented content.
 - Method: [drafting/references/20-utility-model.md](drafting/references/20-utility-model.md) and
-  [21-manuscript-lint.md](drafting/references/21-manuscript-lint.md) (zh/en).
+  [21-manuscript-lint.md](drafting/references/21-manuscript-lint.md), [22-manuscript-render.md](drafting/references/22-manuscript-render.md) (zh/en).
 
 ## Skill 4.2.0 / kernel 0.10.0 — adaptive retrieval: identity/accounting discipline, evaluator & policy scheduling, fusion pipeline, preregistered ablation
 

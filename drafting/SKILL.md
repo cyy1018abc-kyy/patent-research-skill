@@ -10,7 +10,7 @@ description: >
   回复审查意见/OA、改稿并留变更记录、核对数值能不能写进权项、
   把技术方案落成结构化权项并做支持映射、或把审阅稿交付成申请文件包并出交付清单时使用。
   命中「写交底书」「权项怎么写」「说明书支持」「OA 怎么答复」「改稿闭环」
-  「这个数值能写吗」「结构化权项」「支持映射」「四位一体」「程序模块构架」「修改边界」「组合物权利要求」「马库什」「医药用途」「申请文件包」「交付清单」「实用新型」「结构附图」「摘要附图」「正文一致性」「先行基础」等说法时优先触发。
+  「这个数值能写吗」「结构化权项」「支持映射」「四位一体」「程序模块构架」「修改边界」「组合物权利要求」「马库什」「医药用途」「申请文件包」「交付清单」「实用新型」「结构附图」「摘要附图」「正文一致性」「先行基础」「正文骨架」等说法时优先触发。
 license: Apache-2.0
 metadata:
   version: 4.3.0
@@ -78,7 +78,7 @@ metadata:
 | D5 | 审计与门 | [`14`](references/14-drafting-pipeline.md) | `draft audit` → `draft status` → `draft gate --to review_draft`（需 G-S-01/02/03 PASS） |
 | D6 | 改稿影响 | [`14`](references/14-drafting-pipeline.md) | `draft impact --claim-no N` 报告受影响段落/附图/从权，再走 13 号改稿闭环 |
 | D7 | 专业附图 | [`16-专业附图`](references/16-figures.md) | `figures plan`（系统框图/方法流程图）→ `figures validate` → `figures render`；结构类附图（实用新型必备）人工绘制后 `figures import` → `figures review`；图文一致与人工看图复核 |
-| D8 | 交付 | [`17-交付管线`](references/17-delivery.md) | 写 `07_drafting/manuscript/{claims,specification,abstract}.md` → `draft lint`（正文一致性，[`21`](references/21-manuscript-lint.md)；error 阻塞交付） → `deliver build`（DOCX，可选 PDF）→ `deliver check` → 人工 `deliver sign` → `draft gate --to release_ready` |
+| D8 | 交付 | [`17-交付管线`](references/17-delivery.md) | `draft render --apply` 生成正文骨架（[`22`](references/22-manuscript-render.md)）并填完 `【待补：…】` 空槽，或手写 `07_drafting/manuscript/{claims,specification,abstract}.md` → `draft lint`（正文一致性，[`21`](references/21-manuscript-lint.md)；error 阻塞交付） → `deliver build`（DOCX，可选 PDF）→ `deliver check` → 人工 `deliver sign` → `draft gate --to release_ready` |
 
 ## 硬约束（不得违反）
 
@@ -137,6 +137,7 @@ metadata:
 | [`15-claims-and-support.md`](references/15-claims-and-support.md) | 权项原子/结构化权项/支持映射的字段、校验规则与验收清单 |
 | [`16-figures.md`](references/16-figures.md) | **P3** 专业附图：figure plan 规格、确定性渲染、F-001…F-014 校验与人工复核纪律 |
 | [`17-delivery.md`](references/17-delivery.md) | **P4** 交付管线：冻结快照、DOCX/PDF、交付清单、E-001…E-012、签核与失效语义、CNIPA XML 现状 |
+| [`22-manuscript-render.md`](references/22-manuscript-render.md) | **正文骨架**：`draft render` 由结构化模型生成权利要求书/说明书/摘要骨架，缺的内容留 `【待补：…】`（M-016 拦截），附支持映射建议 |
 | [`21-manuscript-lint.md`](references/21-manuscript-lint.md) | **正文一致性**：`draft lint` 的 M-001…M-015（引用语↔结构、段落号、五部分、摘要/名称字数、含糊用语、先行基础、附图标记、附图说明）与 E-016 |
 | [`20-utility-model.md`](references/20-utility-model.md) | **实用新型**：申请类型/权项类别、结构附图导入与确认、D-020…D-025 / F-015…F-016 / E-013…E-015 |
 | [`19-chemistry-practice.md`](references/19-chemistry-practice.md) | 化学/材料/医药用途主题：公开三件套、组合物措辞、马库什单一性、属种新颖性方向 |

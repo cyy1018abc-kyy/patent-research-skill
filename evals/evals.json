@@ -718,6 +718,19 @@
     ],
     "behavior": "读 references/21：python -m patentkit draft lint；error（M-002/003/004 重号/006/011/013/015）阻塞交付（E-016），warn（含糊用语、先行基础、未括注标记、五部分标题）逐条交人判断；启发式不当结论"
    }
+  },
+  {
+   "id": "D20",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "权项和原子都确认好了，能不能直接生成一版正文骨架，我再往里填内容？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "正文骨架"
+    ],
+    "behavior": "读 references/22：draft render（dry-run 预览，--apply 写入，已有稿件需 --force）；模型里没有的内容留【待补：…】空槽，不编造；填完后 draft support import render/support_suggestion.json + 人工复核；draft lint 的 M-016 必须清零才能交付"
+   }
   }
  ]
 }
