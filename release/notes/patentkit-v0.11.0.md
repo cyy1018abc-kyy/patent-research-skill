@@ -2,7 +2,7 @@
 
 Companion kernel for Patent Research Skill 4.3.0; Python 3.11+. Assessment protocol 1,
 G-S-01…05 semantics, the evidence three-tier system and rules V001–V038 are unchanged.
-Additive release: the utility-model drafting line (4.3 / M1).
+Additive release: the utility-model drafting line (4.3 / M1) and the manuscript consistency lint (M2).
 
 ## What changed
 
@@ -27,6 +27,13 @@ Additive release: the utility-model drafting line (4.3 / M1).
   (W-003 for typed inventions), E-015 external drawing changed/unconfirmed after delivery;
   unconfirmed external drawings make `deliver build` fail; DOCX gets the title line and an
   abstract-drawing section.
+- **Manuscript lint** (`draft lint`, new module `patentkit/manuscript_lint.py`): M-001…M-015 check the
+  manuscript text against the structured model and formal requirements (claim numbering, dependent
+  reference wording vs `parent_claim_no`, paragraph numbers, the five description parts, abstract
+  ≤ 300 characters, title length, vague wording, antecedent-basis heuristic, reference signs in
+  parentheses and sign conflicts, subject wording vs application type, drawing descriptions, full
+  stops). Heuristics only warn. Errors make `deliver build` refuse and `deliver check` report **E-016**.
+  The pure core `lint_texts()` is what the repository's drafting benchmark scores.
 - **No migration**: plans without `application_type` rebuild a byte-identical document model
   (same `model_fingerprint` as 0.10.0 on the same workspace; regression-tested).
 

@@ -17,7 +17,8 @@ an optional `application_type` (`invention` | `utility_model`) on the drafting p
 optional `claim_category` (`product` | `method` | `use`) on claims, the D-020…D-025 audit codes
 (utility-model subject matter, category consistency, drawings, abstract figure), human-drawn
 `external_drawing` figures (`figures import` / `figures review`, pinned by SHA-256, F-015/F-016)
-and the E-013…E-015 delivery checks; plans without `application_type` rebuild a byte-identical
+and the E-013…E-015 delivery checks, plus the manuscript consistency lint (`draft lint`,
+`manuscript_lint.py`, M-001…M-015, delivery check E-016); plans without `application_type` rebuild a byte-identical
 document model, so existing deliveries do not go stale. Kernel 0.10.0 expanded the deadline presets to the 2025
 Examination Guidelines practice (six new `deadlines.py` PRESETS: subsequent OA response,
 registration formalities, reexamination request, drug-PTE and delayed-grant compensation
@@ -29,7 +30,7 @@ invariant regressions (`test_init_writes_lf_only`, `test_pipeline_writes_lf_only
 the discipline in. Kernel 0.8.0 had wired the revision loop to the
 novelty conclusions (`revise reconfirm`, stale marking on apply, close precondition and
 validate rule V038) and made drafting support citations resolvable (D-019). The patch
-SHA-256 is `5140d77b0c312022a019ed8bdf73ed0adec95745868ae491824c520a58f3dc8f`.
+SHA-256 is `e96d100ed9c95543537f35537c8c2a284454f594e7598dca34b6813ce8da2b46`.
 History: `-to-0.10.0.patch` was the 2025-Guidelines deadline presets, `-to-0.9.0.patch` was the explicit-LF write unification across all kernel text
 writes, `-to-0.8.0.patch` was the revision↔conclusions linkage (V038) + structured
 support citations (D-019), `-to-0.6.0.patch` was the census-evidence rework (G-S-04 census

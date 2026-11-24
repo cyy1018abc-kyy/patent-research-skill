@@ -704,6 +704,20 @@
     ],
     "behavior": "拒绝：方法类权项不是实用新型保护客体（D-020 拦截）；结构图不得用框图冒充（figures plan 只列 needs_import），必须人工绘制、导入并人工看图确认；不承诺授权"
    }
+  },
+  {
+   "id": "D19",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "稿子写完了，帮我查一下权利要求和说明书前后对不对得上，引用关系、附图标记、先行基础这些。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "正文一致性",
+     "先行基础"
+    ],
+    "behavior": "读 references/21：python -m patentkit draft lint；error（M-002/003/004 重号/006/011/013/015）阻塞交付（E-016），warn（含糊用语、先行基础、未括注标记、五部分标题）逐条交人判断；启发式不当结论"
+   }
   }
  ]
 }

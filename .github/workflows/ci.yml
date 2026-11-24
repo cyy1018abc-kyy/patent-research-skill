@@ -107,6 +107,8 @@ jobs:
         run: python -m pytest tests extensions/patent_intel/tests -o addopts= -q
       - name: Benchmark gold solutions score perfect (scorer semantics locked)
         run: python tools/score_benchmark.py --suite benchmarks/cases --gold --gate perfect
+      - name: Drafting benchmark — draft lint detects every seeded defect with zero false positives
+        run: python tools/score_drafting.py --suite benchmarks/drafting/cases --gate perfect
       - name: Audit benchmark gold self-check on bm01/bm02 (audit-mode scorer locked)
         run: |
           python tools/score_audit_findings.py --case benchmarks/cases/bm01-timesync --gold-selfcheck --gate perfect

@@ -9,10 +9,10 @@ the release builder, and release notes.
 **No real project data, patent drafts, target IDs, or candidate IDs are included**;
 the sample workspace is synthetic (`TGT-0002`).
 
-## Skill 4.3.0 / kernel 0.11.0 — drafting & delivery, utility model first
+## Skill 4.3.0 / kernel 0.11.0 — drafting & delivery: utility model first, manuscript lint
 
 Headline of this release — the drafting/delivery line (plan:
-[docs/4.3-drafting-delivery-plan.md](docs/4.3-drafting-delivery-plan.md), milestone M1):
+[docs/4.3-drafting-delivery-plan.md](docs/4.3-drafting-delivery-plan.md), milestones M1 + M2):
 
 - **Application type & claim category**: `draft plan --type utility_model`; optional
   `application_type` / `abstract_figure` on the plan and `claim_category`
@@ -27,7 +27,14 @@ Headline of this release — the drafting/delivery line (plan:
 - **Delivery gate**: E-013 (utility model without drawings), E-014 (abstract drawing), E-015
   (external drawing changed after delivery); the DOCX carries the title line and an abstract-drawing
   section. Plans without `application_type` rebuild a byte-identical document model.
-- Method: [drafting/references/20-utility-model.md](drafting/references/20-utility-model.md) (zh/en).
+- **Manuscript consistency lint (M2)**: `draft lint` checks the manuscript text against the structured
+  model and formal requirements (M-001…M-015: reference wording ↔ structure, paragraph numbers, five
+  description parts, abstract/title length, vague wording, antecedent basis, reference signs, drawing
+  descriptions); errors block delivery (E-016), heuristics only warn. A synthetic drafting benchmark
+  ([benchmarks/drafting/](benchmarks/drafting/README.md), 23 seeded defects) is gated in CI at
+  "all detected, zero false positives".
+- Method: [drafting/references/20-utility-model.md](drafting/references/20-utility-model.md) and
+  [21-manuscript-lint.md](drafting/references/21-manuscript-lint.md) (zh/en).
 
 ## Skill 4.2.0 / kernel 0.10.0 — adaptive retrieval: identity/accounting discipline, evaluator & policy scheduling, fusion pipeline, preregistered ablation
 

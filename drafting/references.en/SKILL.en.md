@@ -17,7 +17,7 @@ description: >
   "specification support", "how to answer the OA", "revision loop",
   "can this number be written in", "structured claims", "support mapping",
   "application document package", "delivery manifest", "composition claims", "Markush", "medical use (manufacturing use)",
-  "utility model", "structure drawing", "abstract drawing".
+  "utility model", "structure drawing", "abstract drawing", "manuscript consistency", "antecedent basis".
 license: Apache-2.0
 metadata:
   version: 4.3.0
@@ -90,7 +90,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | D5 | Audit & gate | [14](14-drafting-pipeline.md) | `draft audit` → `draft status` → `draft gate --to review_draft` (requires G-S-01/02/03 PASS) |
 | D6 | Change impact | [14](14-drafting-pipeline.md) | `draft impact --claim-no N` reports affected paragraphs/figures/dependents, then use the revision loop |
 | D7 | Professional figures | [16](16-figures.md) | `figures plan` (system block diagram / method flowchart) → `figures validate` → `figures render`; structure drawings (mandatory for utility models) are human-drawn, then `figures import` → `figures review`; figure-text consistency plus human visual review |
-| D8 | Delivery | [17](17-delivery.md) | write `07_drafting/manuscript/{claims,specification,abstract}.md` → `deliver build` (DOCX, optional PDF) → `deliver check` → human `deliver sign` → `draft gate --to release_ready` |
+| D8 | Delivery | [17](17-delivery.md) | write `07_drafting/manuscript/{claims,specification,abstract}.md` → `draft lint` (manuscript consistency, [21](21-manuscript-lint.md); errors block delivery) → `deliver build` (DOCX, optional PDF) → `deliver check` → human `deliver sign` → `draft gate --to release_ready` |
 
 ## Hard constraints (must not be violated)
 
@@ -166,6 +166,7 @@ the hand-off may not proceed with "pending" rows uncleared.
 | [`15-claims-and-support.md`](15-claims-and-support.md) | claim atom / structured claim / support mapping fields, validation rules and review checklist |
 | [`16-figures.md`](16-figures.md) | **P3** professional figures: figure plan spec, deterministic rendering, F-001…F-014 checks, human review discipline |
 | [`17-delivery.md`](17-delivery.md) | **P4** delivery pipeline: frozen snapshot, DOCX/PDF, delivery manifest, E-001…E-012, sign-off/invalidation, CNIPA XML status |
+| [`21-manuscript-lint.md`](21-manuscript-lint.md) | **manuscript consistency**: `draft lint` M-001…M-015 (reference wording ↔ structure, paragraph numbers, five parts, abstract/title length, vague wording, antecedent basis, reference signs, drawing descriptions) and E-016 |
 | [`20-utility-model.md`](20-utility-model.md) | **utility model**: application type / claim category, structure-drawing import and confirmation, D-020…D-025 / F-015…F-016 / E-013…E-015 |
 | [`19-chemistry-practice.md`](19-chemistry-practice.md) | chemistry/materials/medical-use subjects: the three enablement elements, composition wording, Markush unity, genus/spec novelty direction |
 | [`glossary.md`](../references/glossary.md) | zh⇄en glossary (shared with patent-research; CI keeps the copies identical) |

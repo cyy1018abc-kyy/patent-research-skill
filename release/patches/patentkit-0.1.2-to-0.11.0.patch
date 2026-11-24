@@ -6591,10 +6591,10 @@ index 0000000..488c4f0
 +    raise SystemExit(main())
 diff --git a/patentkit/delivery.py b/patentkit/delivery.py
 new file mode 100644
-index 0000000..738da9b
+index 0000000..55b0b26
 --- /dev/null
 +++ b/patentkit/delivery.py
-@@ -0,0 +1,861 @@
+@@ -0,0 +1,876 @@
 +"""Complete delivery pipeline (P4 / plan §5.4, §4.7): frozen document model → artifacts → manifest.
 +
 +Deliverables are generated **from one frozen snapshot**:
@@ -6627,7 +6627,7 @@ index 0000000..738da9b
 +from pathlib import Path
 +from typing import Any
 +
-+from . import contracts, draft, figure_plan
++from . import contracts, draft, figure_plan, manuscript_lint
 +
 +#: Workspace-relative delivery area (created by the P0 upgrade layout).
 +DELIVERY_DIR = Path("11_delivery")
@@ -7154,6 +7154,13 @@ index 0000000..738da9b
 +    article_audit = draft.check(root)
 +    for error in article_audit.get("errors", []):
 +        add("error", "E-008", error.get("path", "draft"), f"[{error.get('code')}] {error.get('message')}")
++    # 4.3 / M2: manuscript text ↔ model consistency; lint errors block the delivery (E-016).
++    try:
++        lint_report = manuscript_lint.lint(root)
++        for error in lint_report.get("errors", []):
++            add("error", "E-016", error.get("path", "manuscript"), f"[{error.get('code')}] {error.get('message')}")
++    except manuscript_lint.LintError as exc:
++        add("error", "E-016", "manuscript", str(exc))
 +
 +    official_status = str(manifest.get("official_format_status", "not_attempted"))
 +    if official_status == "verified_by_official_tool" and not any(
@@ -7201,7 +7208,15 @@ index 0000000..738da9b
 +            "delivery prerequisites failed (draft audit errors): "
 +            + "; ".join(f"[{error['code']}] {error['message']}" for error in audit["errors"][:5])
 +        )
++    # build_model keeps its own structural refusals (missing files, numbering, paragraphs, figures);
++    # the manuscript lint then checks the text itself (4.3 / M2).
 +    model, figure_warnings = build_model(root)
++    lint_report = manuscript_lint.lint(root)
++    if lint_report["errors"]:
++        raise DeliveryError(
++            "delivery prerequisites failed (manuscript lint errors; run `patentkit draft lint`): "
++            + "; ".join(f"[{error['code']}] {error['path']}: {error['message']}" for error in lint_report["errors"][:5])
++        )
 +    if not apply:
 +        return {
 +            "ok": True,
@@ -8763,10 +8778,10 @@ index 0000000..648e680
 +    raise SystemExit(main())
 diff --git a/patentkit/draft.py b/patentkit/draft.py
 new file mode 100644
-index 0000000..6bb23c3
+index 0000000..cdefd71
 --- /dev/null
 +++ b/patentkit/draft.py
-@@ -0,0 +1,1468 @@
+@@ -0,0 +1,1476 @@
 +"""Structured drafting pipeline (P2 / plan §5.2): Plan → ClaimAtom → Claim → Support → gates.
 +
 +The kernel owns the **structure and audit**, while the AI/skill owns the prose. This module
@@ -10136,7 +10151,7 @@ index 0000000..6bb23c3
 +    configure_stdio()
 +    argv = list(sys.argv[1:] if argv is None else argv)
 +    if not argv or argv[0] in {"-h", "--help"}:
-+        print("usage: python -m patentkit draft <plan|atoms import|atoms review|claims import|support import|support review|audit|status|gate|impact> [--root X] [--apply] [--json]")
++        print("usage: python -m patentkit draft <plan|atoms import|atoms review|claims import|support import|support review|audit|lint|status|gate|impact> [--root X] [--apply] [--json]")
 +        return 0
 +    action = argv[0]
 +    rest = argv[1:]
@@ -10197,6 +10212,10 @@ index 0000000..6bb23c3
 +                return 64
 +        elif action == "audit":
 +            data = check(root)
++        elif action == "lint":
++            from . import manuscript_lint
++
++            data = manuscript_lint.lint(root)
 +        elif action == "status":
 +            data = status(root)
 +        elif action == "gate":
@@ -10218,6 +10237,10 @@ index 0000000..6bb23c3
 +        print(json.dumps(data, ensure_ascii=False, indent=2))
 +    elif action == "audit":
 +        print(render_check(data))
++    elif action == "lint":
++        from . import manuscript_lint
++
++        print(manuscript_lint.render(data))
 +    elif action == "status":
 +        print(render_status(data))
 +    elif action == "gate":
@@ -16460,6 +16483,517 @@ index 0000000..ca87d66
 +
 +if __name__ == "__main__":  # pragma: no cover
 +    raise SystemExit(main())
+diff --git a/patentkit/manuscript_lint.py b/patentkit/manuscript_lint.py
+new file mode 100644
+index 0000000..51b9886
+--- /dev/null
++++ b/patentkit/manuscript_lint.py
+@@ -0,0 +1,505 @@
++"""Manuscript consistency lint (4.3 / M2): ``draft lint`` — manuscript text ↔ structured model.
++
++The structured pipeline (P2) checks the *model* (atoms, claims, support); P4 delivery froze the
++manuscript but only compared claim numbers, the paragraph count and ``图N`` citations. This
++module checks the **text itself** against the model and against formal drafting rules:
++
++* M-001 manuscript files missing / unparsable;
++* M-002 claim numbering in ``claims.md`` vs the structured claims;
++* M-003 a dependent claim's reference wording vs its structured ``parent_claim_no``
++  (and references to non-existent or later claims);
++* M-004 specification paragraph numbering is not consecutive from ``[0001]``;
++* M-005 the five specification parts (technical field, background, summary, description of
++  drawings, detailed description) are missing or out of order;
++* M-006 the abstract exceeds 300 characters;
++* M-007 the title exceeds 25 characters;
++* M-008 vague wording in claims (约/左右/接近 + number, 例如, 最好是, 尤其是, 必要时, 类似物, 优选, 等);
++* M-009 antecedent basis heuristic: ``所述X`` without an earlier introduction of X;
++* M-010 reference signs in claims are not in parentheses;
++* M-011 a part name is used with a reference sign the figure plans do not map to it;
++* M-012 subject wording of the wrong application type (本发明 in a utility model and vice versa);
++* M-013 figures missing from the description of drawings, or cited figures without a figure plan;
++* M-014 claims refer to figures/the description ("如图…所示");
++* M-015 a claim uses a full stop (。) other than at its end, or does not end with one.
++
++Legal anchors (registered in drafting/references/21-manuscript-lint.md, article numbers of
++the 2023 Implementing Regulations are deliberately not cited): the Implementing Regulations'
++clauses on the description, the claims and the abstract, and the Patent Examination Guidelines
++Part II Chapter 2 (description and claims). Every heuristic (M-005, M-007…M-010, M-012, M-014)
++is a **warning** for a human to judge; only deterministic formal defects are errors.
++
++The core is :func:`lint_texts` (pure: strings + plain structures in, findings out) so the
++drafting benchmark can score it without a workspace; :func:`lint` wraps it for a workspace.
++"""
++
++from __future__ import annotations
++
++import re
++from pathlib import Path
++from typing import Any
++
++MANUSCRIPT_DIR = Path("07_drafting") / "manuscript"
++CLAIMS_MD = MANUSCRIPT_DIR / "claims.md"
++SPECIFICATION_MD = MANUSCRIPT_DIR / "specification.md"
++ABSTRACT_MD = MANUSCRIPT_DIR / "abstract.md"
++
++ABSTRACT_LIMIT = 300
++TITLE_LIMIT = 25
++
++_CLAIM_RE = re.compile(r"^\s*(\d{1,3})\s*[.、．]\s*(.+?)(?=^\s*\d{1,3}\s*[.、．]|\Z)", re.M | re.S)
++_PARAGRAPH_LINE = re.compile(r"^\s*\[(\d{4})\]")
++_PARAGRAPH_RE = re.compile(r"\[(\d{4})\]\s*")
++_FIGURE_REF = re.compile(r"图\s*(\d{1,3})")
++_CLAIM_REF = re.compile(r"权利要求\s*(\d{1,3}(?:\s*(?:或|至|到|-|－|～|~|、|和|及)\s*\d{1,3})*)")
++_CJK = re.compile(r"[一-鿿]")
++
++#: Five parts of a description, in order. ``{content}`` is 发明内容 / 实用新型内容.
++_HEADINGS = ("技术领域", "背景技术", "{content}", "附图说明", "具体实施方式")
++_CONTENT_HEADING = {"invention": "发明内容", "utility_model": "实用新型内容"}
++_SUBJECT_WORD = {"invention": "本发明", "utility_model": "本实用新型"}
++
++#: Vague wording in claims (Examination Guidelines Part II Chapter 2: unclear terms).
++_VAGUE_PATTERNS = (
++    (re.compile(r"(?:大约|约)\s*\d"), "约/大约 + 数值"),
++    (re.compile(r"\d\s*(?:%|℃|°C?|[a-zA-Zμ]+)?\s*左右"), "数值 + 左右"),
++    (re.compile(r"接近\s*\d"), "接近 + 数值"),
++    (re.compile(r"例如|比如"), "例如"),
++    (re.compile(r"最好是|最好为"), "最好是"),
++    (re.compile(r"尤其是"), "尤其是"),
++    (re.compile(r"必要时"), "必要时"),
++    (re.compile(r"类似物"), "类似物"),
++    (re.compile(r"优选"), "优选"),
++    (re.compile(r"等等|等[。，；、,;]"), "等"),
++)
++
++#: Characters that end a ``所述X`` capture once at least two characters were collected.
++_TERM_STOP = set("的与和及或在上下中内外为是通将设有具包用于经由对向从至并且其该时后前当使沿按所以并而则")
++_TERM_MAX = 10
++#: A digit that is a unit/count rather than a reference sign.
++_NOT_A_SIGN = r"(?![\d.．%A-Za-zμ°℃个根块条片层只件次组对])"
++
++
++class LintError(RuntimeError):
++    """Raised when the workspace inputs cannot be read at all."""
++
++
++# ── Parsing ────────────────────────────────────────────────────────────────────────────
++
++
++def parse_claims(text: str) -> list[dict[str, Any]]:
++    return [
++        {"claim_no": int(match.group(1)), "text": match.group(2).strip()}
++        for match in _CLAIM_RE.finditer(text)
++        if match.group(2).strip()
++    ]
++
++
++def _expand_refs(raw: str) -> list[int]:
++    numbers: list[int] = []
++    tokens = re.split(r"\s*(或|至|到|-|－|～|~|、|和|及)\s*", raw)
++    index = 0
++    while index < len(tokens):
++        token = tokens[index]
++        if token.isdigit():
++            numbers.append(int(token))
++        elif token in {"至", "到", "-", "－", "～", "~"} and numbers and index + 1 < len(tokens) and tokens[index + 1].isdigit():
++            start, end = numbers[-1], int(tokens[index + 1])
++            numbers.extend(range(start + 1, end + 1))
++            index += 1
++        index += 1
++    return numbers
++
++
++def claim_references(text: str) -> list[int]:
++    """Claim numbers a claim's wording refers to (``根据权利要求1或2``, ``权利要求1至3`` …)."""
++    found: list[int] = []
++    for match in _CLAIM_REF.finditer(text):
++        for number in _expand_refs(match.group(1)):
++            if number not in found:
++                found.append(number)
++    return found
++
++
++def parse_specification(text: str) -> tuple[list[dict[str, Any]], list[tuple[int, str]]]:
++    """Paragraphs ``[{paragraph_no, text, section}]`` and headings ``[(line_index, heading)]``."""
++    paragraphs: list[dict[str, Any]] = []
++    headings: list[tuple[int, str]] = []
++    section = ""
++    current: dict[str, Any] | None = None
++    for index, line in enumerate(text.splitlines()):
++        stripped = line.strip()
++        match = _PARAGRAPH_LINE.match(line)
++        if match:
++            current = {"paragraph_no": match.group(1), "text": _PARAGRAPH_RE.sub("", stripped, count=1), "section": section}
++            paragraphs.append(current)
++            continue
++        heading = stripped.lstrip("#").strip().rstrip("：:").strip()
++        if heading and _is_heading(heading):
++            headings.append((index, heading))
++            section = heading
++            current = None
++            continue
++        if current is not None and stripped:
++            current["text"] += stripped
++    return paragraphs, headings
++
++
++def _is_heading(text: str) -> bool:
++    known = {"技术领域", "背景技术", "发明内容", "实用新型内容", "附图说明", "具体实施方式"}
++    return text in known
++
++
++# ── Core lint ──────────────────────────────────────────────────────────────────────────
++
++
++def lint_texts(
++    *,
++    claims_text: str,
++    specification_text: str,
++    abstract_text: str,
++    structured_claims: list[dict[str, Any]],
++    figures: list[dict[str, Any]],
++    application_type: str = "invention",
++    title: str = "",
++) -> dict[str, Any]:
++    """Lint manuscript strings against the structured model.
++
++    ``structured_claims``: ``[{claim_no, claim_type, parent_claim_no}]``;
++    ``figures``: ``[{figure_id: "FIG-n", parts: [{label, mark}]}]``.
++    Returns ``{ok, errors, warnings, counts}``; findings are ``{level, code, path, message}``.
++    """
++    findings: list[dict[str, str]] = []
++
++    def add(level: str, code: str, path: str, message: str) -> None:
++        findings.append({"level": level, "code": code, "path": path, "message": message})
++
++    app_type = application_type if application_type in _CONTENT_HEADING else "invention"
++    claims = parse_claims(claims_text)
++    paragraphs, headings = parse_specification(specification_text)
++    if not claims:
++        add("error", "M-001", "claims", "claims.md has no numbered claims (expected lines like `1. ...`)")
++    if not paragraphs:
++        add("error", "M-001", "specification", "specification.md has no numbered paragraphs (expected [0001] markers)")
++    if not abstract_text.strip():
++        add("error", "M-001", "abstract", "abstract.md is empty")
++
++    _check_claim_numbers(claims, structured_claims, add)
++    _check_claim_references(claims, structured_claims, add)
++    _check_claim_sentences(claims, add)
++    _check_vague_wording(claims, add)
++    _check_antecedents(claims, structured_claims, add)
++    _check_signs(claims, paragraphs, figures, add)
++    _check_paragraph_numbers(paragraphs, add)
++    _check_headings(headings, app_type, bool(figures), add)
++    _check_figure_descriptions(paragraphs, headings, figures, add)
++    _check_subject_wording(claims_text, specification_text, abstract_text, app_type, add)
++
++    abstract_chars = len(re.sub(r"\s", "", abstract_text))
++    if abstract_chars > ABSTRACT_LIMIT:
++        add("error", "M-006", "abstract", f"abstract has {abstract_chars} characters (limit {ABSTRACT_LIMIT})")
++    title_chars = len(re.sub(r"\s", "", title or ""))
++    if title_chars > TITLE_LIMIT:
++        add("warn", "M-007", "title", f"title has {title_chars} characters (generally no more than {TITLE_LIMIT})")
++
++    errors = [finding for finding in findings if finding["level"] == "error"]
++    warnings = [finding for finding in findings if finding["level"] == "warn"]
++    return {
++        "ok": not errors,
++        "action": "draft lint",
++        "application_type": app_type,
++        "counts": {
++            "claims": len(claims),
++            "paragraphs": len(paragraphs),
++            "headings": len(headings),
++            "abstract_chars": abstract_chars,
++            "figures": len(figures),
++        },
++        "errors": errors,
++        "warnings": warnings,
++    }
++
++
++def _check_claim_numbers(claims: list[dict[str, Any]], structured: list[dict[str, Any]], add: Any) -> None:
++    numbers = [claim["claim_no"] for claim in claims]
++    duplicates = sorted({number for number in numbers if numbers.count(number) > 1})
++    if duplicates:
++        add("error", "M-002", "claims", f"duplicate claim numbers in claims.md: {duplicates}")
++    if numbers and sorted(set(numbers)) != list(range(1, max(numbers) + 1)):
++        add("error", "M-002", "claims", f"claim numbering in claims.md is not consecutive from 1: {numbers}")
++    if structured:
++        expected = sorted(int(claim["claim_no"]) for claim in structured)
++        if sorted(set(numbers)) != expected:
++            add("error", "M-002", "claims", f"claims.md numbers {sorted(set(numbers))} differ from the structured claims {expected}")
++
++
++def _check_claim_references(claims: list[dict[str, Any]], structured: list[dict[str, Any]], add: Any) -> None:
++    by_no = {int(claim["claim_no"]): claim for claim in structured}
++    existing = {claim["claim_no"] for claim in claims}
++    for claim in claims:
++        number = claim["claim_no"]
++        refs = claim_references(claim["text"])
++        for ref in refs:
++            if ref not in existing:
++                add("error", "M-003", f"claims/{number}", f"refers to claim {ref}, which does not exist")
++            elif ref >= number:
++                add("error", "M-003", f"claims/{number}", f"refers to claim {ref}, which is not an earlier claim")
++        model = by_no.get(number)
++        if model is None or model.get("claim_type") != "dependent":
++            continue
++        parent = model.get("parent_claim_no")
++        if parent is None:
++            continue
++        parent = int(parent)
++        if not refs:
++            add("error", "M-003", f"claims/{number}", f"dependent claim (parent {parent}) does not refer to any claim in its wording")
++        elif parent not in refs:
++            add("error", "M-003", f"claims/{number}", f"wording refers to claim(s) {refs} but the structured parent is claim {parent}")
++        elif len(refs) > 1:
++            add("warn", "M-003", f"claims/{number}", f"multiple dependency {refs}: the structured model records only parent {parent}")
++
++
++def _check_claim_sentences(claims: list[dict[str, Any]], add: Any) -> None:
++    for claim in claims:
++        text = claim["text"].strip()
++        stops = text.count("。")
++        if stops > 1 or (stops == 1 and not text.endswith("。")):
++            add("error", "M-015", f"claims/{claim['claim_no']}", "a claim may use a full stop (。) only at its end")
++        elif stops == 0:
++            add("warn", "M-015", f"claims/{claim['claim_no']}", "claim does not end with a full stop (。)")
++        if re.search(r"如图\s*\d|如说明书", text):
++            add("warn", "M-014", f"claims/{claim['claim_no']}", "claims should not refer to figures or the description (如图…所示) unless absolutely necessary")
++
++
++def _check_vague_wording(claims: list[dict[str, Any]], add: Any) -> None:
++    for claim in claims:
++        hits = [label for pattern, label in _VAGUE_PATTERNS if pattern.search(claim["text"])]
++        if hits:
++            add("warn", "M-008", f"claims/{claim['claim_no']}", f"vague wording in a claim: {hits}")
++
++
++def _capture_term(text: str, start: int) -> str:
++    term = ""
++    index = start
++    if text[index:index + 1] == "的":
++        index += 1
++    while index < len(text) and len(term) < _TERM_MAX:
++        char = text[index]
++        if not (_CJK.match(char) or char.isascii() and char.isalpha()):
++            break
++        if char in _TERM_STOP and len(term) >= 2:
++            break
++        term += char
++        index += 1
++    return term
++
++
++def _claim_chain_texts(number: int, claims_by_no: dict[int, str], structured_by_no: dict[int, dict[str, Any]], seen: set[int]) -> list[str]:
++    """Texts of every claim this claim builds on: structured parents + claims its wording cites."""
++    if number in seen:
++        return []
++    seen.add(number)
++    texts: list[str] = []
++    refs = set(claim_references(claims_by_no.get(number, "")))
++    parent = (structured_by_no.get(number) or {}).get("parent_claim_no")
++    if parent is not None:
++        refs.add(int(parent))
++    for ref in sorted(refs):
++        if ref < number and ref in claims_by_no:
++            texts.extend(_claim_chain_texts(ref, claims_by_no, structured_by_no, seen))
++            texts.append(claims_by_no[ref])
++    return texts
++
++
++def _check_antecedents(claims: list[dict[str, Any]], structured: list[dict[str, Any]], add: Any) -> None:
++    claims_by_no = {claim["claim_no"]: claim["text"] for claim in claims}
++    structured_by_no = {int(claim["claim_no"]): claim for claim in structured}
++    for claim in claims:
++        number = claim["claim_no"]
++        text = claim["text"]
++        chain = "\n".join(_claim_chain_texts(number, claims_by_no, structured_by_no, set()))
++        missing: list[str] = []
++        for match in re.finditer("所述", text):
++            term = _capture_term(text, match.end())
++            if len(term) < 2:
++                continue
++            prior = chain + "\n" + text[: match.start()]
++            if not any(term[:length] in prior for length in range(len(term), 1, -1)):
++                if term not in missing:
++                    missing.append(term)
++        if missing:
++            add("warn", "M-009", f"claims/{number}", f"antecedent basis: 所述{missing} not introduced earlier in this claim or the claims it refers to")
++
++
++def _sign_pattern(label: str) -> re.Pattern[str]:
++    return re.compile(re.escape(label) + r"\s*(?:[（(]\s*(\d{1,3})\s*[)）]|(\d{1,3})" + _NOT_A_SIGN + ")")
++
++
++def _check_signs(claims: list[dict[str, Any]], paragraphs: list[dict[str, Any]], figures: list[dict[str, Any]], add: Any) -> None:
++    allowed: dict[str, set[str]] = {}
++    for figure in figures:
++        for part in figure.get("parts") or []:
++            label, mark = str(part.get("label", "")).strip(), str(part.get("mark", "")).strip()
++            if label and mark:
++                allowed.setdefault(label, set()).add(mark)
++    if not allowed:
++        return
++    # Longest labels first so "上盖板" is not also matched as "盖板".
++    labels = sorted(allowed, key=len, reverse=True)
++    for claim in claims:
++        bare: list[str] = []
++        for label in labels:
++            for match in _sign_pattern(label).finditer(claim["text"]):
++                if match.start() > 0 and any(
++                    claim["text"].endswith(longer, 0, match.start() + len(label)) and longer != label
++                    for longer in labels
++                    if len(longer) > len(label)
++                ):
++                    continue
++                mark = match.group(1) or match.group(2)
++                if mark not in allowed[label]:
++                    add("error", "M-011", f"claims/{claim['claim_no']}", f"{label}{mark}: the figures map {label} to {sorted(allowed[label])}")
++                elif match.group(2) and f"{label}{mark}" not in bare:
++                    bare.append(f"{label}{mark}")
++        if bare:
++            add("warn", "M-010", f"claims/{claim['claim_no']}", f"reference signs in claims should be in parentheses: {bare}")
++    for paragraph in paragraphs:
++        for label in labels:
++            for match in _sign_pattern(label).finditer(paragraph["text"]):
++                if any(
++                    paragraph["text"].endswith(longer, 0, match.start() + len(label)) and longer != label
++                    for longer in labels
++                    if len(longer) > len(label)
++                ):
++                    continue
++                mark = match.group(1) or match.group(2)
++                if mark not in allowed[label]:
++                    add("error", "M-011", f"specification/{paragraph['paragraph_no']}", f"{label}{mark}: the figures map {label} to {sorted(allowed[label])}")
++
++
++def _check_paragraph_numbers(paragraphs: list[dict[str, Any]], add: Any) -> None:
++    numbers = [int(paragraph["paragraph_no"]) for paragraph in paragraphs]
++    duplicates = sorted({number for number in numbers if numbers.count(number) > 1})
++    if duplicates:
++        add("error", "M-004", "specification", "duplicate paragraph numbers: " + ", ".join(f"[{n:04d}]" for n in duplicates))
++    if numbers and numbers != list(range(1, len(numbers) + 1)) and not duplicates:
++        expected = set(range(1, max(numbers) + 1))
++        gaps = sorted(expected - set(numbers))
++        detail = ("gaps " + ", ".join(f"[{n:04d}]" for n in gaps[:10])) if gaps else "out of order"
++        add("warn", "M-004", "specification", f"paragraph numbering is not consecutive from [0001] ({detail})")
++
++
++def _check_headings(headings: list[tuple[int, str]], app_type: str, has_figures: bool, add: Any) -> None:
++    content = _CONTENT_HEADING[app_type]
++    other = _CONTENT_HEADING["invention" if app_type == "utility_model" else "utility_model"]
++    present = [heading for _index, heading in headings]
++    if other in present:
++        add("warn", "M-012", "specification", f"heading {other!r} does not match the application type (expected {content!r})")
++    wanted = [heading.format(content=content) for heading in _HEADINGS]
++    if not has_figures:
++        wanted.remove("附图说明")
++    missing = [heading for heading in wanted if heading not in present and not (heading == content and other in present)]
++    if missing:
++        add("warn", "M-005", "specification", f"missing description part heading(s): {missing}")
++    order = [heading if heading != other else content for heading in present if heading in wanted or heading == other]
++    if order != [heading for heading in wanted if heading in order]:
++        add("warn", "M-005", "specification", f"description parts are out of order: {order}")
++
++
++def _check_figure_descriptions(
++    paragraphs: list[dict[str, Any]], headings: list[tuple[int, str]], figures: list[dict[str, Any]], add: Any
++) -> None:
++    numbers = set()
++    for figure in figures:
++        match = re.fullmatch(r"FIG-(\d{1,3})", str(figure.get("figure_id", "")))
++        if match:
++            numbers.add(int(match.group(1)))
++    cited_anywhere = {int(value) for paragraph in paragraphs for value in _FIGURE_REF.findall(paragraph["text"])}
++    for number in sorted(cited_anywhere - numbers):
++        add("error", "M-013", "specification", f"the description cites 图{number} but there is no FIG-{number}")
++    if not numbers:
++        return
++    has_section = any(heading == "附图说明" for _index, heading in headings)
++    pool = [paragraph for paragraph in paragraphs if paragraph["section"] == "附图说明"] if has_section else paragraphs
++    described = {int(value) for paragraph in pool for value in _FIGURE_REF.findall(paragraph["text"])}
++    for number in sorted(numbers - described):
++        where = "the description of drawings (附图说明)" if has_section else "the description"
++        add("error", "M-013", f"figures/FIG-{number}", f"图{number} is not described in {where}")
++
++
++def _check_subject_wording(claims_text: str, specification_text: str, abstract_text: str, app_type: str, add: Any) -> None:
++    wrong = _SUBJECT_WORD["invention" if app_type == "utility_model" else "utility_model"]
++    for label, text in (("claims", claims_text), ("specification", specification_text), ("abstract", abstract_text)):
++        if wrong in text:
++            add("warn", "M-012", label, f"uses {wrong!r} but the application type is {app_type}")
++
++
++# ── Workspace wrapper ──────────────────────────────────────────────────────────────────
++
++
++def lint(root: Path) -> dict[str, Any]:
++    """Lint ``07_drafting/manuscript/*`` of a workspace against its structured model."""
++    from . import draft, figure_plan  # local import: draft/delivery import this module lazily
++
++    root = Path(root).resolve()
++    paths = {"claims": root / CLAIMS_MD, "specification": root / SPECIFICATION_MD, "abstract": root / ABSTRACT_MD}
++    if not any(path.is_file() for path in paths.values()):
++        return {
++            "ok": True,
++            "action": "draft lint",
++            "workspace": str(root),
++            "counts": {},
++            "errors": [],
++            "warnings": [{"level": "warn", "code": "M-001", "path": MANUSCRIPT_DIR.as_posix(), "message": "no manuscript yet (07_drafting/manuscript/{claims,specification,abstract}.md)"}],
++        }
++    texts: dict[str, str] = {}
++    missing: list[str] = []
++    for label, path in paths.items():
++        try:
++            texts[label] = path.read_text(encoding="utf-8")
++        except FileNotFoundError:
++            texts[label] = ""
++            missing.append(label)
++        except (OSError, UnicodeDecodeError) as exc:
++            raise LintError(f"cannot read {path.relative_to(root).as_posix()}: {exc}") from exc
++    plan = draft.load_plan(root) or {}
++    figures = []
++    for figure_id, (figure, _path) in sorted(figure_plan.load_plans(root).items()):
++        marks = figure.get("mark_mapping") or {}
++        parts = [
++            {"label": str(node.get("label", "")), "mark": str(marks.get(str(node.get("id")), ""))}
++            for node in figure_plan._content_nodes(figure)
++        ]
++        figures.append({"figure_id": figure_id, "parts": parts if figure.get("type") in {"external_drawing", "block_diagram", "connection"} else []})
++    report = lint_texts(
++        claims_text=texts["claims"],
++        specification_text=texts["specification"],
++        abstract_text=texts["abstract"],
++        structured_claims=draft.load_claims(root),
++        figures=figures,
++        application_type=draft.application_type(plan),
++        title=str(plan.get("working_title") or ""),
++    )
++    for label in missing:
++        report["errors"].insert(0, {"level": "error", "code": "M-001", "path": paths[label].relative_to(root).as_posix(), "message": "manuscript file is missing"})
++    report["ok"] = not report["errors"]
++    report["workspace"] = str(root)
++    return report
++
++
++def render(data: dict[str, Any]) -> str:
++    lines = [
++        f"Workspace : {data.get('workspace', '')}",
++        f"Type      : {data.get('application_type', '-')}",
++        f"M check   : {'PASS' if data['ok'] else 'FAIL'}",
++    ]
++    if data.get("counts"):
++        lines.append("Counts    : " + ", ".join(f"{key}={value}" for key, value in data["counts"].items()))
++    if data["errors"]:
++        lines.append("")
++        lines.append("Errors (blocking delivery):")
++        lines.extend(f"  ❌ [{f['code']}] {f['path']}: {f['message']}" for f in data["errors"])
++    if data["warnings"]:
++        lines.append("")
++        lines.append("Warnings (human judgement):")
++        lines.extend(f"  ⚠️ [{f['code']}] {f['path']}: {f['message']}" for f in data["warnings"])
++    return "\n".join(lines)
 diff --git a/patentkit/map.py b/patentkit/map.py
 new file mode 100644
 index 0000000..fb34d00
@@ -30539,6 +31073,156 @@ index d45b766..bbf5a77 100644
  def test_init_terminology_parses_and_has_required_sections(fresh_dir):
      """The glossary must be parseable as YAML and contain the five sections registry requires.
  
+diff --git a/tests/test_manuscript_lint.py b/tests/test_manuscript_lint.py
+new file mode 100644
+index 0000000..20b1ade
+--- /dev/null
++++ b/tests/test_manuscript_lint.py
+@@ -0,0 +1,144 @@
++"""4.3 / M2 manuscript lint tests — `draft lint` text ↔ model consistency and delivery gate E-016.
++
++Synthetic data only. The repository-level drafting benchmark (benchmarks/drafting) scores the
++same `lint_texts` on seeded-defect cases; these tests pin individual parsing rules, the
++workspace wrapper, the CLI and the delivery integration.
++"""
++
++from __future__ import annotations
++
++import json
++from pathlib import Path
++
++import pytest
++
++from patentkit import cli, delivery, draft, manuscript_lint as ml
++
++CLEAN_CLAIMS = (
++    "1. 一种储物盒，包括壳体(1)和盖板(2)，其特征在于，所述壳体(1)顶部设有卡槽(11)。\n"
++    "2. 根据权利要求1所述的储物盒，其特征在于，所述盖板(2)边缘设有卡扣(21)。\n"
++)
++CLEAN_SPEC = (
++    "技术领域\n[0001] 本实用新型涉及收纳用品技术领域。\n"
++    "背景技术\n[0002] 现有储物盒的铰链易松动。\n"
++    "实用新型内容\n[0003] 本实用新型提供一种储物盒。\n"
++    "附图说明\n[0004] 图1为储物盒的结构示意图。\n"
++    "具体实施方式\n[0005] 如图1所示，壳体1顶部设有卡槽11，盖板2边缘设有卡扣21。\n"
++)
++STRUCTURED = [
++    {"claim_no": 1, "claim_type": "independent", "parent_claim_no": None},
++    {"claim_no": 2, "claim_type": "dependent", "parent_claim_no": 1},
++]
++FIGURES = [{"figure_id": "FIG-1", "parts": [{"label": "壳体", "mark": "1"}, {"label": "盖板", "mark": "2"}, {"label": "卡槽", "mark": "11"}, {"label": "卡扣", "mark": "21"}]}]
++
++
++def _lint(**overrides):
++    kwargs = dict(
++        claims_text=CLEAN_CLAIMS,
++        specification_text=CLEAN_SPEC,
++        abstract_text="本实用新型公开了一种储物盒。",
++        structured_claims=STRUCTURED,
++        figures=FIGURES,
++        application_type="utility_model",
++        title="一种储物盒",
++    )
++    kwargs.update(overrides)
++    return ml.lint_texts(**kwargs)
++
++
++def _codes(report, level=None):
++    findings = report["errors"] + report["warnings"] if level is None else report[level]
++    return {(finding["code"], finding["path"]) for finding in findings}
++
++
++def test_clean_manuscript_has_no_findings():
++    report = _lint()
++    assert report["ok"] and not report["errors"] and not report["warnings"], report
++
++
++def test_claim_reference_expansion():
++    assert ml.claim_references("根据权利要求1至3中任一项所述的装置") == [1, 2, 3]
++    assert ml.claim_references("根据权利要求1或2所述的装置，采用权利要求4所述") == [1, 2, 4]
++    assert ml.claim_references("一种权利要求书") == []
++
++
++def test_dependent_reference_must_match_the_structure():
++    claims = CLEAN_CLAIMS.replace("根据权利要求1所述的储物盒", "所述的储物盒")
++    assert ("M-003", "claims/2") in _codes(_lint(claims_text=claims), "errors")
++
++
++def test_independent_claim_may_refer_to_an_earlier_claim():
++    structured = [dict(STRUCTURED[0]), {"claim_no": 2, "claim_type": "independent", "parent_claim_no": None}]
++    claims = CLEAN_CLAIMS.replace("根据权利要求1所述的储物盒，其特征在于，", "一种盖板，用于权利要求1所述的储物盒，")
++    report = _lint(claims_text=claims, structured_claims=structured)
++    assert not any(code == "M-003" for code, _ in _codes(report))
++
++
++def test_sign_matching_prefers_the_longest_label():
++    figures = [{"figure_id": "FIG-1", "parts": [{"label": "盖板", "mark": "2"}, {"label": "上盖板", "mark": "5"}]}]
++    claims = "1. 一种储物盒，包括上盖板(5)和盖板(2)。\n"
++    report = _lint(claims_text=claims, structured_claims=STRUCTURED[:1], figures=figures,
++                   specification_text=CLEAN_SPEC.replace("壳体1顶部设有卡槽11，盖板2边缘设有卡扣21", "上盖板5与盖板2相连"))
++    assert not any(code == "M-011" for code, _ in _codes(report)), report
++
++
++def test_units_are_not_reference_signs():
++    claims = CLEAN_CLAIMS.replace("顶部设有卡槽(11)", "顶部设有卡槽(11)，所述壳体(1)壁厚2mm")
++    assert not any(code in {"M-010", "M-011"} for code, _ in _codes(_lint(claims_text=claims)))
++
++
++def test_figure_description_section_is_checked():
++    spec = CLEAN_SPEC.replace("[0004] 图1为储物盒的结构示意图。", "[0004] 附图仅用于说明。")
++    assert ("M-013", "figures/FIG-1") in _codes(_lint(specification_text=spec), "errors")
++
++
++def test_invention_headings_and_subject_word():
++    spec = CLEAN_SPEC.replace("实用新型内容", "发明内容").replace("本实用新型", "本发明")
++    report = _lint(specification_text=spec, abstract_text="本发明公开了一种储物盒。", application_type="invention")
++    assert not report["warnings"] and not report["errors"], report
++
++
++def test_abstract_limit_counts_non_whitespace_characters():
++    assert _lint(abstract_text="字" * 300 + "\n  \n")["ok"]
++    assert ("M-006", "abstract") in _codes(_lint(abstract_text="字" * 301), "errors")
++
++
++# ── Workspace wrapper, CLI and delivery gate ──────────────────────────────────────────
++
++
++def test_workspace_without_manuscript_is_a_warning_only(tmp_path):
++    from upgrade_test_utils import seed_confirmed_idea
++
++    root, _ = seed_confirmed_idea(tmp_path)
++    report = ml.lint(root)
++    assert report["ok"] and [f["code"] for f in report["warnings"]] == ["M-001"]
++
++
++def test_cli_draft_lint_json(tmp_path, monkeypatch, capsys):
++    import test_delivery
++
++    root = test_delivery._workspace(tmp_path, monkeypatch)
++    code = cli.main(["draft", "lint", "--root", str(root), "--json"])
++    data = json.loads(capsys.readouterr().out)
++    assert code == 0 and data["ok"] and data["action"] == "draft lint"
++
++
++def test_lint_errors_block_build_and_surface_as_e016(tmp_path, monkeypatch):
++    import test_delivery
++
++    root = test_delivery._workspace(tmp_path, monkeypatch)
++    assert delivery.build(root, apply=True)["ok"]
++    assert delivery.sign(root, "inventor", apply=True)["ok"]
++    assert delivery.check(root)["ok"]
++
++    # A dependent claim that loses its reference wording is a lint error (M-003 → E-016) …
++    claims_path = root / delivery.CLAIMS_MD
++    claims_path.write_text(
++        claims_path.read_text(encoding="utf-8").replace("根据权利要求1所述的方法", "所述方法"), encoding="utf-8"
++    )
++    codes = [finding["code"] for finding in delivery.check(root)["errors"]]
++    assert "E-016" in codes
++    # … and a rebuild refuses to freeze it.
++    test_delivery._fake_gates(monkeypatch, test_delivery.PASS_GATES)
++    with pytest.raises(delivery.DeliveryError, match="manuscript lint errors"):
++        delivery.build(root, apply=True)
 diff --git a/tests/test_new_features.py b/tests/test_new_features.py
 new file mode 100644
 index 0000000..867de5c

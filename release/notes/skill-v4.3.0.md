@@ -1,4 +1,4 @@
-# Patent Research Skill 4.3.0（撰写交付线：实用新型优先；kernel 0.11.0）
+# Patent Research Skill 4.3.0（撰写交付线：实用新型优先 + 正文一致性校验；kernel 0.11.0）
 
 Requires **patentkit 0.11.0, assessment protocol 1**, Python 3.11+。内核 **0.10.0 → 0.11.0**
 （需重装内核 wheel）。扩展 `patent_intel` 本轮**无变化**（0.3.0 延续）。
@@ -6,7 +6,7 @@ Requires **patentkit 0.11.0, assessment protocol 1**, Python 3.11+。内核 **0.
 ## 什么变了
 
 本轮把重点从检索线转到**撰写交付线**，并优先打通**实用新型**场景
-（方案：`docs/4.3-drafting-delivery-plan.md`，里程碑 M1）：
+（方案：`docs/4.3-drafting-delivery-plan.md`，里程碑 M1 + M2）：
 
 - **申请类型与权项类别**（内核契约，向后兼容，schema_version 仍 1.0）：
   `drafting_plan.application_type`（`invention` | `utility_model`，缺省=发明）、
@@ -28,9 +28,17 @@ Requires **patentkit 0.11.0, assessment protocol 1**, Python 3.11+。内核 **0.
   DOCX 首行写「实用新型名称/发明名称」，并单列「摘要附图」。
 - **零迁移承诺**：未声明 `application_type` 的旧计划重建出的文档模型**逐字节一致**
   （同一工作区新旧内核 model_fingerprint 相同，回归测试锁定），已签核交付不会因升级失效。
-- **方法论**：新增 `drafting/references/20-utility-model.md`（中英镜像）；SKILL.md 硬约束 13、
-  D1/D7 接线、触发短语；14/16/17 号文档补码表；evals +2 用例（49→51）；术语锚定 +2。
-- 测试：内核 777 passed（0.10.0 时 753；新增 `tests/test_utility_model.py` 25 例）。
+- **正文一致性校验 `draft lint`（M2，新模块 `manuscript_lint.py`）**：稿件正文 ↔ 结构化模型与形式要求，
+  M-001…M-015——编号与结构一致、从属权项引用语↔`parent_claim_no`、段落号、说明书五部分标题、
+  摘要 ≤300 字、名称 ≤25 字（warn）、含糊用语（warn）、先行基础启发式（warn）、附图标记括注（warn）
+  与标记冲突（error）、主题词与申请类型（warn）、附图说明逐图覆盖（error）、权项引用附图（warn）、
+  权项句号。error 阻塞交付：`deliver build` 拒绝构建，`deliver check` 报 **E-016**；启发式一律 warn。
+- **撰写基准（M0 首批）**：`benchmarks/drafting/` 四个合成案例（实用新型/发明各一份干净稿 + 缺陷注入稿，
+  共 23 个注入缺陷，覆盖 M-002…M-015）；`tools/score_drafting.py --gate perfect` 入 CI——
+  全部检出且零误报；`tests/test_drafting_benchmark.py` 受控破坏防橡皮图章。
+- **方法论**：新增 `drafting/references/20-utility-model.md` 与 `21-manuscript-lint.md`（中英镜像）；
+  SKILL.md 硬约束 13、D1/D7/D8 接线、触发短语；14/16/17 号文档补码表；evals +3 用例（49→52）；术语锚定 +3。
+- 测试：内核 790 passed（0.10.0 时 753；新增 `test_utility_model.py` 25 例、`test_manuscript_lint.py` 12 例）。
 
 ## 安装与迁移
 

@@ -65,6 +65,7 @@ python -m patentkit deliver status --root .\workspace
 | E-014 | error | utility model with drawings but no designated abstract drawing, or the abstract drawing is not delivered |
 | E-015 | error | an external drawing changed or lost its human confirmation after delivery |
 | W-003 | warn | an invention that declares its application type has drawings but no abstract drawing |
+| E-016 | error | the manuscript consistency lint (`draft lint`, M-001…M-015) has errors — see [21](21-manuscript-lint.md) |
 
 ## 5. Sign-off and invalidation
 

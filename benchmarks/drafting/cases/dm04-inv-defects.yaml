@@ -1,0 +1,43 @@
+# 合成用例（无真实申请材料）：发明·缺陷注入稿。
+id: dm04-inv-defects
+description: 在 dm03 上注入：权项编号与结构不符、从属权项无引用语、多项引用、结尾缺句号、主题词与内容标题错用实用新型口径、引用不存在的图3、段落重号、例如/优选、标记冲突（说明书）。
+application_type: invention
+title: 一种负载切换控制系统及方法
+structured_claims:
+  - {claim_no: 1, claim_type: independent, parent_claim_no: null}
+  - {claim_no: 2, claim_type: dependent, parent_claim_no: 1}
+  - {claim_no: 3, claim_type: dependent, parent_claim_no: 2}
+  - {claim_no: 4, claim_type: dependent, parent_claim_no: 1}
+figures:
+  - figure_id: FIG-1
+    parts: [{label: 检测单元, mark: "10"}, {label: 控制单元, mark: "20"}, {label: 执行机构, mark: "30"}]
+claims: |
+  1. 一种负载切换控制系统，包括检测单元(10)、控制单元(20)和执行机构(30)，其特征在于，所述检测单元(10)用于检测负载变化率，所述控制单元(20)在所述负载变化率超过阈值时向所述执行机构(30)发出切换命令。
+  2. 所述的负载切换控制系统，其特征在于，所述阈值优选为5%至8%。
+  3. 根据权利要求1或2所述的负载切换控制系统，其特征在于，所述检测单元(10)例如为电流互感器
+  5. 根据权利要求1所述的负载切换控制系统，其特征在于，所述执行机构(30)为接触器。
+specification: |
+  技术领域
+  [0001] 本发明涉及能源装备控制技术领域。
+  背景技术
+  [0002] 现有控制系统按固定时间切换运行模式。
+  实用新型内容
+  [0003] 本实用新型提供一种负载切换控制系统，检测单元10检测负载变化率，控制单元40控制执行机构30。
+  附图说明
+  [0004] 图1为负载切换控制系统的结构框图。
+  [0004] 图3为方法流程图。
+  具体实施方式
+  [0005] 如图1所示，检测单元10与控制单元20连接。
+abstract: |
+  本发明公开了一种负载切换控制系统，在负载变化率超过阈值时切换运行模式。
+expected:
+  - {code: M-002, path: claims}              # claims.md 为 1,2,3,5，结构为 1-4
+  - {code: M-003, path: claims/2}            # 从属权项无引用语
+  - {code: M-003, path: claims/3}            # 多项引用 1或2，结构只记父项 2（warn）
+  - {code: M-015, path: claims/3}            # 结尾缺句号（warn）
+  - {code: M-008, path: claims/2}            # 优选
+  - {code: M-008, path: claims/3}            # 例如
+  - {code: M-004, path: specification}       # [0004] 重号
+  - {code: M-012, path: specification}       # 发明稿中出现「本实用新型」/「实用新型内容」
+  - {code: M-013, path: specification}       # 引用图3 但无 FIG-3
+  - {code: M-011, path: specification/0003}  # 控制单元40 与图中 20 冲突
