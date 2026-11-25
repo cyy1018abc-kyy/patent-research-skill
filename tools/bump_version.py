@@ -110,6 +110,7 @@ RESIDUE_WHITELIST = (
     ("tools/render_terminal_shot.py", "截图脚注按当次发布手工更新"),
     ("evals/check_terminology.py", "「3.1.0 起全部双语」历史陈述"),
     ("tools/bump_version.py", "本工具自身的文档字符串"),
+    ("extensions/patent_intel/tests/test_staleness.py", "索引清单 engine_version 的任意测试取值（与内核版本无关）"),
 )
 
 

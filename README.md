@@ -9,6 +9,36 @@ the release builder, and release notes.
 **No real project data, patent drafts, target IDs, or candidate IDs are included**;
 the sample workspace is synthetic (`TGT-0002`).
 
+## Skill 4.3.0 / kernel 0.11.0 — drafting & delivery: utility model first, manuscript lint & skeleton
+
+Headline of this release — the drafting/delivery line (plan:
+[docs/4.3-drafting-delivery-plan.md](docs/4.3-drafting-delivery-plan.md), milestones M1–M3):
+
+- **Application type & claim category**: `draft plan --type utility_model`; optional
+  `application_type` / `abstract_figure` on the plan and `claim_category`
+  (`product`/`method`/`use`, inherited by dependent claims) on claims — no workspace migration.
+- **Utility-model audit (D-020…D-025)**: method/use claims and undeclared independent claims are
+  blocked, drawings are mandatory (flowchart-only figures rejected), method/material/software
+  wording is flagged for human judgement, claim categories must be consistent, and the abstract
+  drawing must exist.
+- **Human-drawn structure drawings**: `figures import` pins a PNG line drawing by SHA-256 with its
+  reference-sign list; `figures review` binds a human visual confirmation to both (F-015/F-016).
+  `figures plan` never fakes a structure view with a block diagram.
+- **Delivery gate**: E-013 (utility model without drawings), E-014 (abstract drawing), E-015
+  (external drawing changed after delivery); the DOCX carries the title line and an abstract-drawing
+  section. Plans without `application_type` rebuild a byte-identical document model.
+- **Manuscript consistency lint (M2)**: `draft lint` checks the manuscript text against the structured
+  model and formal requirements (M-001…M-015: reference wording ↔ structure, paragraph numbers, five
+  description parts, abstract/title length, vague wording, antecedent basis, reference signs, drawing
+  descriptions); errors block delivery (E-016), heuristics only warn. A synthetic drafting benchmark
+  ([benchmarks/drafting/](benchmarks/drafting/README.md), 24 seeded defects) is gated in CI at
+  "all detected, zero false positives".
+- **Manuscript skeleton (M3)**: `draft render` generates claims/description/abstract skeletons from the
+  structured model (numbering, dependency wording, five parts, drawing descriptions, reference signs);
+  anything the model lacks stays an explicit `【待补：…】` slot (M-016 blocks delivery) — no invented content.
+- Method: [drafting/references/20-utility-model.md](drafting/references/20-utility-model.md) and
+  [21-manuscript-lint.md](drafting/references/21-manuscript-lint.md), [22-manuscript-render.md](drafting/references/22-manuscript-render.md) (zh/en).
+
 ## Skill 4.2.0 / kernel 0.10.0 — adaptive retrieval: identity/accounting discipline, evaluator & policy scheduling, fusion pipeline, preregistered ablation
 
 Headline of this release — the retrieval layer upgrade (extension **patent_intel 0.3.0**;
@@ -78,12 +108,13 @@ unchanged ([docs/patent-skill-upgrade-implementation-plan.md](docs/patent-skill-
   CNIPA XML remains **not attempted** until independently researched and verified.
 
 The kernel is reconstructed in CI from the public 0.1.2 sdist plus
-`release/patches/patentkit-0.1.2-to-0.10.0.patch`; the full package ships all four skills.
+`release/patches/patentkit-0.1.2-to-0.11.0.patch`; the full package ships all four skills.
 The skill-matrix decision (2026-10-25, see
 [docs/skill-matrix-plan.md](docs/skill-matrix-plan.md)) still describes the split into
 **research** and **drafting** (OA merged into drafting), 3.6.0 additionally ships
-`patent-discovery`, 4.0.0 additionally ships `patent-audit`, and 4.2.0 upgrades the
-retrieval layer (extension 0.3.0). Everything below still
+`patent-discovery`, 4.0.0 additionally ships `patent-audit`, 4.2.0 upgrades the
+retrieval layer (extension 0.3.0), and 4.3.0 adds the utility-model drafting line (kernel 0.11.0).
+Everything below still
 describes the 2.5.0 Chinese-primary + delivery-safety release, which 3.x inherits in full.
 
 ## Skill 3.6.0 — release doctor + synthetic patent benchmark
@@ -125,7 +156,7 @@ secrecy `.gitignore` rules, and a reconstructed `tests/conftest.py` so the kerne
 suite runs from the patched tree in CI.
 
 Everything from 2.4.0 still holds: source provenance and judgment are separate ([assessment
-protocol](patent-research-skill/references/07-assessment-protocol.md)); supported AI
+protocol](research/references/07-assessment-protocol.md)); supported AI
 assessments may count for G-S-02; G-S-03 requires explicit human confirmation bound to the
 current judgment. CI reconstructs the kernel from the [verified public source and
 patch](release/patches/README.md), builds both packages, and validates installation on
@@ -133,12 +164,12 @@ Windows/Linux with Python 3.11/3.12 before publishing.
 
 ## Download & install
 
-Download the paired [Skill 4.2.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v4.2.0) and [patentkit 0.10.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.10.0) releases:
+Download the paired [Skill 4.3.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/skill-v4.3.0) and [patentkit 0.11.0](https://github.com/cyy1018abc-kyy/patent-research-skill/releases/tag/patentkit-v0.11.0) releases:
 
 | Asset | Purpose |
 |---|---|
-| `patent-research-skill-v4.2.0.zip` | Full package: installs all four skills (patent-research + patent-drafting + patent-discovery + patent-audit), with installers + synthetic sample workspace |
-| `patentkit-0.10.0-py3-none-any.whl` | Matching kernel: assessment protocol 1 + P0–P4 modules (contracts, upgrade, intake, discovery, draft, figures, delivery) |
+| `patent-research-skill-v4.3.0.zip` | Full package: installs all four skills (patent-research + patent-drafting + patent-discovery + patent-audit), with installers + synthetic sample workspace |
+| `patentkit-0.11.0-py3-none-any.whl` | Matching kernel: assessment protocol 1 + P0–P4 modules (contracts, upgrade, intake, discovery, draft, figures, delivery) |
 | `install-oneclick.cmd` | Windows installer, also included in the ZIP |
 | `INSTALL-colleagues.md` | One-page install guide (repo source: `release/install-guide-for-colleagues.md`) |
 
@@ -150,14 +181,14 @@ same folder, then double-click `install-oneclick.cmd`.
 ### Manual (any platform)
 
 ```powershell
-python -m pip install ./patentkit-0.10.0-py3-none-any.whl
-Expand-Archive ./patent-research-skill-v4.2.0.zip -DestinationPath ./pkg
+python -m pip install ./patentkit-0.11.0-py3-none-any.whl
+Expand-Archive ./patent-research-skill-v4.3.0.zip -DestinationPath ./pkg
 pwsh -File ./pkg/install.ps1 -Client both -Force
 ```
 
 ```bash
-python3 -m pip install ./patentkit-0.2.0-py3-none-any.whl
-unzip patent-research-skill-v4.2.0.zip -d pkg
+python3 -m pip install ./patentkit-0.11.0-py3-none-any.whl
+unzip patent-research-skill-v4.3.0.zip -d pkg
 chmod +x pkg/install.sh && ./pkg/install.sh --client both --force
 ```
 
@@ -197,7 +228,7 @@ docs/                    design memos (skill matrix, data sources, scope decisio
 ## Build a release package
 
 ```bash
-python -m pip install ./patentkit-0.10.0-py3-none-any.whl
+python -m pip install ./patentkit-0.11.0-py3-none-any.whl
 python tools/build_skill_release.py --out dist --built-at 2026-10-23T00:00:00+00:00 --json
 python -m unittest discover -s tests -v
 ```
@@ -205,7 +236,7 @@ python -m unittest discover -s tests -v
 ## Requirements
 
 - Python >= 3.11 (required by the skill scripts)
-- Skill 4.2.0: `patentkit` >= 0.10.0, assessment protocol 1 (docx export needs the optional `python-docx`)
+- Skill 4.3.0: `patentkit` >= 0.11.0, assessment protocol 1 (docx export needs the optional `python-docx`)
 - Codex CLI >= 0.161 (the desktop app bundles a newer runtime, no upgrade needed)
 
 ## Language
@@ -243,7 +274,7 @@ This repository is licensed under the **Apache-2.0** license (see [LICENSE](LICE
 
 ## Optional extension: patent_intel (4.0 development line)
 
-An independently versioned, strictly optional wheel (`patent_intel`, currently 0.1.0)
+An independently versioned, strictly optional wheel (`patent_intel`, currently 0.3.0)
 adds retrieval-recall tooling around the kernel without touching its authority:
 **Status: experimental enhancement** — the preregistered Phase V evaluation
 (DAPFAM, 312 public test topics, same-budget same-engine comparison) did **not**
@@ -277,5 +308,5 @@ Retrieval benchmark protocol: [docs/retrieval-evaluation.md](docs/retrieval-eval
 
 ## Version
 
-Skill version: **4.2.0** (patent-research + patent-drafting + patent-discovery + patent-audit),
-companion kernel: **0.10.0**. See [CHANGELOG.md](CHANGELOG.md).
+Skill version: **4.3.0** (patent-research + patent-drafting + patent-discovery + patent-audit),
+companion kernel: **0.11.0**. See [CHANGELOG.md](CHANGELOG.md).

@@ -28,7 +28,7 @@ EN_DISCOVERY = ROOT / "discovery" / "references.en"
 
 #: 中文主文件名前缀（两侧镜像齐备的部分）
 PAIRED_RESEARCH = [f"0{i}-" for i in range(1, 9)]   # 01–08
-PAIRED_DRAFTING = ["00-", "09-", "10-", "11-", "12-", "13-", "14-", "15-", "16-", "17-", "19-"]
+PAIRED_DRAFTING = ["00-", "09-", "10-", "11-", "12-", "13-", "14-", "15-", "16-", "17-", "19-", "20-", "21-", "22-"]
 PAIRED_DISCOVERY = ["00-", "01-", "02-", "03-"]
 
 #: 核心锚定术语：中文须在中文文档（两技能）出现，英文 token 须在英文镜像出现。
@@ -58,6 +58,9 @@ GLOBAL_ANCHORS = [
     ("工作区", "workspace"),
     ("期限台账", "deadline"),
     ("附图标记", "figure-mark"),
+    ("实用新型", "utility model"),
+    ("摘要附图", "abstract drawing"),
+    ("先行基础", "antecedent basis"),
     ("数值声明溯源", "A/B/C"),
     ("来源材料", "source material"),
     ("技术事实", "technical fact"),
@@ -69,7 +72,7 @@ GLOBAL_ANCHORS = [
     ("权项原子", "claim atom"),
     ("支持映射", "support mapping"),
     ("双状态写作门", "dual-state writing gate"),
-    ("先行基础", "antecedent basis"),
+    ("正文骨架", "manuscript skeleton"),
     ("附图规格", "figure plan"),
     ("附图渲染", "figure rendering"),
     ("图文一致性", "figure-text consistency"),
@@ -158,7 +161,7 @@ def main() -> int:
         for p in problems[:30]:
             print(f"  · {p}")
         return 1
-    print("✅ 术语一致性通过：research 01–08 / drafting 00,09–17+19 / discovery 00–03 中英配对完整，"
+    print("✅ 术语一致性通过：research 01–08 / drafting 00,09–17+19–22 / discovery 00–03 中英配对完整，"
           "锚定术语在用，glossary 三份逐字节一致")
     return 0
 

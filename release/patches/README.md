@@ -1,6 +1,6 @@
 # patentkit kernel source patches
 
-The current kernel is **0.10.0** (skill 4.2.0): the P0–P4 upgrade — versioned data
+The current kernel is **0.11.0** (skill 4.3.0): the P0–P4 upgrade — versioned data
 contracts + non-destructive workspace upgrade, the discovery/technical-fact control layer
 (G-I), the structured drafting pipeline (G-D, `concept`/`review_draft` gate), the
 professional figure engine, and the complete delivery pipeline (frozen
@@ -9,10 +9,18 @@ the manifest fingerprint → `release_ready` gate). CNIPA XML is **not implement
 `official_format_status` stays `not_attempted` until the official schema and tool are
 researched and independently verified (plan §5.4).
 
-The patch is provided as `patentkit-0.1.2-to-0.10.0.patch`; it adds, among others,
+The patch is provided as `patentkit-0.1.2-to-0.11.0.patch`; it adds, among others,
 `patentkit/contracts.py`, `workspace_upgrade.py`, `source_intake.py`, `discovery.py`,
 `discovery_handoff.py`, `draft.py`, `figure_plan.py` and `delivery.py` on top of the
-previously released modules. Kernel 0.10.0 expands the deadline presets to the 2025
+previously released modules. Kernel 0.11.0 adds the utility-model drafting line (4.3 / M1):
+an optional `application_type` (`invention` | `utility_model`) on the drafting plan and an
+optional `claim_category` (`product` | `method` | `use`) on claims, the D-020…D-025 audit codes
+(utility-model subject matter, category consistency, drawings, abstract figure), human-drawn
+`external_drawing` figures (`figures import` / `figures review`, pinned by SHA-256, F-015/F-016)
+and the E-013…E-015 delivery checks, plus the manuscript consistency lint (`draft lint`,
+`manuscript_lint.py`, M-001…M-016, delivery check E-016) and the manuscript skeleton renderer
+(`draft render`, `manuscript_render.py`); plans without `application_type` rebuild a byte-identical
+document model, so existing deliveries do not go stale. Kernel 0.10.0 expanded the deadline presets to the 2025
 Examination Guidelines practice (six new `deadlines.py` PRESETS: subsequent OA response,
 registration formalities, reexamination request, drug-PTE and delayed-grant compensation
 requests, biological-deposit certificates), with unknown ledger types still falling back
@@ -23,8 +31,8 @@ invariant regressions (`test_init_writes_lf_only`, `test_pipeline_writes_lf_only
 the discipline in. Kernel 0.8.0 had wired the revision loop to the
 novelty conclusions (`revise reconfirm`, stale marking on apply, close precondition and
 validate rule V038) and made drafting support citations resolvable (D-019). The patch
-SHA-256 is `c1b4758ee12168c243329178cd3ccef08df581fb6b520b18a5e9927c1cf8cdbb`.
-History: `-to-0.9.0.patch` was the explicit-LF write unification across all kernel text
+SHA-256 is `d9256373769d80a0c35b8f49089939058b1cf96dfe4572e52c910fbe36ceadb8`.
+History: `-to-0.10.0.patch` was the 2025-Guidelines deadline presets, `-to-0.9.0.patch` was the explicit-LF write unification across all kernel text
 writes, `-to-0.8.0.patch` was the revision↔conclusions linkage (V038) + structured
 support citations (D-019), `-to-0.6.0.patch` was the census-evidence rework (G-S-04 census
 records + V037 + the BigQuery/OPS data-source fixes), and `-to-0.5.1.patch` and older are
@@ -53,7 +61,7 @@ assert hashlib.sha256(data).hexdigest() == "5ab1ff6e6387c1b6f30e8e084b0da88d93bf
 with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
     archive.extractall(destination, filter="data")
 kernel = destination / "patentkit-0.1.2"
-subprocess.run(["git", "apply", "--directory=kernel-build/patentkit-0.1.2", str(repo / "release/patches/patentkit-0.1.2-to-0.10.0.patch")], cwd=repo, check=True)
+subprocess.run(["git", "apply", "--directory=kernel-build/patentkit-0.1.2", str(repo / "release/patches/patentkit-0.1.2-to-0.11.0.patch")], cwd=repo, check=True)
 assert (kernel / "patentkit/assessment.py").is_file()
 assert (kernel / "patentkit/revise.py").is_file()
 assert (kernel / "patentkit/contracts.py").is_file()
@@ -87,9 +95,9 @@ the applied tree is byte-identical (LF-normalised) to the dev-tree mirror. `--ve
 applied tree exactly (used when only the build tooling changed).
 
 The extracted directory retains its upstream `0.1.2` name; the patched package declares
-version `0.10.0`. CI repeats the download, checksum verification, patch application, and
+version `0.11.0`. CI repeats the download, checksum verification, patch application, and
 regression tests. No real patent data is needed. CI builds the wheel/sdist and the
 official installation ZIP, runs Windows/Linux acceptance, and publishes the paired
-Releases after merge to main. See `../notes/skill-v4.2.0.md` for installation and
+Releases after merge to main. See `../notes/skill-v4.3.0.md` for installation and
 migration: existing workspaces can run `python -m patentkit upgrade check` first (read-only)
 and `upgrade apply` to add the `10_discovery/` and `11_delivery/` directories non-destructively.

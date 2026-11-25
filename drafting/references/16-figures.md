@@ -42,7 +42,11 @@ python -m patentkit figures render FIG-1 --root .\workspace --format png
 # 3) 图文一致性校验（F-001…F-014；V033 标记核对复用既有实现）
 python -m patentkit figures validate --root .\workspace
 
-# 4) 原有能力不变
+# 4) 人工绘制的结构图（实用新型必备）：导入 + 人工看图确认，详见 20 号文档
+python -m patentkit figures import FIG-3 .\drawings\fig3.png --title "图3 结构示意图" --parts "1=壳体,2=盖板" --apply
+python -m patentkit figures review FIG-3 --by inventor --apply
+
+# 5) 原有能力不变
 python -m patentkit figures check --root .\workspace
 python -m patentkit figures draw FIG-1 --root .\workspace
 ```
@@ -65,6 +69,8 @@ python -m patentkit figures draw FIG-1 --root .\workspace
 | F-012 | warn | 重复连线 |
 | F-013 | warn | 自环连线 |
 | F-014 | warn | `source_refs` 不是 FACT 编号 |
+| F-015 | error | 外部附图（`external_drawing`）文件缺失、不是 PNG 或导入后被改动 |
+| F-016 | warn | 外部附图尚未人工确认或确认已过期（交付构建会拒绝） |
 | V033 | warn | 复用既有「图内标记 ↔ 说明书标记」双向核对（启发式，只提醒不自动改） |
 
 ## 4. 附图渲染的确定性约定

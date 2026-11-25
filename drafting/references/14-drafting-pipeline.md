@@ -77,6 +77,7 @@ python -m patentkit draft impact --claim-no 1
 | D-015 | error/warn | provenance 登记问题（复用既有检查，不重复实现） |
 | D-016 | error/warn | 修订账本问题（复用既有 `revise` 检查） |
 | D-017 | error | 原子自称 confirmed 但指纹绑定的人工确认记录缺失/过期 |
+| D-020…D-025 | error/warn | 申请类型与权项类别规则（实用新型客体、类别一致、附图、摘要附图）——详见 [20 号](20-utility-model.md) |
 
 ## 5. 与既有机制的关系
 

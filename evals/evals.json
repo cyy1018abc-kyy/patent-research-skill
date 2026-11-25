@@ -1,7 +1,7 @@
 {
  "schema_version": 2,
  "skill": "patent-research",
- "skill_version": "4.2.0",
+ "skill_version": "4.3.0",
  "note": "触发/边界/拒绝评测集（多技能）。每个用例带 skill 字段；CI 用 validate_evals.py 按对应 SKILL.md 校验锚定。",
  "cases": [
   {
@@ -675,6 +675,61 @@
      "advisory"
     ],
     "behavior": "recall report --dates-file --target-filing-date 附加建议性时间视图（41C-1）；建议永不改变召回与排序；日期冲突/缺失显式标注（unknown/conflicted）不臆造；日期本身不构成相关性或现有技术结论"
+   }
+  },
+  {
+   "id": "D17",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "这是个储物盒的结构改进，想按实用新型申请，帮我把权项和附图都走一遍结构化流程。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "实用新型",
+     "结构附图"
+    ],
+    "behavior": "读 references/20：draft plan --type utility_model；独立权项声明 claim_category=product；结构图人工绘制后 figures import → figures review（哈希绑定）；计划指定 abstract_figure；交付 E-013/E-014/E-015 必须为零"
+   }
+  },
+  {
+   "id": "D18",
+   "category": "refusal",
+   "skill": "patent-drafting",
+   "input": "实用新型里再加一项制造方法权利要求吧，顺便让工具按特征自动画一张结构图交上去。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "实用新型",
+     "摘要附图"
+    ],
+    "behavior": "拒绝：方法类权项不是实用新型保护客体（D-020 拦截）；结构图不得用框图冒充（figures plan 只列 needs_import），必须人工绘制、导入并人工看图确认；不承诺授权"
+   }
+  },
+  {
+   "id": "D19",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "稿子写完了，帮我查一下权利要求和说明书前后对不对得上，引用关系、附图标记、先行基础这些。",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "正文一致性",
+     "先行基础"
+    ],
+    "behavior": "读 references/21：python -m patentkit draft lint；error（M-002/003/004 重号/006/011/013/015）阻塞交付（E-016），warn（含糊用语、先行基础、未括注标记、五部分标题）逐条交人判断；启发式不当结论"
+   }
+  },
+  {
+   "id": "D20",
+   "category": "trigger",
+   "skill": "patent-drafting",
+   "input": "权项和原子都确认好了，能不能直接生成一版正文骨架，我再往里填内容？",
+   "expect": {
+    "must_trigger": true,
+    "skill_phrases": [
+     "正文骨架"
+    ],
+    "behavior": "读 references/22：draft render（dry-run 预览，--apply 写入，已有稿件需 --force）；模型里没有的内容留【待补：…】空槽，不编造；填完后 draft support import render/support_suggestion.json + 人工复核；draft lint 的 M-016 必须清零才能交付"
    }
   }
  ]

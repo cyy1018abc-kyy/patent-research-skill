@@ -40,6 +40,9 @@ python -m patentkit figures render FIG-1 --root .\workspace --format png   # opt
 python -m patentkit figures validate --root .\workspace
 python -m patentkit figures check --root .\workspace          # existing V033 mark check
 python -m patentkit figures draw FIG-1 --root .\workspace     # existing simple renderer
+# human-drawn structure drawings (mandatory for utility models): import + visual confirmation, see 20
+python -m patentkit figures import FIG-3 .\drawings\fig3.png --title "Fig. 3 structure" --parts "1=housing,2=lid" --apply
+python -m patentkit figures review FIG-3 --by inventor --apply
 ```
 
 ## 3. Validation codes (`figures validate`)
@@ -60,6 +63,8 @@ python -m patentkit figures draw FIG-1 --root .\workspace     # existing simple 
 | F-012 | warn | duplicate edge |
 | F-013 | warn | self-loop edge |
 | F-014 | warn | `source_refs` is not a FACT id |
+| F-015 | error | external drawing (`external_drawing`) file missing, not a PNG, or changed after import |
+| F-016 | warn | external drawing not human-confirmed or the confirmation is stale (delivery build refuses it) |
 | V033 | warn | existing bidirectional reference-sign check (heuristic; warns only) |
 
 ## 4. Deterministic rendering contract

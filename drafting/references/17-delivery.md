@@ -69,6 +69,11 @@ python -m patentkit deliver status --root .\workspace
 | E-012 | error | 清单声称官方工具已验证但没有任何已验证产物（禁止虚假合规声明） |
 | W-001 | warn | 交付中没有附图 |
 | W-002 | warn | 请求了 PDF 但未生成（无本地转换器） |
+| E-013 | error | 实用新型交付件没有附图 |
+| E-014 | error | 实用新型有附图但未指定摘要附图，或摘要附图不在交付件中 |
+| E-015 | error | 外部附图在交付后被改动或失去人工确认 |
+| W-003 | warn | 声明了申请类型的发明有附图但未指定摘要附图 |
+| E-016 | error | 稿件正文一致性校验（`draft lint`，M-001…M-016）存在 error，详见 [21 号](21-manuscript-lint.md) |
 
 ## 5. 签核与失效语义
 

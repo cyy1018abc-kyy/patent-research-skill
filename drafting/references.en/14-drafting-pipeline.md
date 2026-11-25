@@ -68,6 +68,7 @@ python -m patentkit draft impact --claim-no 1
 | D-015 | error/warn | provenance registry problems (reuses the existing check) |
 | D-016 | error/warn | revision-ledger problems (reuses the existing `revise` check) |
 | D-017 | error | atom claims confirmed but the fingerprint-bound review record is missing/stale |
+| D-020…D-025 | error/warn | application-type and claim-category rules (utility-model subject matter, category consistency, drawings, abstract drawing) — see [20](20-utility-model.md) |
 
 ## 5. Relationship to existing mechanisms
 
